@@ -1,4 +1,4 @@
-﻿# Продукты сборки и окружения в репозиторий не попадают.
+# Продукты сборки и окружения в репозиторий не попадают.
 build/
 dist/
 .venv/
@@ -18,3 +18,11 @@ session.jsonl
 
 # Служебные копии агентов Claude Code - это отдельные репозитории.
 .claude/
+
+# Additional build products and local environment.
+build-core/
+out/
+.vs/
+.cache/
+vcpkg_installed/
+*.user
