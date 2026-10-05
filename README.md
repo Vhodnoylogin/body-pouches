@@ -152,6 +152,14 @@ What the next run settles:
 | whether HIGGS holds the bottle while VRIK keeps the grip from the game | `draw.grab_confirmed` rather than `draw.grab_failed` |
 | where the pouch should hang | `body.squeeze`: the numbers that would put it at the hand |
 
+## Planned cooperation with VRIK HIGGS and PLANCK
+
+Body Pouches intends to migrate to the proposed shared architecture. This
+repository is the single source of the [English concept](docs/trinity-synergy/concept-en.md)
+and [Russian concept](docs/trinity-synergy/concept-ru.md). The proposal describes
+framework responsibilities and illustrative pseudo-ABI; the new services are
+not yet implemented or agreed with the framework authors.
+
 ## Repository
 
 The active repository is [Vhodnoylogin/body-pouches](https://github.com/Vhodnoylogin/body-pouches),

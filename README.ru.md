@@ -150,6 +150,14 @@ disable a slot» — его собственный комментарий в `vr
 | держит ли HIGGS бутылку, пока VRIK прячет захват от игры | `draw.grab_confirmed`, а не `draw.grab_failed` |
 | где должен висеть подсумок | `body.squeeze`: числа, которые поставили бы его к руке |
 
+## Планируемая синергия VRIK HIGGS и PLANCK
+
+Body Pouches планирует перейти на общую архитектуру взаимодействия трёх модов.
+Этот репозиторий — единственный источник [русской концепции](docs/trinity-synergy/concept-ru.md)
+и [английской концепции](docs/trinity-synergy/concept-en.md). Документы описывают
+ответственность участников и примерный псевдо-ABI. Новые службы пока не реализованы
+и не согласованы с авторами фреймворков.
+
 ## Репозиторий
 
 Действующий репозиторий темы `potion-pouches` — [Vhodnoylogin/body-pouches](https://github.com/Vhodnoylogin/body-pouches),
