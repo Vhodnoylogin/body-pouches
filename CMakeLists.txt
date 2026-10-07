@@ -13,7 +13,7 @@ cmake_minimum_required(VERSION 3.24)
 #
 # The split is not decoration: the whole of the reasoning sits in the half that can
 # be run in a second, and the half that needs a headset holds no reasoning at all.
-project(BodyPouches VERSION 0.1.10 LANGUAGES CXX)
+project(BodyPouches VERSION 0.1.11 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -117,6 +117,7 @@ list(REMOVE_ITEM BODYPOUCHES_HEADERS ${BODYPOUCHES_CORE_HEADERS})
 add_library(BodyPouches SHARED
     ${BODYPOUCHES_SOURCES}
     ${BODYPOUCHES_HEADERS}
+    contract/DevBenchAPI.cpp
 )
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${BODYPOUCHES_SOURCES} ${BODYPOUCHES_HEADERS})
@@ -155,7 +156,11 @@ if(BODYPOUCHES_BUILD_TESTS)
     target_include_directories(bodypouches_config_tests PRIVATE src tests)
     target_compile_definitions(bodypouches_config_tests PRIVATE PLUGIN_NAME="BodyPouches")
     target_link_libraries(bodypouches_config_tests PRIVATE nlohmann_json::nlohmann_json spdlog::spdlog)
+    add_executable(bodypouches_state_tests tests/main.cpp tests/test_state.cpp)
+    target_include_directories(bodypouches_state_tests PRIVATE src tests)
+    target_link_libraries(bodypouches_state_tests PRIVATE BodyPouchesCore nlohmann_json::nlohmann_json)
     if(MSVC)
         target_compile_options(bodypouches_config_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+        target_compile_options(bodypouches_state_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
     endif()
 endif()

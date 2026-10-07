@@ -1,0 +1,4 @@
+# Preserve the upstream MIT integration glue byte-for-byte.
+contract/DevBenchAPI.h -text
+contract/DevBenchAPI.cpp -text
+contract/DevBenchAPI.LICENSE.txt -text

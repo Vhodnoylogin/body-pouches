@@ -115,6 +115,7 @@ namespace BodyPouches
 				Loc::Info(Keys::kPictureGiven, setting.slot);
 			}
 		}
+		_dataLoaded = true;
 	}
 
 	void Mod::OnFrame()
@@ -123,6 +124,8 @@ namespace BodyPouches
 		if (!mod.Working() || mod._loading) {
 			return;
 		}
+		++mod._callbackFrame;
+		mod._frameGeneration = mod._worldGeneration;
 
 		if (!mod._frameSeen) {
 			mod._frameSeen = true;
@@ -131,6 +134,54 @@ namespace BodyPouches
 
 		mod.NoteReach();
 		mod.RefreshDisplay();
+	}
+
+	Diagnostics::State Mod::ReadState()
+	{
+		Diagnostics::State result;
+		std::scoped_lock guard(_lock);
+		result.loadGeneration = _worldGeneration;
+		result.callbackFrame = _callbackFrame;
+		if (!_dataLoaded || !Working()) {
+			return result;
+		}
+		if (_loading || !_frameSeen || _frameGeneration != _worldGeneration) {
+			result.reason = "loading_or_no_callback_in_current_generation";
+			return result;
+		}
+		const auto* player = RE::PlayerCharacter::GetSingleton();
+		const auto* cell = player != nullptr ? player->GetParentCell() : nullptr;
+		auto* ui = RE::UI::GetSingleton();
+		if (player == nullptr || player->Get3D() == nullptr || cell == nullptr || !cell->IsAttached() ||
+			ui == nullptr || ui->GameIsPaused() || ui->IsMenuOpen("Main Menu") || ui->IsMenuOpen("Loading Menu")) {
+			result.reason = "gameplay_world_unavailable";
+			return result;
+		}
+		const auto* editorId = cell->GetFormEditorID();
+		if (editorId == nullptr || std::string_view(editorId) == "VRPlayroom01" ||
+			ui->IsMenuOpen("Fader Menu") || ui->IsMenuOpen("RaceSex Menu")) {
+			result.reason = "startup_world_or_transition";
+			return result;
+		}
+		if (_settings.language.size() > 128 || Loc::Language().size() > 128) {
+			result.reason = "state_string_exceeds_128_bytes";
+			return result;
+		}
+		result.settings.mayEnableSlots = _settings.mayEnableSlots;
+		// Report applied localization/logger state, including their fallback behavior.
+		result.settings.language = Loc::Language();
+		const auto level = spdlog::level::to_string_view(spdlog::get_level());
+		result.settings.logLevel = std::string(level.data(), level.size());
+		result.pouches = _pouches.Snapshot();
+		for (const auto& pouch : result.pouches) {
+			result.bodySlots.push_back({ pouch.slot, _vrik.IsSuspended(pouch.slot) });
+		}
+		if (const auto* setting = RE::GetINISetting("bLeftHandedMode:VRInput"); setting != nullptr) {
+			result.inputLeftHanded = setting->GetBool();
+		}
+		result.available = true;
+		result.reason.clear();
+		return result;
 	}
 
 	void Mod::FirstFrame()

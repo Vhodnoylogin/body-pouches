@@ -7,6 +7,7 @@
 #include "game/PlayerPack.h"
 #include "vr/HiggsLink.h"
 #include "vr/VrikLink.h"
+#include "diagnostics/State.h"
 
 #include <cstdint>
 #include <mutex>
@@ -51,6 +52,8 @@ namespace BodyPouches
 		void OnGameLoading();
 
 		[[nodiscard]] bool Working() const noexcept { return _vrik.Ready() && _higgs.Ready(); }
+		// Called only from a bounded SKSE main-thread inspection task.
+		[[nodiscard]] Diagnostics::State ReadState();
 
 	private:
 		Mod() = default;
@@ -152,6 +155,9 @@ namespace BodyPouches
 		// When the pouch is next asked what it should show. Zero means at once.
 		std::int64_t _displayAt{ 0 };
 		bool         _frameSeen{ false };
+		bool         _dataLoaded{ false };
+		std::uint64_t _callbackFrame{ 0 };
+		std::uint64_t _frameGeneration{ 0 };
 		Input        _input;
 		bool         _slotsArranged{ false };
 		bool         _watchingInput{ false };

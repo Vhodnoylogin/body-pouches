@@ -34,6 +34,13 @@ namespace BodyPouches::Core
 		int     count{};
 	};
 
+	struct PouchState
+	{
+		int slot{};
+		Mode mode{ Mode::Shared };
+		bool assigned{};
+	};
+
 	// Every pouch the player has, and the rule that decides what happens when they
 	// reach for one.
 	//
@@ -51,6 +58,7 @@ namespace BodyPouches::Core
 		[[nodiscard]] const Pouch* Find(int a_slot) const noexcept;
 		[[nodiscard]] Pouch*       Find(int a_slot) noexcept;
 		[[nodiscard]] std::size_t  Size() const noexcept { return _pouches.size(); }
+		[[nodiscard]] std::vector<PouchState> Snapshot() const;
 
 		// The fast answer, the one VRIK is waiting for.
 		[[nodiscard]] Decision Decide(const Reach& a_reach, const Pack& a_pack) const;
