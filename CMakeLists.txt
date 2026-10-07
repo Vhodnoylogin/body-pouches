@@ -13,7 +13,7 @@ cmake_minimum_required(VERSION 3.24)
 #
 # The split is not decoration: the whole of the reasoning sits in the half that can
 # be run in a second, and the half that needs a headset holds no reasoning at all.
-project(BodyPouches VERSION 0.1.9 LANGUAGES CXX)
+project(BodyPouches VERSION 0.1.10 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -148,3 +148,14 @@ target_link_libraries(BodyPouches PRIVATE
     CommonLibSSE::CommonLibSSE
     nlohmann_json::nlohmann_json
 )
+
+if(BODYPOUCHES_BUILD_TESTS)
+    # Exercise the actual settings loader in a temporary directory, without Skyrim.
+    add_executable(bodypouches_config_tests tests/main.cpp tests/test_config.cpp src/Config.cpp src/Loc.cpp)
+    target_include_directories(bodypouches_config_tests PRIVATE src tests)
+    target_compile_definitions(bodypouches_config_tests PRIVATE PLUGIN_NAME="BodyPouches")
+    target_link_libraries(bodypouches_config_tests PRIVATE nlohmann_json::nlohmann_json spdlog::spdlog)
+    if(MSVC)
+        target_compile_options(bodypouches_config_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+    endif()
+endif()

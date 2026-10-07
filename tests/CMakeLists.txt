@@ -24,3 +24,14 @@ endif()
 
 enable_testing()
 add_test(NAME core COMMAND bodypouches_tests)
+
+# Compile the production form adapter against a small engine boundary fixture.
+# It deliberately needs neither the game nor the CommonLib binary.
+add_executable(bodypouches_form_tests main.cpp test_forms.cpp ../src/game/Forms.cpp)
+target_include_directories(bodypouches_form_tests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/form-fixture" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(bodypouches_form_tests PRIVATE BodyPouchesCore)
+if(MSVC)
+    target_compile_options(bodypouches_form_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+endif()
+add_test(NAME forms COMMAND bodypouches_form_tests)

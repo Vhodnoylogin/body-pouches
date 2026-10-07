@@ -69,12 +69,14 @@ namespace BodyPouches
 			in >> json;
 
 			Settings settings = Settings::Defaults();
-			settings.pouches.clear();
 
 			settings.language = json.value("language", settings.language);
 			settings.logLevel = json.value("logLevel", settings.logLevel);
 			settings.mayEnableSlots = json.value("mayEnableSlots", settings.mayEnableSlots);
-			for (const auto& entry : json.value("pouches", nlohmann::json::array())) {
+			// A missing key inherits the built-in pouch; an explicit [] disables it.
+			const auto pouches = json.value("pouches", ToJson(settings).at("pouches"));
+			settings.pouches.clear();
+			for (const auto& entry : pouches) {
 				Settings::PouchSetting pouch;
 				pouch.slot = entry.value("slot", 0);
 				pouch.mode = entry.value("mode", std::string{ "shared" });
@@ -89,7 +91,8 @@ namespace BodyPouches
 			// setting nobody can see is a setting nobody can change: its value is quietly the
 			// default and the only way to learn its name is to read the source. So the file is
 			// topped up in place the moment it is missing one, keeping everything set in it.
-			for (const auto& entry : ToJson(settings).items()) {
+			const auto complete = ToJson(settings);
+			for (const auto& entry : complete.items()) {
 				if (!json.contains(entry.key())) {
 					Loc::Info(Keys::kConfigToppedUp, entry.key(), file.string());
 					Write(file, settings);

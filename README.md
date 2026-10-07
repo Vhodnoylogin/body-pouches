@@ -125,7 +125,7 @@ The settings file and the table of text are written by the plugin on first run i
 
 ## State
 
-Version 0.1.9. One pouch, on the stomach slot (13), given over to the mod entirely: it draws on
+Version 0.1.10. One pouch, on the stomach slot (13), given over to the mod entirely: it draws on
 VRIK's own holster attempt, stows when a bottle is let go of inside it, and shows the potion it
 holds. Run 7 (0.1.7) proved the moment of drawing and every step of the hand-over; this version is
 the first to take out and put in by VRIK's rules rather than against them, and the first with a
@@ -152,7 +152,7 @@ What the next run settles:
 | whether HIGGS holds the bottle while VRIK keeps the grip from the game | `draw.grab_confirmed` rather than `draw.grab_failed` |
 | where the pouch should hang | `body.squeeze`: the numbers that would put it at the hand |
 
-0.1.9 checks the current hand and pouch again before executing a queued draw,
+0.1.10 checks the current hand and pouch again before executing a queued draw,
 matches grab confirmation to the requested reference handle and deadline, and
 uses reference handles and a world generation for queued returns. A reference
 currently held by either hand is not picked up by a delayed return; regrabbing
@@ -160,6 +160,10 @@ also cancels that reference's earlier queued return. Loading clears
 hand bookkeeping and pending grabs and refreshes the picture from current stock.
 Pouch assignment still lasts only for the current process. These changes require
 game regression testing; a grab confirmation log alone is not proof of handover.
+
+Runtime-created potions are identified by their full runtime form ID, including
+when they have no source plugin. Missing `pouches` in an older settings file now
+keeps the default stomach pouch; an explicit `"pouches": []` still disables pouches.
 
 ## Planned cooperation with VRIK HIGGS and PLANCK
 
