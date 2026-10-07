@@ -120,7 +120,7 @@ namespace BodyPouches
 	void Mod::OnFrame()
 	{
 		auto& mod = GetSingleton();
-		if (!mod.Working()) {
+		if (!mod.Working() || mod._loading) {
 			return;
 		}
 
@@ -159,8 +159,9 @@ namespace BodyPouches
 			// A bottle handed to this hand and never taken. The other ending - the hand did
 			// close on it - arrives as an event of its own and clears this, so what is left
 			// here when the time is up is a failure and nothing else.
-			if (_checkGrabAt[hand] != 0 && now >= _checkGrabAt[hand]) {
-				_checkGrabAt[hand] = 0;
+			if (_pendingGrab[hand].Expired(now)) {
+				_pendingGrab[hand].Clear();
+				_grabReference[hand].reset();
 				Loc::Warn(Keys::kGrabFailed, HandName(IsLeftHand(secondary)), _drawnFrom[hand]);
 			}
 
@@ -228,8 +229,28 @@ namespace BodyPouches
 		return leftHanded ? !a_isLeft : a_isLeft;
 	}
 
+	void Mod::OnGameLoading()
+	{
+		_loading = true;
+		++_worldGeneration;
+		_queuedDrops.clear();
+		std::scoped_lock guard(_lock);
+		for (int hand = 0; hand < 2; ++hand) {
+			_pendingGrab[hand].Clear();
+			_grabReference[hand].reset();
+			_reach[hand] = 0;
+			_drawnFrom[hand] = 0;
+		}
+		_pouches.NoteSettled(false);
+		_pouches.NoteSettled(true);
+		_displayAt = 0;
+	}
+
 	void Mod::OnGameLoaded()
 	{
+		// Also invalidate here for a new game or a missed pre-load notification.
+		OnGameLoading();
+		_loading = false;
 		// Said out loud on purpose. A run of this mod once ended with a log that stopped
 		// after the settings were read, and nothing in it could tell "the message never
 		// arrived" from "it arrived and every step of it quietly did nothing".
@@ -400,6 +421,23 @@ namespace BodyPouches
 
 	bool Mod::Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item)
 	{
+		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
+		if (_loading || _pendingGrab[hand].Active() || _higgs.IsHolding(a_isLeft) ||
+			!_higgs.CanGrab(a_isLeft)) {
+			return false;
+		}
+		// The queue may run after another action changed the hand, stock or filter.
+		{
+			std::scoped_lock guard(_lock);
+			Core::Reach reach;
+			reach.slot = a_slot;
+			reach.leftHand = a_isLeft;
+			reach.handCanHold = true;
+			const auto current = _pouches.Decide(reach, _pack);
+			if (current.act != Core::Act::Draw || !(current.item == a_item)) {
+				return false;
+			}
+		}
 		Loc::Info(Keys::kDrawStart, a_slot, HandName(a_isLeft));
 
 		auto* object = Game::PlayerPack::Held(a_item);
@@ -414,6 +452,9 @@ namespace BodyPouches
 		}
 
 		auto*        player = RE::PlayerCharacter::GetSingleton();
+		if (player == nullptr) {
+			return false;
+		}
 		RE::NiPoint3 rotation{};
 
 		// One call does both halves of what we need: the potion leaves the inventory and
@@ -429,16 +470,17 @@ namespace BodyPouches
 			return false;
 		}
 
-		_higgs.Grab(dropped.get(), a_isLeft);
-		Loc::Info(Keys::kGrabAsked, HandName(a_isLeft));
 		{
 			std::scoped_lock guard(_lock);
 			_pouches.NoteDrawn(a_isLeft, a_slot, a_item);
 		}
 
-		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
 		_drawnFrom[hand] = a_slot;
-		_checkGrabAt[hand] = Now() + kGrabCheckMs;
+		_grabReference[hand] = handle;
+		_pendingGrab[hand].Arm(handle.native_handle(), Now() + kGrabCheckMs);
+		// Arm before calling HIGGS so a synchronous callback is correlated too.
+		_higgs.Grab(dropped.get(), a_isLeft);
+		Loc::Info(Keys::kGrabAsked, HandName(a_isLeft));
 		_displayAt = 0;  // the last bottle of its kind may just have left the pack
 
 		Loc::Info(Keys::kPouchDrawn, a_slot, HandName(a_isLeft));
@@ -447,7 +489,12 @@ namespace BodyPouches
 
 	void Mod::StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object)
 	{
-		if (a_object == nullptr) {
+		if (_loading || a_object == nullptr || a_object->IsDeleted() || a_object->IsDisabled() ||
+			_higgs.Held(false) == a_object || _higgs.Held(true) == a_object) {
+			return;
+		}
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		if (player == nullptr) {
 			return;
 		}
 
@@ -491,11 +538,6 @@ namespace BodyPouches
 
 		if (!taken) {
 			Loc::Info(Keys::kDropNotOurs, HandName(a_isLeft), a_slot);
-			return;
-		}
-
-		auto* player = RE::PlayerCharacter::GetSingleton();
-		if (player == nullptr) {
 			return;
 		}
 
@@ -602,7 +644,7 @@ namespace BodyPouches
 		Loc::Info(Keys::kHolsterOffered, a_slot, a_secondaryHand, a_handOccupied);
 
 		auto& mod = GetSingleton();
-		if (!mod.Working()) {
+		if (!mod.Working() || mod._loading) {
 			Loc::Debug(Keys::kIdleHere);
 			return true;  // not our business: let VRIK do what it always did
 		}
@@ -632,8 +674,12 @@ namespace BodyPouches
 		// callback.
 		if (decision.act == Core::Act::Draw) {
 			if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
-				tasks->AddTask([slot = decision.slot, isLeft, item = decision.item]() {
-					GetSingleton().Draw(slot, isLeft, item);
+				tasks->AddTask([slot = decision.slot, isLeft, item = decision.item,
+					generation = mod._worldGeneration]() {
+					auto& current = GetSingleton();
+					if (!current._loading && generation == current._worldGeneration) {
+						current.Draw(slot, isLeft, item);
+					}
 				});
 				Loc::Info(Keys::kTaskQueued, decision.slot);
 			} else {
@@ -673,19 +719,26 @@ namespace BodyPouches
 		}
 	}
 
-	void Mod::OnGrabbed(bool a_isLeft, ::TESObjectREFR*)
+	void Mod::OnGrabbed(bool a_isLeft, ::TESObjectREFR* a_refr)
 	{
 		auto&     mod = GetSingleton();
 		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
 
 		// This fires for everything the player picks up, so it is only worth a word when
 		// a bottle of ours is waiting to be told whether it was taken.
-		if (mod._checkGrabAt[hand] == 0) {
+		auto* object = reinterpret_cast<RE::TESObjectREFR*>(a_refr);
+		if (object != nullptr) {
+			// Regrabbing cancels its earlier release, even if the player drops it
+			// elsewhere again before the queued pickup has had a turn.
+			mod._queuedDrops.erase(object->GetHandle().native_handle());
+		}
+		if (mod._loading || object == nullptr ||
+			!mod._pendingGrab[hand].Confirm(object->GetHandle().native_handle(), Now())) {
 			Loc::Debug(Keys::kHiggsEvent, "grabbed", HandName(a_isLeft));
 			return;
 		}
 
-		mod._checkGrabAt[hand] = 0;
+		mod._grabReference[hand].reset();
 		Loc::Info(Keys::kGrabConfirmed, HandName(a_isLeft), mod._drawnFrom[hand]);
 	}
 
@@ -694,7 +747,7 @@ namespace BodyPouches
 		Loc::Info(Keys::kHiggsEvent, "dropped", HandName(a_isLeft));
 
 		auto& mod = GetSingleton();
-		if (!mod.Working()) {
+		if (!mod.Working() || mod._loading) {
 			return;
 		}
 
@@ -705,13 +758,22 @@ namespace BodyPouches
 		if (const int slot = mod.PouchAt(a_isLeft); slot != 0 && a_refr != nullptr) {
 			Loc::Info(Keys::kDropAtPouch, HandName(a_isLeft), slot);
 
-			// By id and not by pointer: the reference is handed to a task that runs
-			// later, and what HIGGS let go of may be gone by then.
-			const auto id = reinterpret_cast<RE::TESObjectREFR*>(a_refr)->GetFormID();
+			// A handle cannot silently resolve a reused form ID as another object.
+			const auto handle = reinterpret_cast<RE::TESObjectREFR*>(a_refr)->GetHandle();
 			if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
-				tasks->AddTask([slot, a_isLeft, id]() {
-					GetSingleton().StowDropped(slot, a_isLeft,
-						RE::TESForm::LookupByID<RE::TESObjectREFR>(id));
+				const auto serial = ++mod._dropSerial;
+				mod._queuedDrops[handle.native_handle()] = serial;
+				tasks->AddTask([slot, a_isLeft, handle, serial, generation = mod._worldGeneration]() {
+					auto& current = GetSingleton();
+					if (!current._loading && generation == current._worldGeneration) {
+						const auto pending = current._queuedDrops.find(handle.native_handle());
+						if (pending == current._queuedDrops.end() || pending->second != serial) {
+							return;
+						}
+						current._queuedDrops.erase(pending);
+						const auto object = handle.get();
+						current.StowDropped(slot, a_isLeft, object.get());
+					}
 				});
 			}
 			return;

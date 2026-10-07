@@ -108,6 +108,12 @@ namespace BodyPouches::Game
 
 	void Picture::Reset(std::int64_t a_now)
 	{
+		_wanted.clear();
+		_wantedWhat.clear();
+		_shown.clear();
+		_waiting = false;
+		_waitingSince = 0;
+		_displayed = false;
 		if (!Ready()) {
 			return;
 		}
@@ -128,6 +134,9 @@ namespace BodyPouches::Game
 
 	void Picture::Put()
 	{
+		if (_wanted.empty()) {
+			return;
+		}
 		auto* player = RE::PlayerCharacter::GetSingleton();
 		if (player == nullptr) {
 			return;

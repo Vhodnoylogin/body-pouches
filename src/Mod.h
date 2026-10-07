@@ -2,6 +2,7 @@
 
 #include "Config.h"
 #include "core/PouchSet.h"
+#include "core/PendingGrab.h"
 #include "game/Picture.h"
 #include "game/PlayerPack.h"
 #include "vr/HiggsLink.h"
@@ -9,6 +10,7 @@
 
 #include <cstdint>
 #include <mutex>
+#include <unordered_map>
 
 namespace BodyPouches
 {
@@ -46,6 +48,7 @@ namespace BodyPouches
 		// only matters for the picture - but it is also the one load message that has
 		// ever arrived, and the slots are arranged here as well as at the first frame.
 		void OnGameLoaded();
+		void OnGameLoading();
 
 		[[nodiscard]] bool Working() const noexcept { return _vrik.Ready() && _higgs.Ready(); }
 
@@ -140,7 +143,12 @@ namespace BodyPouches
 		int          _drawnFrom[2]{ 0, 0 };
 		// When to look back and see whether the hand really closed on the bottle. HIGGS
 		// takes no answer and gives none, so the only honest report is one made afterwards.
-		std::int64_t _checkGrabAt[2]{ 0, 0 };
+		Core::PendingGrab _pendingGrab[2];
+		RE::ObjectRefHandle _grabReference[2];
+		std::uint64_t _worldGeneration{ 0 };
+		bool _loading{ false };
+		std::uint64_t _dropSerial{ 0 };
+		std::unordered_map<std::uint32_t, std::uint64_t> _queuedDrops;
 		// When the pouch is next asked what it should show. Zero means at once.
 		std::int64_t _displayAt{ 0 };
 		bool         _frameSeen{ false };
