@@ -29,6 +29,19 @@ namespace BodyPouches::Diagnostics
 		std::uint64_t callbackFrame{};
 	};
 
+	// VRIK state exists independently of whether any pouch is configured.
+	// An unavailable provider is never interpreted as an unsuspended slot.
+	template <class ReadSlot>
+	std::vector<State::BodySlot> ReadBodySlots(bool a_ready, ReadSlot a_read)
+	{
+		std::vector<State::BodySlot> result;
+		result.reserve(14);
+		for (int slot = 1; slot <= 14; ++slot) {
+			result.push_back({ slot, a_ready ? std::optional<bool>(a_read(slot)) : std::nullopt });
+		}
+		return result;
+	}
+
 	// A timed-out queued read must not later inspect a different world. Expiry is
 	// also checked after copying; the listener never waits past its own deadline.
 	class ReadGate

@@ -173,9 +173,8 @@ namespace BodyPouches
 		const auto level = spdlog::level::to_string_view(spdlog::get_level());
 		result.settings.logLevel = std::string(level.data(), level.size());
 		result.pouches = _pouches.Snapshot();
-		for (const auto& pouch : result.pouches) {
-			result.bodySlots.push_back({ pouch.slot, _vrik.IsSuspended(pouch.slot) });
-		}
+		result.bodySlots = Diagnostics::ReadBodySlots(_vrik.Ready(),
+			[this](int a_slot) { return _vrik.IsSuspended(a_slot); });
 		if (const auto* setting = RE::GetINISetting("bLeftHandedMode:VRInput"); setting != nullptr) {
 			result.inputLeftHanded = setting->GetBool();
 		}

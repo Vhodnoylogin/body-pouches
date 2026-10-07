@@ -79,3 +79,36 @@ TEST(missing_game_handedness_is_unavailable_instead_of_guessed_right_handed)
 	CHECK(result.at("settings").at("inputHandedness").is_null());
 	CHECK_EQ(result.at("inputHandednessAvailable"), false);
 }
+
+TEST(empty_pouch_configuration_still_reads_actual_all_slot_suspension)
+{
+	Diagnostics::State state;
+	state.available = true;
+	int reads = 0;
+	state.bodySlots = Diagnostics::ReadBodySlots(true, [&reads](int a_slot) {
+		++reads;
+		CHECK(a_slot >= 1 && a_slot <= 14);
+		return a_slot == 13;  // VRIK may be suspended by another consumer.
+	});
+	const auto result = Diagnostics::StateValues(state);
+	CHECK_EQ(reads, 14);
+	CHECK(result.at("settings").at("pouches").empty());
+	CHECK_EQ(result.at("runtime").at("assignmentCount"), 0);
+	CHECK_EQ(result.at("bodySlots").size(), 14U);
+	CHECK_EQ(result.at("bodySlots").at(12).at("slot"), 13);
+	CHECK_EQ(result.at("bodySlots").at(12).at("suspended"), true);
+	CHECK_EQ(result.at("bodySlots").at(13).at("slot"), 14);
+	CHECK_EQ(result.at("bodySlots").at(13).at("suspended"), false);
+}
+
+TEST(unavailable_vrik_is_not_read_and_does_not_become_false_for_any_slot)
+{
+	int reads = 0;
+	const auto slots = Diagnostics::ReadBodySlots(false, [&reads](int) { ++reads; return false; });
+	CHECK_EQ(reads, 0);
+	CHECK_EQ(slots.size(), 14U);
+	for (const auto& slot : slots) {
+		CHECK(slot.slot >= 1 && slot.slot <= 14);
+		CHECK(!slot.suspended.has_value());
+	}
+}

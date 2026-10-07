@@ -38,7 +38,7 @@ must propagate unavailable data, not translate absence into zero or false.
 | `subject.settings.inputHandedness` | Current native game `bLeftHandedMode:VRInput` as left/right; null if unavailable |
 | `subject.inputHandednessAvailable` | Whether the native game setting existed |
 | `subject.runtime.assignmentCount` | Actual number of assigned core pouches, in assigned_pouches; independent of inventory quantity |
-| `subject.bodySlots[]` | Actual `VRIK GetSlotSuspended(slot)` per loaded pouch, with slot, suspended and suspendedAvailable; never inferred from exclusive/shared mode |
+| `subject.bodySlots[]` | Actual `VRIK GetSlotSuspended(slot)` for every valid slot1..14, independently of pouch membership, with slot, suspended and suspendedAvailable; never inferred from exclusive/shared mode or an empty pouch list |
 | `subject.loadGeneration` | Mod's actual world-invalidation counter; initial world may be zero; both pre/post-load invalidation can increment it |
 | `subject.callbackFrame` | Mod's actual HIGGS post-VRIK/post-HIGGS callback counter; **not** an engine, physics or render-frame number |
 
