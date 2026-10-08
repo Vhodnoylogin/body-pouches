@@ -90,8 +90,8 @@ namespace BodyPouches
 		// Current filtered VRIK reach, or current shared spatial candidate when its
 		// weapon filter offers none. Never use remembered reach to accept a drop.
 		[[nodiscard]] int PouchAt(bool a_isLeft);
-		[[nodiscard]] bool SharedWorldReady();
-		[[nodiscard]] std::optional<double> SharedDistance(int a_slot, bool a_isLeft);
+		[[nodiscard]] bool SharedWorldReady(std::string_view* a_reason = nullptr);
+		[[nodiscard]] std::optional<double> SharedDistance(int a_slot, bool a_isLeft, std::string_view* a_reason = nullptr);
 		[[nodiscard]] double SharedRadius();
 		[[nodiscard]] int SharedCandidate(bool a_isLeft);
 		[[nodiscard]] bool SharedDrawAllowed(bool a_isLeft);

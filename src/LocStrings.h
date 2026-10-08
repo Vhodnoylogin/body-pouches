@@ -105,4 +105,7 @@ namespace BodyPouches::Keys
 	inline constexpr auto kDropFailed = "drop.failed";
 	inline constexpr auto kSharedDraw = "shared.withdrawal";
 	inline constexpr auto kSharedDrop = "shared.drop";
+	inline constexpr auto kDropReachProbe = "drop.reach_probe";
+	inline constexpr auto kDropSharedProbe = "drop.shared_probe";
+	inline constexpr auto kDropGuard = "drop.guard";
 }

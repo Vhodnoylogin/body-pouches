@@ -273,6 +273,14 @@ namespace BodyPouches
 		const int slot = _vrik.SlotInReach(IsSecondaryHand(a_isLeft));
 		if (slot == 0) {
 			const int shared = SharedCandidate(a_isLeft);
+			Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft), slot, shared);
+			for (const auto& pouch : _pouches.Snapshot()) {
+				if (pouch.mode != Core::Mode::Shared) { continue; }
+				std::string_view reason;
+				const auto distance = SharedDistance(pouch.slot, a_isLeft, &reason);
+				Loc::Info(Keys::kDropSharedProbe, HandName(a_isLeft), pouch.slot,
+					distance.value_or(-1), distance.has_value(), SharedRadius(), reason);
+			}
 			if (shared != 0) {
 				const auto distance = SharedDistance(shared, a_isLeft);
 				if (distance) { Loc::Info(Keys::kSharedDrop, shared, HandName(a_isLeft), *distance, SharedRadius()); }
@@ -280,24 +288,36 @@ namespace BodyPouches
 			return shared;
 		}
 		std::scoped_lock guard(_lock);
-		return _pouches.Find(slot) != nullptr ? slot : 0;
+		const int chosen = _pouches.Find(slot) != nullptr ? slot : 0;
+		Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft), slot, chosen);
+		return chosen;
 	}
 
-	bool Mod::SharedWorldReady()
+	bool Mod::SharedWorldReady(std::string_view* a_reason)
 	{
+		const auto fail = [a_reason](std::string_view reason) {
+			if (a_reason) { *a_reason = reason; }
+			return false;
+		};
+		if (a_reason) { *a_reason = "ready"; }
 		auto* player = RE::PlayerCharacter::GetSingleton();
 		auto* ui = RE::UI::GetSingleton();
 		const auto* cell = player != nullptr ? player->GetParentCell() : nullptr;
-		if (_loading || !_frameSeen || _frameGeneration != _worldGeneration ||
-			player == nullptr || player->Get3D(true) == nullptr || player->Get3D(false) == nullptr ||
-			player->AsActorState()->IsSwimming() || player->IsOnMount() ||
-			player->AsActorState()->GetSitSleepState() != RE::SIT_SLEEP_STATE::kNormal ||
-			cell == nullptr || !cell->IsAttached() || ui == nullptr || ui->GameIsPaused() ||
-			ui->IsMenuOpen("Main Menu") || ui->IsMenuOpen("Loading Menu") || ui->IsMenuOpen("Fader Menu") ||
-			ui->IsMenuOpen("RaceSex Menu")) { return false; }
+		if (_loading || !_frameSeen || _frameGeneration != _worldGeneration) { return fail("loading_or_callback_generation"); }
+		if (player == nullptr) { return fail("player_missing"); }
+		if (player->Get3D(true) == nullptr || player->Get3D(false) == nullptr) { return fail("player_3d_missing"); }
+		if (player->AsActorState()->IsSwimming()) { return fail("swimming"); }
+		if (player->IsOnMount()) { return fail("mounted"); }
+		if (player->AsActorState()->GetSitSleepState() != RE::SIT_SLEEP_STATE::kNormal) { return fail("sitting_or_sleeping"); }
+		if (cell == nullptr || !cell->IsAttached()) { return fail("cell_unattached"); }
+		if (ui == nullptr || ui->GameIsPaused()) { return fail("ui_missing_or_paused"); }
+		if (ui->IsMenuOpen("Main Menu") || ui->IsMenuOpen("Loading Menu") || ui->IsMenuOpen("Fader Menu") ||
+			ui->IsMenuOpen("RaceSex Menu")) { return fail("transition_menu"); }
 		const auto* id = cell->GetFormEditorID();
-		return id != nullptr && std::string_view(id) != "VRPlayroom01" &&
-			_vrik.GetSetting("enableHolsters") > .5 && _vrik.GetSetting("displayHolsters") > .5;
+		if (id == nullptr || std::string_view(id) == "VRPlayroom01") { return fail("startup_cell"); }
+		if (!(_vrik.GetSetting("enableHolsters") > .5)) { return fail("holsters_disabled"); }
+		if (!(_vrik.GetSetting("displayHolsters") > .5)) { return fail("holsters_display_disabled"); }
+		return true;
 	}
 
 	double Mod::SharedRadius()
@@ -306,23 +326,31 @@ namespace BodyPouches
 		return std::isfinite(radius) && radius > 0 && radius < 1000 ? radius : 0;
 	}
 
-	std::optional<double> Mod::SharedDistance(int a_slot, bool a_isLeft)
+	std::optional<double> Mod::SharedDistance(int a_slot, bool a_isLeft, std::string_view* a_reason)
 	{
-		if (!SharedWorldReady()) { return std::nullopt; }
+		const auto fail = [a_reason](std::string_view reason) -> std::optional<double> {
+			if (a_reason) { *a_reason = reason; }
+			return std::nullopt;
+		};
+		if (!SharedWorldReady(a_reason)) { return std::nullopt; }
 		const auto* pouch = _pouches.Find(a_slot);
-		if (pouch == nullptr || pouch->PouchMode() != Core::Mode::Shared || !_vrik.IsDetectable(a_slot) ||
-			_vrik.GetSetting(std::format("visibleSlot{}", a_slot).c_str()) <= .5) { return std::nullopt; }
+		if (pouch == nullptr || pouch->PouchMode() != Core::Mode::Shared) { return fail("not_shared_pouch"); }
+		if (!_vrik.IsDetectable(a_slot)) { return fail("slot_not_detectable"); }
+		if (_vrik.GetSetting(std::format("visibleSlot{}", a_slot).c_str()) <= .5) { return fail("slot_not_visible"); }
 		const double allowedHand = _vrik.GetSetting(std::format("handSlot{}", a_slot).c_str());
 		if (!std::isfinite(allowedHand) || (allowedHand != 0 && allowedHand != 1 && allowedHand != 2) ||
-			(a_isLeft ? allowedHand == 2 : allowedHand == 1)) { return std::nullopt; }
+			(a_isLeft ? allowedHand == 2 : allowedHand == 1)) { return fail("hand_policy"); }
 		const auto bone = Game::Body::Bone(a_slot);
 		auto* player = RE::PlayerCharacter::GetSingleton();
 		auto* root = player->Get3D(true);
 		auto* hand = root->GetObjectByName(a_isLeft ? "NPC L Hand [LHnd]" : "NPC R Hand [RHnd]");
-		if (!bone || !std::isfinite(bone->scale) || bone->scale <= 0 || hand == nullptr) { return std::nullopt; }
+		if (!bone || !std::isfinite(bone->scale) || bone->scale <= 0) { return fail("slot_bone_unavailable"); }
+		if (hand == nullptr) { return fail("hand_node_unavailable"); }
 		const auto centre = Game::Body::ToWorld(*bone, _vrik.SlotPosition(a_slot));
 		const double distance = hand->world.translate.GetDistance(centre);
-		return std::isfinite(distance) && distance >= 0 ? std::optional<double>(distance) : std::nullopt;
+		if (!std::isfinite(distance) || distance < 0) { return fail("distance_nonfinite"); }
+		if (a_reason) { *a_reason = "measured"; }
+		return distance;
 	}
 
 	int Mod::SharedCandidate(bool a_isLeft)
@@ -930,6 +958,7 @@ namespace BodyPouches
 		auto& mod = GetSingleton();
 		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
 		if (!mod.Working() || mod._loading) {
+			Loc::Info(Keys::kDropGuard, mod.Working(), mod._loading, a_refr != nullptr);
 			return;
 		}
 

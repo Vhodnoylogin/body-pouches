@@ -42,13 +42,19 @@ straight past a free hand at an empty slot; and the controller buzzes as a hand 
 Suspension lasts until the game is closed and is set at the first frame of play, because a new game
 sends a plugin no message to set it on.
 
-Since 0.1.12, an empty shared slot also accepts a potion without an equipped weapon. VRIK's
+Build 0.1.12 introduced a spatial path intended to accept a potion into an empty shared slot
+without an equipped weapon; game test 30 still failed the shared return criterion. VRIK's
 filtered weapon-hover API cannot report that case, so the mod measures the current first-person
 hand against the configured third-person slot bone, using VRIK's loaded activation distance and
 body scale. A shared draw requires a real grip (or configured trigger) press inside the slot and
 withdrawal while held within three seconds. Release, load, unavailable geometry, a newly held
 object or native VRIK ownership cancels it. Native offers take priority and queued draws are
 deduplicated. Shared slots remain unsuspended and their weapon display stays owned by VRIK.
+
+Test build 0.1.13 adds drop-callback diagnostics: the actual native/chosen slot, each configured
+shared slot's distance/radius and the precise unavailable-world/geometry/policy guard. These
+callback reads differ in phase from the post-VRIK state snapshots. The diagnostics investigate
+the failed shared seed return in build 0.1.12; they do not claim that the failure is fixed.
 
 There is no hotkey or proximity-only draw, and a drop never uses remembered reach. Run 7 showed
 what they cost: a press drew a bottle, the hand leaving the pouch with it
