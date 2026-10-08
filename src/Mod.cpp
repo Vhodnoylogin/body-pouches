@@ -126,8 +126,8 @@ namespace BodyPouches
 	{
 		auto& mod = GetSingleton();
 		// A missing post callback cannot carry an old release into another update.
-		mod.CancelSharedDrop(true);
-		mod.CancelSharedDrop(false);
+		mod.CancelPendingRelease(true);
+		mod.CancelPendingRelease(false);
 		++mod._higgsUpdate;
 		mod._inHiggsUpdate = true;
 	}
@@ -136,8 +136,8 @@ namespace BodyPouches
 	{
 		auto& mod = GetSingleton();
 		if (!mod.Working() || mod._loading) {
-			mod.CancelSharedDrop(true);
-			mod.CancelSharedDrop(false);
+			mod.CancelPendingRelease(true);
+			mod.CancelPendingRelease(false);
 			mod._sharedPresses[0].Clear();
 			mod._sharedPresses[1].Clear();
 			mod._sharedButtons[0].Clear();
@@ -153,7 +153,7 @@ namespace BodyPouches
 			mod.FirstFrame();
 		}
 
-		mod.ResolveSharedDrops();
+		mod.ResolvePendingReleases();
 		mod.PollSharedButtons();
 		mod.ResolveSharedPresses();
 		mod._inHiggsUpdate = false;
@@ -296,14 +296,12 @@ namespace BodyPouches
 		_picture.Tick(now, _vrik.IsDisplayed(slot));
 	}
 
-	int Mod::PouchAt(bool a_isLeft, int a_nativeSlot, bool a_sharedPhase)
+	int Mod::PouchAt(bool a_isLeft, int a_nativeSlot)
 	{
 		const int slot = a_nativeSlot;
-		const auto phase = a_sharedPhase ? "post_vrik_same_update" : "higgs_dropped_native";
+		constexpr auto phase = "post_vrik_same_update";
 		if (slot == 0) {
-			// The pre-VRIK hand/body transforms are not a coherent shared-slot test.
-			// Read them for diagnosis only; decide from the same update's post hook.
-			const int shared = a_sharedPhase ? SharedCandidate(a_isLeft) : 0;
+			const int shared = SharedCandidate(a_isLeft);
 			Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft), slot, shared, phase);
 			for (const auto& pouch : _pouches.Snapshot()) {
 				if (pouch.mode != Core::Mode::Shared) { continue; }
@@ -324,9 +322,9 @@ namespace BodyPouches
 		return chosen;
 	}
 
-	void Mod::CancelSharedDrop(bool a_isLeft)
+	void Mod::CancelPendingRelease(bool a_isLeft)
 	{
-		auto& release = _sharedReleases[a_isLeft ? 0 : 1];
+		auto& release = _pendingReleases[a_isLeft ? 0 : 1];
 		if (release.event.Active()) {
 			const auto pending = _queuedDrops.find(release.handle.native_handle());
 			if (pending != _queuedDrops.end() && pending->second == release.serial) {
@@ -345,10 +343,10 @@ namespace BodyPouches
 		}
 	}
 
-	void Mod::ResolveSharedDrops()
+	void Mod::ResolvePendingReleases()
 	{
 		for (const bool isLeft : { true, false }) {
-			auto& stored = _sharedReleases[isLeft ? 0 : 1];
+			auto& stored = _pendingReleases[isLeft ? 0 : 1];
 			if (!stored.event.Active()) { continue; }
 			const auto release = stored;
 			const bool current = _inHiggsUpdate && stored.event.Take(_worldGeneration, _higgsUpdate);
@@ -359,14 +357,13 @@ namespace BodyPouches
 				_queuedDrops.erase(pending);
 				continue;
 			}
-			// A native offer that appears after VRIK owns arbitration. Never redirect
-			// a deferred shared release into an exclusive or somebody else's slot.
+			// Resolve every release from this update's VRIK hover, including exclusive
+			// pouches. HIGGS's dropped callback precedes VRIK's update and its hover
+			// can still describe the previous hand pose. It must not decide a pickup.
+			// A different native holster keeps priority over the shared spatial path.
 			const int native = _vrik.SlotInReach(IsSecondaryHand(isLeft));
-			if (native != 0) {
-				Loc::Info(Keys::kDropReachProbe, HandName(isLeft), native, 0, "post_vrik_native_priority");
-			}
-			const int slot = native == 0 ? PouchAt(isLeft, native, true) : 0;
-			Loc::Info(Keys::kSharedResolved, HandName(isLeft), release.handle.native_handle(),
+			const int slot = PouchAt(isLeft, native);
+			Loc::Info(Keys::kDropResolved, HandName(isLeft), release.handle.native_handle(),
 				_higgsUpdate, _worldGeneration, slot);
 			if (slot != 0) {
 				QueueStowDropped(slot, isLeft, release.handle, release.serial);
@@ -569,8 +566,8 @@ namespace BodyPouches
 		++_worldGeneration;
 		Trace(Diagnostics::Event::LoadBegin);
 		_inHiggsUpdate = false;
-		CancelSharedDrop(true);
-		CancelSharedDrop(false);
+		CancelPendingRelease(true);
+		CancelPendingRelease(false);
 		_queuedDrops.clear();
 		std::scoped_lock guard(_lock);
 		for (int hand = 0; hand < 2; ++hand) {
@@ -1030,9 +1027,17 @@ namespace BodyPouches
 		Loc::Info(Keys::kHolsterOffered, a_slot, a_secondaryHand, a_handOccupied);
 		auto& mod = GetSingleton();
 		// Native VRIK selection owns arbitration, including an unrelated weapon slot.
-		mod._sharedWithdrawal[IsLeftHand(a_secondaryHand) ? 0 : 1].Clear();
-		mod._sharedPresses[IsLeftHand(a_secondaryHand) ? 0 : 1].Clear();
-		mod.CancelSharedDrop(IsLeftHand(a_secondaryHand));
+		const bool isLeft = IsLeftHand(a_secondaryHand);
+		mod._sharedWithdrawal[isLeft ? 0 : 1].Clear();
+		mod._sharedPresses[isLeft ? 0 : 1].Clear();
+		// A real potion release in this update is being resolved after VRIK. Its
+		// now-empty hand must not draw a replacement while that return is pending.
+		// An unrelated native holster still cancels the pending return and acts normally.
+		if (mod._inHiggsUpdate && mod._pendingReleases[isLeft ? 0 : 1].event.Active() &&
+			mod._pouches.Find(a_slot) != nullptr) {
+			return false;
+		}
+		mod.CancelPendingRelease(isLeft);
 		return mod.HandleHolsterAttempt(a_slot, a_secondaryHand, a_handOccupied);
 	}
 
@@ -1105,7 +1110,7 @@ namespace BodyPouches
 		auto& mod = GetSingleton();
 		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
 		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
-		mod.CancelSharedDrop(a_isLeft);
+		mod.CancelPendingRelease(a_isLeft);
 		std::scoped_lock guard(mod._lock);
 		if (const auto slot = mod._pouches.SlotOfHand(a_isLeft); slot.has_value()) {
 			Loc::Info(Keys::kPouchConsumed, *slot);
@@ -1120,7 +1125,7 @@ namespace BodyPouches
 		auto& mod = GetSingleton();
 		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
 		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
-		mod.CancelSharedDrop(a_isLeft);
+		mod.CancelPendingRelease(a_isLeft);
 		std::scoped_lock guard(mod._lock);
 		if (const auto slot = mod._pouches.SlotOfHand(a_isLeft); slot.has_value()) {
 			Loc::Info(Keys::kPouchReturned, *slot);
@@ -1134,7 +1139,7 @@ namespace BodyPouches
 		auto&     mod = GetSingleton();
 		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
 		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
-		mod.CancelSharedDrop(a_isLeft);
+		mod.CancelPendingRelease(a_isLeft);
 		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
 
 		// This fires for everything the player picks up, so it is only worth a word when
@@ -1181,28 +1186,22 @@ namespace BodyPouches
 			return;
 		}
 
-		mod.CancelSharedDrop(a_isLeft);
-		const int native = mod._vrik.SlotInReach(IsSecondaryHand(a_isLeft));
-		// Native VRIK reach keeps its existing callback-time path. The shared spatial
-		// fallback is resolved after VRIK in this exact update, never from cached reach.
-		if (const int slot = mod.PouchAt(a_isLeft, native, false); slot != 0 && a_refr != nullptr) {
-			Loc::Info(Keys::kDropAtPouch, HandName(a_isLeft), slot);
-			const auto handle = reinterpret_cast<RE::TESObjectREFR*>(a_refr)->GetHandle();
-			const auto serial = ++mod._dropSerial;
-			mod._queuedDrops[handle.native_handle()] = serial;
-			mod.QueueStowDropped(slot, a_isLeft, handle, serial);
-			return;
-		}
-		const auto pouches = mod._pouches.Snapshot();
-		const bool hasShared = std::any_of(pouches.begin(), pouches.end(),
-			[](const auto& pouch) { return pouch.mode == Core::Mode::Shared; });
-		if (native == 0 && hasShared && mod._inHiggsUpdate && a_refr != nullptr) {
-			auto& release = mod._sharedReleases[a_isLeft ? 0 : 1];
+		mod.CancelPendingRelease(a_isLeft);
+		auto* object = reinterpret_cast<RE::TESObjectREFR*>(a_refr);
+		auto* base = object != nullptr ? object->GetBaseObject() : nullptr;
+		// Store only the actual release/reference. Choose neither slot nor position
+		// until VRIK has updated in this very HIGGS update. Missing post, load or
+		// either-hand regrab cancels through the same generation/serial guards.
+		if (!mod._pouches.Snapshot().empty() && mod._inHiggsUpdate &&
+			base != nullptr && base->As<RE::AlchemyItem>() != nullptr) {
+			Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft),
+				mod._vrik.SlotInReach(IsSecondaryHand(a_isLeft)), 0, "pre_vrik_observation_only");
+			auto& release = mod._pendingReleases[a_isLeft ? 0 : 1];
 			release.handle = reinterpret_cast<RE::TESObjectREFR*>(a_refr)->GetHandle();
 			release.serial = ++mod._dropSerial;
 			release.event.Arm(mod._worldGeneration, mod._higgsUpdate);
 			mod._queuedDrops[release.handle.native_handle()] = release.serial;
-			Loc::Info(Keys::kSharedRelease, HandName(a_isLeft), release.handle.native_handle(),
+			Loc::Info(Keys::kDropRelease, HandName(a_isLeft), release.handle.native_handle(),
 				mod._higgsUpdate, mod._worldGeneration);
 			return;
 		}

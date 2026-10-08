@@ -94,12 +94,12 @@ namespace BodyPouches
 		// A hand let go of something inside a pouch: take it in, or set the pouch up with it.
 		void StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial);
 
-		// Current filtered VRIK reach, or current shared spatial candidate when its
-		// weapon filter offers none. Never use remembered reach to accept a drop.
-		[[nodiscard]] int PouchAt(bool a_isLeft, int a_nativeSlot, bool a_sharedPhase);
+		// Called only after VRIK in the release's own update. Native reach owns
+		// arbitration; the shared spatial path applies only when native reach is zero.
+		[[nodiscard]] int PouchAt(bool a_isLeft, int a_nativeSlot);
 		static void OnBeforeFrame();
-		void ResolveSharedDrops();
-		void CancelSharedDrop(bool a_isLeft);
+		void ResolvePendingReleases();
+		void CancelPendingRelease(bool a_isLeft);
 		void SettleOutsideDrop(bool a_isLeft);
 		void QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial);
 		[[nodiscard]] bool SharedWorldReady(std::string_view* a_reason = nullptr);
@@ -180,13 +180,13 @@ namespace BodyPouches
 		bool _loading{ false };
 		std::uint64_t _dropSerial{ 0 };
 		std::unordered_map<std::uint32_t, std::uint64_t> _queuedDrops;
-		struct SharedRelease
+		struct PendingRelease
 		{
 			Core::CurrentUpdateRelease event;
 			RE::ObjectRefHandle handle;
 			std::uint64_t serial{};
 		};
-		SharedRelease _sharedReleases[2]; // physical left/right; no stored reach
+		PendingRelease _pendingReleases[2]; // physical left/right; no stored reach
 		std::uint64_t _higgsUpdate{}; // public before/post callback pair, not engine frame
 		bool _inHiggsUpdate{};
 		// When the pouch is next asked what it should show. Zero means at once.

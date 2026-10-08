@@ -8,10 +8,12 @@ all 103; a separate focused collection run passed all 214 assertions and collect
 the 73 previously omitted observations. Continuous native ownership, genuine
 task/callback contention, first render-frame behavior, complete input consumption
 and ordinary weapon registration remain separate unconfirmed release criteria.
-Candidate 0.1.16 adds bounded, opt-in read-only task/callback diagnostics to
-investigate those criteria; it does not change gameplay policy or claim release
-acceptance. See [native state](docs/native-state.md). Version 0.2.0 is reserved
-for a release-ready build.
+Candidate 0.1.17 resolves exclusive as well as shared potion releases after VRIK
+in the release's own HIGGS update, instead of accepting the previous native hover.
+Its game verification is pending; the installed 0.1.16 manual observations remain
+separate. It retains 0.1.16's opt-in task/callback diagnostics. See
+[native state](docs/native-state.md) and [manual slot calibration](docs/manual-calibration.md).
+Version 0.2.0 is reserved for a release-ready build.
 
 Russian: [README.ru.md](README.ru.md).
 
@@ -114,11 +116,11 @@ shield or a torch it records "empty".
 **A pouch forgets what it is for when the game is closed.** It is set up by letting go of a bottle
 in it, and that choice lives in memory only.
 
-**The pouch sits wherever VRIK's Stomach slot sits.** In the author's build that is up at the chest,
-close to HIGGS's mouth, where a bottle meant for the pouch can be drunk instead. The slot is moved
-in VRIK's own configuration - the copy of `vrikslots.ini` in the build's VRIK config mod - and the
-numbers come from the game: every squeeze of an empty hand's grip writes into the log the
-`posX13`, `posY13` and `posZ13` that would put the pouch exactly where the hand is.
+**The pouch sits wherever VRIK's Stomach slot sits and inherits its rotation.**
+Position and rotation must be calibrated on the actual body, then locked against
+accidental movement by a long grip. VRIK's native reposition gesture changes both
+without guessing bone-space coordinates. See [manual slot calibration](docs/manual-calibration.md).
+Lower placement and upright display are not verified merely by a source change.
 
 ## What made it possible
 

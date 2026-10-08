@@ -2,7 +2,7 @@
   "deploy": {
     "modsRoot": "D:/Skyrim VR Modding/MO2/ModOrganizer/Skyrim VR/mods",
     "modName": "test_Body Pouches",
-    "version": "0.1.16",
+    "version": "0.1.17",
     "dll": "{root}/build/Release/BodyPouches.dll",
     "dllTargetRel": "SKSE/Plugins",
     "plugin": "{root}/build/BodyPouches.esp",
@@ -10,6 +10,7 @@
     "docs": [
       "{root}/README.md",
       "{root}/README.ru.md",
+      "{root}/docs/manual-calibration.md",
       "{root}\\contract\\DevBenchAPI.LICENSE.txt",
       "{root}\\contract\\OpenVR.LICENSE.txt"
     ],
