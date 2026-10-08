@@ -1,0 +1,6 @@
+Unmodified Valve OpenVR SDK header, tag v1.0.17, IVRSystem_019.
+Source: https://raw.githubusercontent.com/ValveSoftware/openvr/v1.0.17/headers/openvr.h
+SHA256:16bb7c961c07ec2ac6bab0a8038eaa2a7d7d6655390e87f36d11951107874f0c
+License: OpenVR.LICENSE.txt from the same upstream tag.
+Only the existing runtime interface's read-only controller methods are used.
+No OpenVR DLL, initialization, shutdown, hook or input publication is added.

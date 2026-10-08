@@ -5,6 +5,7 @@
 #include "core/SlotPlan.h"
 #include "game/Body.h"
 #include "game/Forms.h"
+#include "vr/Controller.h"
 
 #include <SKSE/SKSE.h>
 
@@ -138,6 +139,8 @@ namespace BodyPouches
 			mod.CancelSharedDrop(false);
 			mod._sharedPresses[0].Clear();
 			mod._sharedPresses[1].Clear();
+			mod._sharedButtons[0].Clear();
+			mod._sharedButtons[1].Clear();
 			mod._inHiggsUpdate = false;
 			return;
 		}
@@ -150,6 +153,7 @@ namespace BodyPouches
 		}
 
 		mod.ResolveSharedDrops();
+		mod.PollSharedButtons();
 		mod.ResolveSharedPresses();
 		mod._inHiggsUpdate = false;
 		mod.NoteReach();
@@ -474,6 +478,19 @@ namespace BodyPouches
 			_vrik.SlotInReach(IsSecondaryHand(a_isLeft)) == 0;
 	}
 
+	void Mod::PollSharedButtons()
+	{
+		const bool ready = SharedWorldReady();
+		for (const bool left : { true, false }) {
+			const int hand = left ? 0 : 1;
+			const auto button = ready ? VR::ReadControllerButton(left,
+				_vrik.GetSetting("useTriggersInstead") > .5) : VR::ControllerButton{};
+			const auto edge = _sharedButtons[hand].Sample(button.available, button.context, button.down);
+			if (!button.available || edge == Core::ButtonEdges::Edge::Up) { SharedButton(left, false); }
+			else if (edge == Core::ButtonEdges::Edge::Down) { SharedButton(left, true); }
+		}
+	}
+
 	void Mod::SharedButton(bool a_isLeft, bool a_down)
 	{
 		const int hand = a_isLeft ? 0 : 1;
@@ -547,6 +564,7 @@ namespace BodyPouches
 			_pendingGrab[hand].Clear();
 			_sharedWithdrawal[hand].Clear();
 			_sharedPresses[hand].Clear();
+			_sharedButtons[hand].Clear();
 			_drawQueued[hand] = false;
 			_grabReference[hand].reset();
 			_reach[hand] = 0;
@@ -926,10 +944,7 @@ namespace BodyPouches
 			// Every press carries its real id into the log: out loud at any slot of VRIK's,
 			// quietly everywhere else, because everywhere else is every press in the game.
 			const int id = static_cast<int>(button->GetIDCode());
-			const int sharedButton = mod._vrik.GetSetting("useTriggersInstead") > .5 ? 33 : kGripButton;
-			if (id == sharedButton && (button->IsDown() || button->IsUp())) {
-				mod.SharedButton(isLeft, button->IsDown());
-			}
+			// Shared gestures use original runtime edges, not VRIK-filtered/replayed events.
 			if (!button->IsDown()) { continue; }
 			const int reached = mod._reach[IsSecondaryHand(isLeft) ? 1 : 0];
 			if (reached != 0) {

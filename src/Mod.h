@@ -5,6 +5,7 @@
 #include "core/PendingGrab.h"
 #include "core/SharedInteraction.h"
 #include "core/CurrentUpdateRelease.h"
+#include "core/ButtonEdges.h"
 #include "game/Picture.h"
 #include "game/PlayerPack.h"
 #include "vr/HiggsLink.h"
@@ -102,6 +103,7 @@ namespace BodyPouches
 		[[nodiscard]] int SharedCandidate(bool a_isLeft);
 		[[nodiscard]] bool SharedDrawAllowed(bool a_isLeft);
 		void SharedButton(bool a_isLeft, bool a_down);
+		void PollSharedButtons();
 		void ResolveSharedPresses();
 		void UpdateSharedWithdrawals();
 		bool HandleHolsterAttempt(int a_slot, bool a_secondaryHand, bool a_handOccupied);
@@ -163,6 +165,7 @@ namespace BodyPouches
 		Core::PendingGrab _pendingGrab[2];
 		Core::SharedWithdrawal _sharedWithdrawal[2];  // physical left/right
 		Core::CurrentUpdateRelease _sharedPresses[2]; // real edge, resolved once post-VRIK
+		Core::ButtonEdges _sharedButtons[2]; // physical left/right, original OpenVR edges
 		std::int64_t _sharedPressAt[2]{};
 		bool _drawQueued[2]{};  // primary/secondary, deduplicate native/fallback offers
 		RE::ObjectRefHandle _grabReference[2];

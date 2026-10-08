@@ -66,6 +66,16 @@ Real shared grip edges likewise wait for coherent geometry in their current/next
 expire after 100 ms, and cancel on release, load, regrab or a native holster offer. They never arm
 from proximity alone; ordinary native/exclusive input processing is retained.
 
+Game test32 verified the shared release correction and unchanged stock on cancellation, but
+failed the following shared withdrawal with no observed shared press in the native log.
+Build0.1.15 reads physical grip/trigger transitions through Skyrim's existing original OpenVR
+interface during the post-VRIK callback: VRIK can hide these buttons from Skyrim's input-event
+sink. It never injects input or initializes/shuts down the runtime. A held button at first
+observation, loading, reconnecting, or changing controller/binding cannot synthesize a press.
+Unavailable input cancels the gesture; native priority and the unchanged spatial radius remain.
+This is a source correction pending game verification, not release acceptance. Sampling can
+miss a press/release entirely between callbacks and does not prove every input was consumed.
+
 There is no hotkey or proximity-only draw, and a drop never uses remembered reach. Run 7 showed
 what they cost: a press drew a bottle, the hand leaving the pouch with it
 was taken for putting it back, and a bottle let go of a second after the hand had left still
