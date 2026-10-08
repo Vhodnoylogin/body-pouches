@@ -95,4 +95,11 @@ namespace BodyPouches::VR
 			_api->AddPostVrikPostHiggsCallback(a_callback);
 		}
 	}
+
+	void HiggsLink::OnBeforeFrame(HiggsPluginAPI::IHiggsInterface001::NoArgCallback a_callback)
+	{
+		if (_api != nullptr && a_callback != nullptr) {
+			_api->AddPreVrikPreHiggsCallback(a_callback);
+		}
+	}
 }

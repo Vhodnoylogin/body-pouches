@@ -108,4 +108,8 @@ namespace BodyPouches::Keys
 	inline constexpr auto kDropReachProbe = "drop.reach_probe";
 	inline constexpr auto kDropSharedProbe = "drop.shared_probe";
 	inline constexpr auto kDropGuard = "drop.guard";
+	inline constexpr auto kSharedRelease = "shared.release_event";
+	inline constexpr auto kSharedResolved = "shared.release_resolved";
+	inline constexpr auto kSharedPress = "shared.press_event";
+	inline constexpr auto kSharedPressResolved = "shared.press_resolved";
 }

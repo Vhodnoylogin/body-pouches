@@ -56,6 +56,16 @@ shared slot's distance/radius and the precise unavailable-world/geometry/policy 
 callback reads differ in phase from the post-VRIK state snapshots. The diagnostics investigate
 the failed shared seed return in build 0.1.12; they do not claim that the failure is fixed.
 
+Test 31 measured 12.201 game units inside the dropped callback against radius 10, while
+surrounding post-VRIK snapshots measured about 1.2. Build 0.1.14 therefore resolves only the
+shared spatial release after VRIK in the **same HIGGS update**. It stores an actual release
+event and reference handle, never reach or a hand position. Missing post-update, another update,
+load, regrab or native priority cancels it; existing queued-pickup identity checks remain.
+The radius is unchanged. This correction still needs game verification.
+Real shared grip edges likewise wait for coherent geometry in their current/next HIGGS update,
+expire after 100 ms, and cancel on release, load, regrab or a native holster offer. They never arm
+from proximity alone; ordinary native/exclusive input processing is retained.
+
 There is no hotkey or proximity-only draw, and a drop never uses remembered reach. Run 7 showed
 what they cost: a press drew a bottle, the hand leaving the pouch with it
 was taken for putting it back, and a bottle let go of a second after the hand had left still

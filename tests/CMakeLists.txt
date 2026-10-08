@@ -13,6 +13,7 @@ add_executable(bodypouches_tests
     "${CMAKE_CURRENT_SOURCE_DIR}/test_slotplan.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/test_pendinggrab.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/test_sharedinteraction.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test_currentupdaterelease.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
 )
 

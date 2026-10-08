@@ -46,8 +46,8 @@ namespace BodyPouches
 		// bottle. Long enough for a frame or two, short enough to be about that bottle.
 		constexpr std::int64_t kGrabCheckMs = 200;
 
-		// The grip, as the VR controllers number their buttons. Not a setting: nothing is
-		// done on it any more but a measurement.
+		// The grip, as the VR controllers number their buttons. Shared draws also
+		// observe its real edge; exclusive draws remain VRIK's callback.
 		constexpr int kGripButton = 2;
 
 		constexpr auto kHeadBone = "NPC Head [Head]";
@@ -86,6 +86,7 @@ namespace BodyPouches
 		Loc::Info(Keys::kHiggsSubscribed);
 
 		// The frame, and with it the end of this mod having a thread of its own.
+		_higgs.OnBeforeFrame(&Mod::OnBeforeFrame);
 		_higgs.OnFrame(&Mod::OnFrame);
 	}
 
@@ -119,10 +120,25 @@ namespace BodyPouches
 		_dataLoaded = true;
 	}
 
+	void Mod::OnBeforeFrame()
+	{
+		auto& mod = GetSingleton();
+		// A missing post callback cannot carry an old release into another update.
+		mod.CancelSharedDrop(true);
+		mod.CancelSharedDrop(false);
+		++mod._higgsUpdate;
+		mod._inHiggsUpdate = true;
+	}
+
 	void Mod::OnFrame()
 	{
 		auto& mod = GetSingleton();
 		if (!mod.Working() || mod._loading) {
+			mod.CancelSharedDrop(true);
+			mod.CancelSharedDrop(false);
+			mod._sharedPresses[0].Clear();
+			mod._sharedPresses[1].Clear();
+			mod._inHiggsUpdate = false;
 			return;
 		}
 		++mod._callbackFrame;
@@ -133,6 +149,9 @@ namespace BodyPouches
 			mod.FirstFrame();
 		}
 
+		mod.ResolveSharedDrops();
+		mod.ResolveSharedPresses();
+		mod._inHiggsUpdate = false;
 		mod.NoteReach();
 		mod.UpdateSharedWithdrawals();
 		mod.RefreshDisplay();
@@ -268,18 +287,21 @@ namespace BodyPouches
 		_picture.Tick(now, _vrik.IsDisplayed(slot));
 	}
 
-	int Mod::PouchAt(bool a_isLeft)
+	int Mod::PouchAt(bool a_isLeft, int a_nativeSlot, bool a_sharedPhase)
 	{
-		const int slot = _vrik.SlotInReach(IsSecondaryHand(a_isLeft));
+		const int slot = a_nativeSlot;
+		const auto phase = a_sharedPhase ? "post_vrik_same_update" : "higgs_dropped_native";
 		if (slot == 0) {
-			const int shared = SharedCandidate(a_isLeft);
-			Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft), slot, shared);
+			// The pre-VRIK hand/body transforms are not a coherent shared-slot test.
+			// Read them for diagnosis only; decide from the same update's post hook.
+			const int shared = a_sharedPhase ? SharedCandidate(a_isLeft) : 0;
+			Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft), slot, shared, phase);
 			for (const auto& pouch : _pouches.Snapshot()) {
 				if (pouch.mode != Core::Mode::Shared) { continue; }
 				std::string_view reason;
 				const auto distance = SharedDistance(pouch.slot, a_isLeft, &reason);
 				Loc::Info(Keys::kDropSharedProbe, HandName(a_isLeft), pouch.slot,
-					distance.value_or(-1), distance.has_value(), SharedRadius(), reason);
+					distance.value_or(-1), distance.has_value(), SharedRadius(), reason, phase);
 			}
 			if (shared != 0) {
 				const auto distance = SharedDistance(shared, a_isLeft);
@@ -289,8 +311,79 @@ namespace BodyPouches
 		}
 		std::scoped_lock guard(_lock);
 		const int chosen = _pouches.Find(slot) != nullptr ? slot : 0;
-		Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft), slot, chosen);
+		Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft), slot, chosen, phase);
 		return chosen;
+	}
+
+	void Mod::CancelSharedDrop(bool a_isLeft)
+	{
+		auto& release = _sharedReleases[a_isLeft ? 0 : 1];
+		if (release.event.Active()) {
+			const auto pending = _queuedDrops.find(release.handle.native_handle());
+			if (pending != _queuedDrops.end() && pending->second == release.serial) {
+				_queuedDrops.erase(pending);
+			}
+		}
+		release = {};
+	}
+
+	void Mod::SettleOutsideDrop(bool a_isLeft)
+	{
+		std::scoped_lock guard(_lock);
+		if (const auto slot = _pouches.SlotOfHand(a_isLeft); slot.has_value()) {
+			Loc::Info(Keys::kPouchLost, *slot);
+			_pouches.NoteSettled(a_isLeft);
+		}
+	}
+
+	void Mod::ResolveSharedDrops()
+	{
+		for (const bool isLeft : { true, false }) {
+			auto& stored = _sharedReleases[isLeft ? 0 : 1];
+			if (!stored.event.Active()) { continue; }
+			const auto release = stored;
+			const bool current = _inHiggsUpdate && stored.event.Take(_worldGeneration, _higgsUpdate);
+			stored = {};
+			const auto pending = _queuedDrops.find(release.handle.native_handle());
+			if (pending == _queuedDrops.end() || pending->second != release.serial) { continue; }
+			if (!current) {
+				_queuedDrops.erase(pending);
+				continue;
+			}
+			// A native offer that appears after VRIK owns arbitration. Never redirect
+			// a deferred shared release into an exclusive or somebody else's slot.
+			const int native = _vrik.SlotInReach(IsSecondaryHand(isLeft));
+			if (native != 0) {
+				Loc::Info(Keys::kDropReachProbe, HandName(isLeft), native, 0, "post_vrik_native_priority");
+			}
+			const int slot = native == 0 ? PouchAt(isLeft, native, true) : 0;
+			Loc::Info(Keys::kSharedResolved, HandName(isLeft), release.handle.native_handle(),
+				_higgsUpdate, _worldGeneration, slot);
+			if (slot != 0) {
+				QueueStowDropped(slot, isLeft, release.handle, release.serial);
+			} else {
+				_queuedDrops.erase(pending);
+				SettleOutsideDrop(isLeft);
+			}
+		}
+	}
+
+	void Mod::QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial)
+	{
+		if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
+			tasks->AddTask([a_slot, a_isLeft, a_handle, a_serial, generation = _worldGeneration]() {
+				auto& current = GetSingleton();
+				if (!current._loading && generation == current._worldGeneration) {
+					const auto pending = current._queuedDrops.find(a_handle.native_handle());
+					if (pending == current._queuedDrops.end() || pending->second != a_serial) { return; }
+					current._queuedDrops.erase(pending);
+					const auto object = a_handle.get();
+					current.StowDropped(a_slot, a_isLeft, object.get());
+				}
+			});
+		} else {
+			_queuedDrops.erase(a_handle.native_handle());
+		}
 	}
 
 	bool Mod::SharedWorldReady(std::string_view* a_reason)
@@ -383,12 +476,36 @@ namespace BodyPouches
 
 	void Mod::SharedButton(bool a_isLeft, bool a_down)
 	{
-		auto& gesture = _sharedWithdrawal[a_isLeft ? 0 : 1];
-		gesture.Clear();
-		if (!a_down || !SharedDrawAllowed(a_isLeft)) { return; }
-		const int slot = SharedCandidate(a_isLeft);
-		const auto distance = SharedDistance(slot, a_isLeft);
-		if (distance) { gesture.Press(slot, *distance, SharedRadius(), Now()); }
+		const int hand = a_isLeft ? 0 : 1;
+		_sharedWithdrawal[hand].Clear();
+		_sharedPresses[hand].Clear();
+		if (!a_down || !SharedWorldReady()) { return; }
+		const auto pouches = _pouches.Snapshot();
+		if (std::none_of(pouches.begin(), pouches.end(),
+			[](const auto& pouch) { return pouch.mode == Core::Mode::Shared; })) { return; }
+		// Input events may precede HIGGS's before-update callback. Resolve this real
+		// edge in that next update, or the current update if already inside it.
+		const auto target = _higgsUpdate + (_inHiggsUpdate ? 0 : 1);
+		_sharedPresses[hand].Arm(_worldGeneration, target);
+		_sharedPressAt[hand] = Now();
+		Loc::Info(Keys::kSharedPress, HandName(a_isLeft), target, _worldGeneration);
+	}
+
+	void Mod::ResolveSharedPresses()
+	{
+		for (const bool isLeft : { true, false }) {
+			const int hand = isLeft ? 0 : 1;
+			if (!_sharedPresses[hand].Active()) { continue; }
+			const auto now = Now();
+			const bool current = _sharedPresses[hand].Take(_worldGeneration, _higgsUpdate);
+			if (!_inHiggsUpdate || !current || now < _sharedPressAt[hand] ||
+				now - _sharedPressAt[hand] > 100 || !SharedDrawAllowed(isLeft)) { continue; }
+			const int slot = SharedCandidate(isLeft);
+			const auto distance = SharedDistance(slot, isLeft);
+			if (distance) { _sharedWithdrawal[hand].Press(slot, *distance, SharedRadius(), now); }
+			Loc::Info(Keys::kSharedPressResolved, HandName(isLeft), _higgsUpdate,
+				_worldGeneration, _sharedWithdrawal[hand].Slot());
+		}
 	}
 
 	void Mod::UpdateSharedWithdrawals()
@@ -421,11 +538,15 @@ namespace BodyPouches
 	{
 		_loading = true;
 		++_worldGeneration;
+		_inHiggsUpdate = false;
+		CancelSharedDrop(true);
+		CancelSharedDrop(false);
 		_queuedDrops.clear();
 		std::scoped_lock guard(_lock);
 		for (int hand = 0; hand < 2; ++hand) {
 			_pendingGrab[hand].Clear();
 			_sharedWithdrawal[hand].Clear();
+			_sharedPresses[hand].Clear();
 			_drawQueued[hand] = false;
 			_grabReference[hand].reset();
 			_reach[hand] = 0;
@@ -840,6 +961,8 @@ namespace BodyPouches
 		auto& mod = GetSingleton();
 		// Native VRIK selection owns arbitration, including an unrelated weapon slot.
 		mod._sharedWithdrawal[IsLeftHand(a_secondaryHand) ? 0 : 1].Clear();
+		mod._sharedPresses[IsLeftHand(a_secondaryHand) ? 0 : 1].Clear();
+		mod.CancelSharedDrop(IsLeftHand(a_secondaryHand));
 		return mod.HandleHolsterAttempt(a_slot, a_secondaryHand, a_handOccupied);
 	}
 
@@ -906,6 +1029,8 @@ namespace BodyPouches
 
 		auto& mod = GetSingleton();
 		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
+		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
+		mod.CancelSharedDrop(a_isLeft);
 		std::scoped_lock guard(mod._lock);
 		if (const auto slot = mod._pouches.SlotOfHand(a_isLeft); slot.has_value()) {
 			Loc::Info(Keys::kPouchConsumed, *slot);
@@ -919,6 +1044,8 @@ namespace BodyPouches
 
 		auto& mod = GetSingleton();
 		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
+		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
+		mod.CancelSharedDrop(a_isLeft);
 		std::scoped_lock guard(mod._lock);
 		if (const auto slot = mod._pouches.SlotOfHand(a_isLeft); slot.has_value()) {
 			Loc::Info(Keys::kPouchReturned, *slot);
@@ -931,6 +1058,8 @@ namespace BodyPouches
 	{
 		auto&     mod = GetSingleton();
 		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
+		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
+		mod.CancelSharedDrop(a_isLeft);
 		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
 
 		// This fires for everything the player picks up, so it is only worth a word when
@@ -957,46 +1086,37 @@ namespace BodyPouches
 
 		auto& mod = GetSingleton();
 		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
+		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
 		if (!mod.Working() || mod._loading) {
 			Loc::Info(Keys::kDropGuard, mod.Working(), mod._loading, a_refr != nullptr);
 			return;
 		}
 
-		// Letting go of something inside a pouch is how it goes in. VRIK is asked where
-		// the hand is at this very moment, and nothing is remembered: the second and a
-		// fifth of memory this used to have turned bottles carried away from the pouch
-		// into bottles put back.
-		if (const int slot = mod.PouchAt(a_isLeft); slot != 0 && a_refr != nullptr) {
+		mod.CancelSharedDrop(a_isLeft);
+		const int native = mod._vrik.SlotInReach(IsSecondaryHand(a_isLeft));
+		// Native VRIK reach keeps its existing callback-time path. The shared spatial
+		// fallback is resolved after VRIK in this exact update, never from cached reach.
+		if (const int slot = mod.PouchAt(a_isLeft, native, false); slot != 0 && a_refr != nullptr) {
 			Loc::Info(Keys::kDropAtPouch, HandName(a_isLeft), slot);
-
-			// A handle cannot silently resolve a reused form ID as another object.
 			const auto handle = reinterpret_cast<RE::TESObjectREFR*>(a_refr)->GetHandle();
-			if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
-				const auto serial = ++mod._dropSerial;
-				mod._queuedDrops[handle.native_handle()] = serial;
-				tasks->AddTask([slot, a_isLeft, handle, serial, generation = mod._worldGeneration]() {
-					auto& current = GetSingleton();
-					if (!current._loading && generation == current._worldGeneration) {
-						const auto pending = current._queuedDrops.find(handle.native_handle());
-						if (pending == current._queuedDrops.end() || pending->second != serial) {
-							return;
-						}
-						current._queuedDrops.erase(pending);
-						const auto object = handle.get();
-						current.StowDropped(slot, a_isLeft, object.get());
-					}
-				});
-			}
+			const auto serial = ++mod._dropSerial;
+			mod._queuedDrops[handle.native_handle()] = serial;
+			mod.QueueStowDropped(slot, a_isLeft, handle, serial);
 			return;
 		}
-
-		std::scoped_lock guard(mod._lock);
-		if (const auto slot = mod._pouches.SlotOfHand(a_isLeft); slot.has_value()) {
-			// It stays where it fell. That is the whole of it: the bottle is an
-			// ordinary thing in the world now, and picking it up is the player's
-			// business.
-			Loc::Info(Keys::kPouchLost, *slot);
-			mod._pouches.NoteSettled(a_isLeft);
+		const auto pouches = mod._pouches.Snapshot();
+		const bool hasShared = std::any_of(pouches.begin(), pouches.end(),
+			[](const auto& pouch) { return pouch.mode == Core::Mode::Shared; });
+		if (native == 0 && hasShared && mod._inHiggsUpdate && a_refr != nullptr) {
+			auto& release = mod._sharedReleases[a_isLeft ? 0 : 1];
+			release.handle = reinterpret_cast<RE::TESObjectREFR*>(a_refr)->GetHandle();
+			release.serial = ++mod._dropSerial;
+			release.event.Arm(mod._worldGeneration, mod._higgsUpdate);
+			mod._queuedDrops[release.handle.native_handle()] = release.serial;
+			Loc::Info(Keys::kSharedRelease, HandName(a_isLeft), release.handle.native_handle(),
+				mod._higgsUpdate, mod._worldGeneration);
+			return;
 		}
+		mod.SettleOutsideDrop(a_isLeft);
 	}
 }

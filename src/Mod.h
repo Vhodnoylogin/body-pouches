@@ -4,6 +4,7 @@
 #include "core/PouchSet.h"
 #include "core/PendingGrab.h"
 #include "core/SharedInteraction.h"
+#include "core/CurrentUpdateRelease.h"
 #include "game/Picture.h"
 #include "game/PlayerPack.h"
 #include "vr/HiggsLink.h"
@@ -89,13 +90,19 @@ namespace BodyPouches
 
 		// Current filtered VRIK reach, or current shared spatial candidate when its
 		// weapon filter offers none. Never use remembered reach to accept a drop.
-		[[nodiscard]] int PouchAt(bool a_isLeft);
+		[[nodiscard]] int PouchAt(bool a_isLeft, int a_nativeSlot, bool a_sharedPhase);
+		static void OnBeforeFrame();
+		void ResolveSharedDrops();
+		void CancelSharedDrop(bool a_isLeft);
+		void SettleOutsideDrop(bool a_isLeft);
+		void QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial);
 		[[nodiscard]] bool SharedWorldReady(std::string_view* a_reason = nullptr);
 		[[nodiscard]] std::optional<double> SharedDistance(int a_slot, bool a_isLeft, std::string_view* a_reason = nullptr);
 		[[nodiscard]] double SharedRadius();
 		[[nodiscard]] int SharedCandidate(bool a_isLeft);
 		[[nodiscard]] bool SharedDrawAllowed(bool a_isLeft);
 		void SharedButton(bool a_isLeft, bool a_down);
+		void ResolveSharedPresses();
 		void UpdateSharedWithdrawals();
 		bool HandleHolsterAttempt(int a_slot, bool a_secondaryHand, bool a_handOccupied);
 
@@ -155,12 +162,23 @@ namespace BodyPouches
 		// takes no answer and gives none, so the only honest report is one made afterwards.
 		Core::PendingGrab _pendingGrab[2];
 		Core::SharedWithdrawal _sharedWithdrawal[2];  // physical left/right
+		Core::CurrentUpdateRelease _sharedPresses[2]; // real edge, resolved once post-VRIK
+		std::int64_t _sharedPressAt[2]{};
 		bool _drawQueued[2]{};  // primary/secondary, deduplicate native/fallback offers
 		RE::ObjectRefHandle _grabReference[2];
 		std::uint64_t _worldGeneration{ 0 };
 		bool _loading{ false };
 		std::uint64_t _dropSerial{ 0 };
 		std::unordered_map<std::uint32_t, std::uint64_t> _queuedDrops;
+		struct SharedRelease
+		{
+			Core::CurrentUpdateRelease event;
+			RE::ObjectRefHandle handle;
+			std::uint64_t serial{};
+		};
+		SharedRelease _sharedReleases[2]; // physical left/right; no stored reach
+		std::uint64_t _higgsUpdate{}; // public before/post callback pair, not engine frame
+		bool _inHiggsUpdate{};
 		// When the pouch is next asked what it should show. Zero means at once.
 		std::int64_t _displayAt{ 0 };
 		bool         _frameSeen{ false };
