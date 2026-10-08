@@ -126,3 +126,40 @@ TEST(unavailable_vrik_is_not_read_and_does_not_become_false_for_any_slot)
 		CHECK(!slot.suspended.has_value());
 	}
 }
+
+TEST(causal_history_disabled_is_explicitly_unavailable_not_complete_empty_capture)
+{
+	Diagnostics::State state;
+	state.available = true;
+	const auto result = Diagnostics::StateValues(state).at("causalTrace");
+	CHECK_EQ(result.at("enabled"), false);
+	CHECK_EQ(result.at("available"), false);
+	CHECK(result.at("events").empty());
+}
+
+TEST(causal_history_serializes_native_identity_deadline_loss_and_global_null_hand)
+{
+	Diagnostics::State state;
+	state.available = true;
+	state.trace.enabled = true;
+	state.trace.available = true;
+	state.trace.nextSequence = 10;
+	state.trace.overwritten = 2;
+	state.trace.busyDrops = 1;
+	Diagnostics::TraceEvent event;
+	event.event = Diagnostics::Event::PendingArmed;
+	event.sequence = 9;
+	event.handle = 0xF0123456;
+	event.pendingHandle = event.handle;
+	event.pendingActive = true;
+	event.monotonicMs = 1000;
+	event.deadlineMs = 1200;
+	state.trace.events.push_back(event);
+	const auto result = Diagnostics::StateValues(state).at("causalTrace");
+	CHECK_EQ(result.at("overwritten"), 2);
+	CHECK_EQ(result.at("busyDrops"), 1);
+	CHECK_EQ(result.at("events").at(0).at("handle").get<std::uint32_t>(), 0xF0123456);
+	CHECK_EQ(result.at("events").at(0).at("deadlineMs"), 1200);
+	CHECK(result.at("events").at(0).at("physicalHand").is_null());
+	CHECK_EQ(result.at("events").at(0).at("event"), "pending.armed");
+}

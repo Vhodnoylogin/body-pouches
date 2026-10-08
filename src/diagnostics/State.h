@@ -2,6 +2,7 @@
 
 #include "Config.h"
 #include "core/PouchSet.h"
+#include "diagnostics/Trace.h"
 
 #include <atomic>
 #include <cstdint>
@@ -39,6 +40,7 @@ namespace BodyPouches::Diagnostics
 		std::optional<bool> inputLeftHanded;
 		std::uint64_t loadGeneration{};
 		std::uint64_t callbackFrame{};
+		TraceSnapshot trace;
 	};
 
 	// VRIK state exists independently of whether any pouch is configured.

@@ -95,6 +95,7 @@ namespace BodyPouches
 	{
 		_settings = LoadSettings();
 		Loc::SetLevel(_settings.logLevel);
+		_trace.Enable(spdlog::get_level() == spdlog::level::debug || spdlog::get_level() == spdlog::level::trace);
 		Loc::Load(Paths::LangDir(), _settings.language);
 		BuildPouches(_settings);
 		WatchInput();
@@ -167,6 +168,7 @@ namespace BodyPouches
 		std::scoped_lock guard(_lock);
 		result.loadGeneration = _worldGeneration;
 		result.callbackFrame = _callbackFrame;
+		result.trace = _trace.Snapshot();
 		if (!_dataLoaded || !Working()) {
 			return result;
 		}
@@ -242,7 +244,10 @@ namespace BodyPouches
 			// close on it - arrives as an event of its own and clears this, so what is left
 			// here when the time is up is a failure and nothing else.
 			if (_pendingGrab[hand].Expired(now)) {
+				Trace(Diagnostics::Event::PendingExpired, IsLeftHand(secondary) ? 0 : 1,
+					_drawnFrom[hand], 0, _pendingDrawIds[hand], 0, 0, 0, now);
 				_pendingGrab[hand].Clear();
+				_pendingDrawIds[hand] = 0;
 				_grabReference[hand].reset();
 				Loc::Warn(Keys::kGrabFailed, HandName(IsLeftHand(secondary)), _drawnFrom[hand]);
 			}
@@ -375,14 +380,21 @@ namespace BodyPouches
 	void Mod::QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial)
 	{
 		if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
+			Trace(Diagnostics::Event::StowQueued, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, _worldGeneration);
 			tasks->AddTask([a_slot, a_isLeft, a_handle, a_serial, generation = _worldGeneration]() {
 				auto& current = GetSingleton();
+				current.Trace(Diagnostics::Event::StowTask, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
 				if (!current._loading && generation == current._worldGeneration) {
 					const auto pending = current._queuedDrops.find(a_handle.native_handle());
-					if (pending == current._queuedDrops.end() || pending->second != a_serial) { return; }
+					if (pending == current._queuedDrops.end() || pending->second != a_serial) {
+						current.Trace(Diagnostics::Event::StowSerialCancelled, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
+						return;
+					}
 					current._queuedDrops.erase(pending);
 					const auto object = a_handle.get();
-					current.StowDropped(a_slot, a_isLeft, object.get());
+					current.StowDropped(a_slot, a_isLeft, object.get(), a_serial);
+				} else {
+					current.Trace(Diagnostics::Event::StowWorldCancelled, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
 				}
 			});
 		} else {
@@ -555,6 +567,7 @@ namespace BodyPouches
 	{
 		_loading = true;
 		++_worldGeneration;
+		Trace(Diagnostics::Event::LoadBegin);
 		_inHiggsUpdate = false;
 		CancelSharedDrop(true);
 		CancelSharedDrop(false);
@@ -562,6 +575,7 @@ namespace BodyPouches
 		std::scoped_lock guard(_lock);
 		for (int hand = 0; hand < 2; ++hand) {
 			_pendingGrab[hand].Clear();
+			_pendingDrawIds[hand] = 0;
 			_sharedWithdrawal[hand].Clear();
 			_sharedPresses[hand].Clear();
 			_sharedButtons[hand].Clear();
@@ -580,6 +594,7 @@ namespace BodyPouches
 		// Also invalidate here for a new game or a missed pre-load notification.
 		OnGameLoading();
 		_loading = false;
+		Trace(Diagnostics::Event::LoadEnd);
 		// Said out loud on purpose. A run of this mod once ended with a log that stopped
 		// after the settings were read, and nothing in it could tell "the message never
 		// arrived" from "it arrived and every step of it quietly did nothing".
@@ -748,11 +763,43 @@ namespace BodyPouches
 		return true;
 	}
 
-	bool Mod::Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item)
+	void Mod::Trace(Diagnostics::Event a_event, int a_physicalHand, int a_slot,
+		std::uint32_t a_handle, std::uint64_t a_causalId, std::uint64_t a_dropSerial,
+		std::uint64_t a_enqueuedGeneration, int a_quantity, std::int64_t a_now,
+		const Core::PendingGrab* a_pendingBefore)
+	{
+		if (!_trace.Enabled()) { return; }
+		Diagnostics::TraceEvent event;
+		event.event = a_event;
+		event.monotonicMs = a_now >= 0 ? a_now : Now();
+		event.worldGeneration = _worldGeneration;
+		event.higgsUpdate = _higgsUpdate;
+		event.callbackFrame = _callbackFrame;
+		event.inHiggsUpdate = _inHiggsUpdate;
+		event.physicalHand = a_physicalHand;
+		if (a_physicalHand >= 0) {
+			const int hand = IsSecondaryHand(a_physicalHand == 0) ? 1 : 0;
+			const auto& pending = a_pendingBefore != nullptr ? *a_pendingBefore : _pendingGrab[hand];
+			event.secondaryHand = hand;
+			event.pendingHandle = pending.Handle();
+			event.deadlineMs = pending.Deadline();
+			event.pendingActive = pending.Active();
+		}
+		event.slot = a_slot;
+		event.handle = a_handle;
+		event.causalId = a_causalId;
+		event.dropSerial = a_dropSerial;
+		event.enqueuedWorldGeneration = a_enqueuedGeneration;
+		event.quantity = a_quantity;
+		_trace.Record(event);
+	}
+
+	bool Mod::Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item, std::uint64_t a_causalId)
 	{
 		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
 		if (_loading || _pendingGrab[hand].Active() || _higgs.IsHolding(a_isLeft) ||
 			!_higgs.CanGrab(a_isLeft)) {
+			Trace(Diagnostics::Event::DrawGuardRejected, a_isLeft ? 0 : 1, a_slot, 0, a_causalId);
 			return false;
 		}
 		// The queue may run after another action changed the hand, stock or filter.
@@ -764,6 +811,7 @@ namespace BodyPouches
 			reach.handCanHold = true;
 			const auto current = _pouches.Decide(reach, _pack);
 			if (current.act != Core::Act::Draw || !(current.item == a_item)) {
+				Trace(Diagnostics::Event::DrawPolicyRejected, a_isLeft ? 0 : 1, a_slot, 0, a_causalId);
 				return false;
 			}
 		}
@@ -790,8 +838,10 @@ namespace BodyPouches
 		// a reference to it appears in the world, which is the only thing HIGGS can put
 		// in a hand. Dropping it is not a metaphor - from here on it is an ordinary
 		// bottle lying in the world that happens to be held.
+		Trace(Diagnostics::Event::RemoveRequested, a_isLeft ? 0 : 1, a_slot, 0, a_causalId, 0, 0, 1);
 		const auto handle = player->RemoveItem(
 			object, 1, RE::ITEM_REMOVE_REASON::kDropping, nullptr, nullptr, &where, &rotation);
+		Trace(Diagnostics::Event::RemoveResult, a_isLeft ? 0 : 1, a_slot, handle.native_handle(), a_causalId);
 
 		const auto dropped = handle.get();
 		if (!dropped) {
@@ -806,7 +856,10 @@ namespace BodyPouches
 
 		_drawnFrom[hand] = a_slot;
 		_grabReference[hand] = handle;
-		_pendingGrab[hand].Arm(handle.native_handle(), Now() + kGrabCheckMs);
+		const auto armedAt = Now();
+		_pendingGrab[hand].Arm(handle.native_handle(), armedAt + kGrabCheckMs);
+		_pendingDrawIds[hand] = a_causalId;
+		Trace(Diagnostics::Event::PendingArmed, a_isLeft ? 0 : 1, a_slot, handle.native_handle(), a_causalId, 0, 0, 0, armedAt);
 		// Arm before calling HIGGS so a synchronous callback is correlated too.
 		_higgs.Grab(dropped.get(), a_isLeft);
 		Loc::Info(Keys::kGrabAsked, HandName(a_isLeft));
@@ -816,7 +869,7 @@ namespace BodyPouches
 		return true;
 	}
 
-	void Mod::StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object)
+	void Mod::StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial)
 	{
 		if (_loading || a_object == nullptr || a_object->IsDeleted() || a_object->IsDisabled() ||
 			_higgs.Held(false) == a_object || _higgs.Held(true) == a_object) {
@@ -877,7 +930,9 @@ namespace BodyPouches
 		// as one and the other four were deleted: the mod took the player's potions away.
 		// PickUpObject counts, keeps whatever else the reference carried, and makes the
 		// sound the game makes when anything else is picked up.
+		Trace(Diagnostics::Event::PickupRequested, a_isLeft ? 0 : 1, a_slot, a_object->GetHandle().native_handle(), 0, a_serial, 0, count);
 		player->PickUpObject(a_object, count, false, true);
+		Trace(Diagnostics::Event::PickupReturned, a_isLeft ? 0 : 1, a_slot, 0, 0, a_serial, 0, count);
 
 		{
 			std::scoped_lock guard(_lock);
@@ -1017,12 +1072,17 @@ namespace BodyPouches
 			if (mod._drawQueued[hand] || mod._pendingGrab[hand].Active()) { return false; }
 			if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
 				mod._drawQueued[hand] = true;
+				const auto causalId = ++mod._traceDrawSerial;
+				mod.Trace(Diagnostics::Event::DrawQueued, isLeft ? 0 : 1, decision.slot, 0, causalId, 0, mod._worldGeneration);
 				tasks->AddTask([slot = decision.slot, isLeft, item = decision.item,
-					generation = mod._worldGeneration]() {
+					generation = mod._worldGeneration, causalId]() {
 					auto& current = GetSingleton();
+					current.Trace(Diagnostics::Event::DrawTask, isLeft ? 0 : 1, slot, 0, causalId, 0, generation);
 					if (!current._loading && generation == current._worldGeneration) {
 						current._drawQueued[IsSecondaryHand(isLeft) ? 1 : 0] = false;
-						current.Draw(slot, isLeft, item);
+						current.Draw(slot, isLeft, item, causalId);
+					} else {
+						current.Trace(Diagnostics::Event::DrawWorldCancelled, isLeft ? 0 : 1, slot, 0, causalId, 0, generation);
 					}
 				});
 				Loc::Info(Keys::kTaskQueued, decision.slot);
@@ -1080,17 +1140,31 @@ namespace BodyPouches
 		// This fires for everything the player picks up, so it is only worth a word when
 		// a bottle of ours is waiting to be told whether it was taken.
 		auto* object = reinterpret_cast<RE::TESObjectREFR*>(a_refr);
+		const auto callbackHandle = object != nullptr ? object->GetHandle().native_handle() : 0;
+		const auto causalId = mod._pendingDrawIds[hand];
 		if (object != nullptr) {
 			// Regrabbing cancels its earlier release, even if the player drops it
 			// elsewhere again before the queued pickup has had a turn.
-			mod._queuedDrops.erase(object->GetHandle().native_handle());
+			const auto pending = mod._queuedDrops.find(callbackHandle);
+			if (pending != mod._queuedDrops.end()) {
+				mod.Trace(Diagnostics::Event::RegrabCancelledStow, a_isLeft ? 0 : 1, 0, callbackHandle, 0, pending->second);
+			}
+			mod._queuedDrops.erase(callbackHandle);
 		}
-		if (mod._loading || object == nullptr ||
-			!mod._pendingGrab[hand].Confirm(object->GetHandle().native_handle(), Now())) {
+		const auto pendingBefore = mod._pendingGrab[hand];
+		const auto callbackAt = Now();
+		// No recording or world reads between this timestamp and the pure Confirm.
+		const bool accepted = !mod._loading && object != nullptr &&
+			mod._pendingGrab[hand].Confirm(callbackHandle, callbackAt);
+		mod.Trace(Diagnostics::Event::GrabCallback, a_isLeft ? 0 : 1, mod._drawnFrom[hand], callbackHandle, causalId, 0, 0, 0, callbackAt, &pendingBefore);
+		if (!accepted) {
+			mod.Trace(Diagnostics::Event::GrabRejected, a_isLeft ? 0 : 1, mod._drawnFrom[hand], callbackHandle, causalId, 0, 0, 0, callbackAt);
 			Loc::Debug(Keys::kHiggsEvent, "grabbed", HandName(a_isLeft));
 			return;
 		}
 
+		mod.Trace(Diagnostics::Event::GrabAccepted, a_isLeft ? 0 : 1, mod._drawnFrom[hand], callbackHandle, causalId, 0, 0, 0, callbackAt);
+		mod._pendingDrawIds[hand] = 0;
 		mod._grabReference[hand].reset();
 		Loc::Info(Keys::kGrabConfirmed, HandName(a_isLeft), mod._drawnFrom[hand]);
 	}

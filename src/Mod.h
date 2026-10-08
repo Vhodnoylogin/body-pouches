@@ -85,9 +85,14 @@ namespace BodyPouches
 		static void OnGrabbed(bool a_isLeft, ::TESObjectREFR* a_refr);
 
 		// --- the work itself, always on the game's own thread ---
-		bool Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item);
+		bool Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item, std::uint64_t a_causalId);
+		void Trace(Diagnostics::Event a_event, int a_physicalHand = -1, int a_slot = 0,
+			std::uint32_t a_handle = 0, std::uint64_t a_causalId = 0,
+			std::uint64_t a_dropSerial = 0, std::uint64_t a_enqueuedGeneration = 0,
+			int a_quantity = 0, std::int64_t a_now = -1,
+			const Core::PendingGrab* a_pendingBefore = nullptr);
 		// A hand let go of something inside a pouch: take it in, or set the pouch up with it.
-		void StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object);
+		void StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial);
 
 		// Current filtered VRIK reach, or current shared spatial candidate when its
 		// weapon filter offers none. Never use remembered reach to accept a drop.
@@ -163,6 +168,8 @@ namespace BodyPouches
 		// When to look back and see whether the hand really closed on the bottle. HIGGS
 		// takes no answer and gives none, so the only honest report is one made afterwards.
 		Core::PendingGrab _pendingGrab[2];
+		Diagnostics::Trace _trace;
+		std::uint64_t _traceDrawSerial{}, _pendingDrawIds[2]{};
 		Core::SharedWithdrawal _sharedWithdrawal[2];  // physical left/right
 		Core::CurrentUpdateRelease _sharedPresses[2]; // real edge, resolved once post-VRIK
 		Core::ButtonEdges _sharedButtons[2]; // physical left/right, original OpenVR edges

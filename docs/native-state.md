@@ -59,3 +59,45 @@ The MIT DevBench API glue in `contract/` is copied unchanged from the published
 integration files at upstream commit32823e465c18a676afc9048ac948aa22a616abd0.
 Its license is shipped by the ordinary staging document list. The DevBench
 plugin implementation is not included.
+
+## Bounded causal history in candidate 0.1.16
+
+The existing snapshot additionally returns `subject.causalTrace`. Capture is
+disabled by default; opt in with the existing `logLevel: "debug"` or `"trace"`
+setting when starting a process. It adds no mutation action or gameplay hook.
+Normal info logging retains the disabled/empty diagnostic envelope.
+
+Capture uses a 256-entry value ring: no allocation, world queries, disk I/O or
+blocking lock inside Record. A busy reader/producer drops the capture instead
+of delaying gameplay. `nextSequence`, `overwritten`, `busyDrops` and retained
+event sequences expose loss. Consumers must reject strict intervals that have
+gaps, missing beginning/end events, overflow or unavailable snapshots. Reads
+copy the ring on the existing SKSE task; serialization remains off the game thread.
+The enclosing snapshot supplies PID, process birth and read epoch. Every event
+supplies actual Body world generation and named callback/task stage, physical
+and secondary hand, Body callback counters and a process-local steady-clock
+millisecond timestamp. These counters are not engine/render/physics frames.
+Loads retain history and record begin/end; they do not silently reset sequence.
+
+Draw enqueue/task/cancellation and RemoveItem request/result share `causalId`.
+Pending arm, callback, accepted/rejected and expiry preserve the real requested
+native handle including reuse bits, callback handle and absolute 200ms deadline.
+The callback entry copies pending state before Confirm and records its actual
+decision timestamp; no diagnostic recording occurs between Now and Confirm.
+Accepted state after Confirm is separately recorded. A zero pending handle or
+deadline with `pendingActive=false` means no pending request, not an observed
+callback target. Physical/secondary fields are null for global load events.
+
+Stow enqueue/task/serial cancellation and either-hand regrab retain the actual
+release serial and native handle. Pickup request/return retain that serial and
+the quantity argument already computed by gameplay. `quantityArgument` is only
+the explicit RemoveItem/PickUpObject argument on those events; zero elsewhere
+is not a measured inventory/world quantity. A returned call is not proof of
+successful engine ownership transfer; retain independent native observations.
+
+This is instrumented Body-path history, not a complete HIGGS ownership stream,
+input-consumer chain, renderer witness or scheduler of genuine contention.
+Normal traces cannot pass an unexercised enqueue/event/task race, wrong-handle
+or exact-deadline callback. No fake callbacks, delays, guard changes, longer
+deadline or forced initial button edges are introduced. Candidate game evidence
+must use its actual installed build; earlier 0.1.15 results remain separate.

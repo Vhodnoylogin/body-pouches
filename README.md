@@ -2,6 +2,17 @@
 
 A working name for the module. The name the mod is released under will be a different one.
 
+Current automatic evidence for 0.1.15: the complete 512-step regression passed
+all 613 authored assertions; the genuine physical stack-of-five scenario passed
+all 103; a separate focused collection run passed all 214 assertions and collected
+the 73 previously omitted observations. Continuous native ownership, genuine
+task/callback contention, first render-frame behavior, complete input consumption
+and ordinary weapon registration remain separate unconfirmed release criteria.
+Candidate 0.1.16 adds bounded, opt-in read-only task/callback diagnostics to
+investigate those criteria; it does not change gameplay policy or claim release
+acceptance. See [native state](docs/native-state.md). Version 0.2.0 is reserved
+for a release-ready build.
+
 Russian: [README.ru.md](README.ru.md).
 
 The mod turns the VRIK holsters worn on the body into pouches: a slot holds not only a weapon but

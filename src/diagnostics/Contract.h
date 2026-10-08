@@ -47,6 +47,28 @@ namespace BodyPouches::Diagnostics
 				{ "basis", "Filtered VRIK reach/CanBeHolstered and current first-person hand to third-person slot bone; sequential main-thread reads, no physics/contact or private weapon state" } });
 		}
 		result["inputHandednessBasis"] = "game bLeftHandedMode:VRInput; read on game thread, not configuration file";
+		const auto& trace = a_state.trace;
+		result["causalTrace"] = { { "enabled", trace.enabled }, { "available", trace.available },
+			{ "reason", !trace.enabled ? "disabled; opt in with logLevel debug or trace" :
+				(trace.available ? "bounded Body callback/task history; not complete HIGGS ownership" : "capture_busy") },
+			{ "capacity", Trace::kCapacity }, { "nextSequence", trace.nextSequence },
+			{ "overwritten", trace.overwritten }, { "busyDrops", trace.busyDrops },
+			{ "clock", "std::chrono::steady_clock milliseconds; process-local epoch; same clock as PendingGrab deadline" },
+			{ "phaseBasis", "named Body callback or SKSE task; higgsUpdate/callbackFrame are Body callback counters, not engine/render/physics frames" },
+			{ "coverage", "Only instrumented Body paths. No complete native ownership, consumer, render or race-scheduling guarantee. Sequence gaps or capture loss make strict intervals unavailable." },
+			{ "events", json::array() } };
+		for (const auto& event : trace.events) {
+			result["causalTrace"]["events"].push_back({ { "event", Name(event.event) },
+				{ "sequence", event.sequence }, { "monotonicMs", event.monotonicMs },
+				{ "worldGeneration", event.worldGeneration }, { "higgsUpdate", event.higgsUpdate },
+				{ "callbackFrame", event.callbackFrame }, { "inHiggsUpdate", event.inHiggsUpdate },
+				{ "physicalHand", event.physicalHand < 0 ? json(nullptr) : json(event.physicalHand == 0 ? "left" : "right") },
+				{ "secondaryHand", event.secondaryHand < 0 ? json(nullptr) : json(event.secondaryHand == 1) },
+				{ "slot", event.slot }, { "handle", event.handle }, { "pendingHandle", event.pendingHandle },
+				{ "pendingActive", event.pendingActive }, { "deadlineMs", event.deadlineMs },
+				{ "causalId", event.causalId }, { "dropSerial", event.dropSerial },
+				{ "enqueuedWorldGeneration", event.enqueuedWorldGeneration }, { "quantityArgument", event.quantity } });
+		}
 		return result;
 	}
 }

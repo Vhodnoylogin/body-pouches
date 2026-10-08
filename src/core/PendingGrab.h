@@ -16,6 +16,8 @@ namespace BodyPouches::Core
 		}
 		void Clear() noexcept { _handle = 0; _deadline = 0; }
 		[[nodiscard]] bool Active() const noexcept { return _handle != 0; }
+		[[nodiscard]] std::uint32_t Handle() const noexcept { return _handle; }
+		[[nodiscard]] std::int64_t Deadline() const noexcept { return _deadline; }
 		[[nodiscard]] bool Expired(std::int64_t a_now) const noexcept
 		{
 			return Active() && a_now >= _deadline;
