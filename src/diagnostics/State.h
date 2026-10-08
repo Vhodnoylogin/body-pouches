@@ -19,11 +19,23 @@ namespace BodyPouches::Diagnostics
 			int slot{};
 			std::optional<bool> suspended;
 		};
+		struct HandReach
+		{
+			bool physicalLeft{};
+			bool secondary{};
+			int filteredSlot{};
+			bool canBeHolstered{};
+			int sharedCandidate{};
+			std::optional<double> distanceGameUnits;
+			double activationRadiusGameUnits{};
+			int armedSharedSlot{};
+		};
 		bool available{ false };
 		std::string reason{ "not_initialized" };
 		Settings settings;
 		std::vector<Core::PouchState> pouches;
 		std::vector<BodySlot> bodySlots;
+		std::vector<HandReach> handReach;
 		std::optional<bool> inputLeftHanded;
 		std::uint64_t loadGeneration{};
 		std::uint64_t callbackFrame{};

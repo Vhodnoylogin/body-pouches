@@ -4,6 +4,20 @@
 
 using namespace BodyPouches;
 
+TEST(shared_reach_diagnostics_keep_units_physical_mapping_and_unavailable_distance)
+{
+	Diagnostics::State state;
+	state.available = true;
+	state.handReach.push_back({ true, false, 0, false, 13, 1.25, 10, 13 });
+	state.handReach.push_back({ false, true, 0, false, 0, std::nullopt, 10, 0 });
+	const auto result = Diagnostics::StateValues(state);
+	CHECK_EQ(result.at("handReach").at(0).at("physicalHand"), "left");
+	CHECK_EQ(result.at("handReach").at(0).at("secondary"), false);
+	CHECK_EQ(result.at("handReach").at(0).at("distanceGameUnits"), 1.25);
+	CHECK_EQ(result.at("handReach").at(0).at("activationRadiusGameUnits"), 10);
+	CHECK(result.at("handReach").at(1).at("distanceGameUnits").is_null());
+}
+
 TEST(expired_canceled_or_old_world_reads_cannot_start_or_return_values)
 {
 	Diagnostics::ReadGate expired(100, 7);

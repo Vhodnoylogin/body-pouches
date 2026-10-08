@@ -54,6 +54,8 @@ namespace BodyPouches
 				{ Keys::kNotArranging, "no pouches are arranged: VRIK ready = {0}, HIGGS ready = {1}" },
 				{ Keys::kSlotSeen, "slot {0} as VRIK reads it: small={1} medium={2} large={3} ranged={4} shield={5} torch={6}, visible={7}, watched={8}" },
 				{ Keys::kHolsterOffered, "VRIK offers slot {0}: secondaryHand = {1}, handOccupied = {2}" },
+				{ Keys::kSharedDraw, "shared spatial withdrawal offers slot {0} to the {1} hand; native weapon hover offered none" },
+				{ Keys::kSharedDrop, "shared current-pose drop at slot {0}, {1} hand, distance {2:.3f} game units, radius {3:.3f} game units" },
 				{ Keys::kDecision, "slot {0}: act = {1}, reason = {2}, {3} hand, VRIK acts = {4}" },
 				{ Keys::kTaskQueued, "slot {0}: the doing of it is queued for the game's next task" },
 				{ Keys::kNoTasks, "slot {0}: SKSE gave no task interface, so nothing can be done" },

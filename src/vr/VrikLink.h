@@ -22,9 +22,9 @@ namespace BodyPouches::VR
 
 	// Our side of VRIK.
 	//
-	// VRIK owns the places on the body: where a slot is, whether a hand is near it, what
-	// is drawn there, and how all of that survives a recalibration. This mod owns none
-	// of that and wants none of it. What it needs is three things, and all three arrived
+	// VRIK owns slot placement, weapon hover and display. Its filtered hover omits
+	// empty shared slots for nonweapon hands; Mod supplies that narrow spatial path
+	// from loaded VRIK settings without changing the slots. Three public hooks arrived
 	// in build 80700:
 	//
 	//   AddHolsterAttemptCallback  - tell me when a hand reaches for a slot, and let my

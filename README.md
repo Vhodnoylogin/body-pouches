@@ -17,8 +17,9 @@ no hotkey. Take a potion off the hip, bring it to the mouth, drink it, put the e
 | Spell Wheel VR | puts a potion in the hand | the item comes out of a menu, not off the body |
 | Immersive Equipment Displays | shows an arbitrary item on the body | it is a display case: nothing can be taken from it by hand |
 
-Half the work is therefore already done by other people, and this mod builds neither its own
-geometry on the body nor its own "the hand is near" detection. It sits exactly in the middle: the
+Half the work is therefore already done by other people. VRIK supplies the body-slot positions;
+Body Pouches uses its native detection for exclusive slots and a current-pose fallback for shared
+slots that VRIK filters out for nonweapon hands. It sits exactly in the middle: the
 place on the body comes from VRIK, handing the item over and drinking come from HIGGS, and what
 belongs to the mod is only the rule of what lies in this slot and what to do when somebody reaches
 for it.
@@ -41,8 +42,16 @@ straight past a free hand at an empty slot; and the controller buzzes as a hand 
 Suspension lasts until the game is closed and is set at the first frame of play, because a new game
 sends a plugin no message to set it on.
 
-There is no button and no gesture of the mod's own any more, and no memory of where a hand was a
-moment ago. Run 7 showed what they cost: a press drew a bottle, the hand leaving the pouch with it
+Since 0.1.12, an empty shared slot also accepts a potion without an equipped weapon. VRIK's
+filtered weapon-hover API cannot report that case, so the mod measures the current first-person
+hand against the configured third-person slot bone, using VRIK's loaded activation distance and
+body scale. A shared draw requires a real grip (or configured trigger) press inside the slot and
+withdrawal while held within three seconds. Release, load, unavailable geometry, a newly held
+object or native VRIK ownership cancels it. Native offers take priority and queued draws are
+deduplicated. Shared slots remain unsuspended and their weapon display stays owned by VRIK.
+
+There is no hotkey or proximity-only draw, and a drop never uses remembered reach. Run 7 showed
+what they cost: a press drew a bottle, the hand leaving the pouch with it
 was taken for putting it back, and a bottle let go of a second after the hand had left still
 counted as put away.
 

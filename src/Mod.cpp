@@ -13,6 +13,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <format>
 #include <span>
 #include <string>
 
@@ -133,6 +134,7 @@ namespace BodyPouches
 		}
 
 		mod.NoteReach();
+		mod.UpdateSharedWithdrawals();
 		mod.RefreshDisplay();
 	}
 
@@ -180,6 +182,13 @@ namespace BodyPouches
 		}
 		result.available = true;
 		result.reason.clear();
+		for (const bool isLeft : { true, false }) {
+			const bool secondary = IsSecondaryHand(isLeft);
+			const int shared = SharedCandidate(isLeft);
+			result.handReach.push_back({ isLeft, secondary, _vrik.SlotInReach(secondary),
+				_vrik.CanBeHolstered(secondary), shared, SharedDistance(shared, isLeft),
+				SharedRadius(), _sharedWithdrawal[isLeft ? 0 : 1].Slot() });
+		}
 		return result;
 	}
 
@@ -263,10 +272,111 @@ namespace BodyPouches
 	{
 		const int slot = _vrik.SlotInReach(IsSecondaryHand(a_isLeft));
 		if (slot == 0) {
-			return 0;
+			const int shared = SharedCandidate(a_isLeft);
+			if (shared != 0) {
+				const auto distance = SharedDistance(shared, a_isLeft);
+				if (distance) { Loc::Info(Keys::kSharedDrop, shared, HandName(a_isLeft), *distance, SharedRadius()); }
+			}
+			return shared;
 		}
 		std::scoped_lock guard(_lock);
 		return _pouches.Find(slot) != nullptr ? slot : 0;
+	}
+
+	bool Mod::SharedWorldReady()
+	{
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		auto* ui = RE::UI::GetSingleton();
+		const auto* cell = player != nullptr ? player->GetParentCell() : nullptr;
+		if (_loading || !_frameSeen || _frameGeneration != _worldGeneration ||
+			player == nullptr || player->Get3D(true) == nullptr || player->Get3D(false) == nullptr ||
+			player->AsActorState()->IsSwimming() || player->IsOnMount() ||
+			player->AsActorState()->GetSitSleepState() != RE::SIT_SLEEP_STATE::kNormal ||
+			cell == nullptr || !cell->IsAttached() || ui == nullptr || ui->GameIsPaused() ||
+			ui->IsMenuOpen("Main Menu") || ui->IsMenuOpen("Loading Menu") || ui->IsMenuOpen("Fader Menu") ||
+			ui->IsMenuOpen("RaceSex Menu")) { return false; }
+		const auto* id = cell->GetFormEditorID();
+		return id != nullptr && std::string_view(id) != "VRPlayroom01" &&
+			_vrik.GetSetting("enableHolsters") > .5 && _vrik.GetSetting("displayHolsters") > .5;
+	}
+
+	double Mod::SharedRadius()
+	{
+		const double radius = _vrik.GetSetting("slotActivationDistance") * _vrik.GetSetting("bodySize");
+		return std::isfinite(radius) && radius > 0 && radius < 1000 ? radius : 0;
+	}
+
+	std::optional<double> Mod::SharedDistance(int a_slot, bool a_isLeft)
+	{
+		if (!SharedWorldReady()) { return std::nullopt; }
+		const auto* pouch = _pouches.Find(a_slot);
+		if (pouch == nullptr || pouch->PouchMode() != Core::Mode::Shared || !_vrik.IsDetectable(a_slot) ||
+			_vrik.GetSetting(std::format("visibleSlot{}", a_slot).c_str()) <= .5) { return std::nullopt; }
+		const double allowedHand = _vrik.GetSetting(std::format("handSlot{}", a_slot).c_str());
+		if (!std::isfinite(allowedHand) || (allowedHand != 0 && allowedHand != 1 && allowedHand != 2) ||
+			(a_isLeft ? allowedHand == 2 : allowedHand == 1)) { return std::nullopt; }
+		const auto bone = Game::Body::Bone(a_slot);
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		auto* root = player->Get3D(true);
+		auto* hand = root->GetObjectByName(a_isLeft ? "NPC L Hand [LHnd]" : "NPC R Hand [RHnd]");
+		if (!bone || !std::isfinite(bone->scale) || bone->scale <= 0 || hand == nullptr) { return std::nullopt; }
+		const auto centre = Game::Body::ToWorld(*bone, _vrik.SlotPosition(a_slot));
+		const double distance = hand->world.translate.GetDistance(centre);
+		return std::isfinite(distance) && distance >= 0 ? std::optional<double>(distance) : std::nullopt;
+	}
+
+	int Mod::SharedCandidate(bool a_isLeft)
+	{
+		const double radius = SharedRadius();
+		if (radius <= 0) { return 0; }
+		int selected = 0;
+		double nearest = radius;
+		// Snapshot is sorted by slot, so equal distances deterministically use the
+		// lower slot. No previous-frame reach is accepted by a drop callback.
+		for (const auto& pouch : _pouches.Snapshot()) {
+			const auto distance = SharedDistance(pouch.slot, a_isLeft);
+			if (distance && *distance <= radius && (selected == 0 || *distance < nearest)) {
+				selected = pouch.slot;
+				nearest = *distance;
+			}
+		}
+		return selected;
+	}
+
+	bool Mod::SharedDrawAllowed(bool a_isLeft)
+	{
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		return SharedWorldReady() && player != nullptr && player->GetEquippedObject(a_isLeft) == nullptr &&
+			!_higgs.IsHolding(a_isLeft) && _higgs.CanGrab(a_isLeft) &&
+			!_drawQueued[IsSecondaryHand(a_isLeft) ? 1 : 0] &&
+			!_pendingGrab[IsSecondaryHand(a_isLeft) ? 1 : 0].Active() &&
+			_vrik.SlotInReach(IsSecondaryHand(a_isLeft)) == 0;
+	}
+
+	void Mod::SharedButton(bool a_isLeft, bool a_down)
+	{
+		auto& gesture = _sharedWithdrawal[a_isLeft ? 0 : 1];
+		gesture.Clear();
+		if (!a_down || !SharedDrawAllowed(a_isLeft)) { return; }
+		const int slot = SharedCandidate(a_isLeft);
+		const auto distance = SharedDistance(slot, a_isLeft);
+		if (distance) { gesture.Press(slot, *distance, SharedRadius(), Now()); }
+	}
+
+	void Mod::UpdateSharedWithdrawals()
+	{
+		for (int index = 0; index < 2; ++index) {
+			auto& gesture = _sharedWithdrawal[index];
+			if (!gesture.Slot()) { continue; }
+			const bool isLeft = index == 0;
+			const auto distance = SharedDistance(gesture.Slot(), isLeft);
+			const int slot = gesture.Update(SharedDrawAllowed(isLeft) && distance.has_value(),
+				distance.value_or(-1), SharedRadius(), Now());
+			if (slot != 0) {
+				Loc::Info(Keys::kSharedDraw, slot, HandName(isLeft));
+				HandleHolsterAttempt(slot, IsSecondaryHand(isLeft), false);
+			}
+		}
 	}
 
 	bool Mod::IsSecondaryHand(bool a_isLeft)
@@ -287,6 +397,8 @@ namespace BodyPouches
 		std::scoped_lock guard(_lock);
 		for (int hand = 0; hand < 2; ++hand) {
 			_pendingGrab[hand].Clear();
+			_sharedWithdrawal[hand].Clear();
+			_drawQueued[hand] = false;
 			_grabReference[hand].reset();
 			_reach[hand] = 0;
 			_drawnFrom[hand] = 0;
@@ -646,7 +758,7 @@ namespace BodyPouches
 
 		for (auto* event = *a_event; event != nullptr; event = event->next) {
 			auto* button = event->AsButtonEvent();
-			if (button == nullptr || !button->IsDown()) {
+			if (button == nullptr) {
 				continue;
 			}
 
@@ -665,6 +777,11 @@ namespace BodyPouches
 			// Every press carries its real id into the log: out loud at any slot of VRIK's,
 			// quietly everywhere else, because everywhere else is every press in the game.
 			const int id = static_cast<int>(button->GetIDCode());
+			const int sharedButton = mod._vrik.GetSetting("useTriggersInstead") > .5 ? 33 : kGripButton;
+			if (id == sharedButton && (button->IsDown() || button->IsUp())) {
+				mod.SharedButton(isLeft, button->IsDown());
+			}
+			if (!button->IsDown()) { continue; }
 			const int reached = mod._reach[IsSecondaryHand(isLeft) ? 1 : 0];
 			if (reached != 0) {
 				Loc::Info(Keys::kButtonAtSlot, HandName(isLeft), id, reached);
@@ -692,8 +809,15 @@ namespace BodyPouches
 		// purpose - a line that only appears when somebody remembered to raise the log
 		// level is a line that is missing from the run that needed it.
 		Loc::Info(Keys::kHolsterOffered, a_slot, a_secondaryHand, a_handOccupied);
-
 		auto& mod = GetSingleton();
+		// Native VRIK selection owns arbitration, including an unrelated weapon slot.
+		mod._sharedWithdrawal[IsLeftHand(a_secondaryHand) ? 0 : 1].Clear();
+		return mod.HandleHolsterAttempt(a_slot, a_secondaryHand, a_handOccupied);
+	}
+
+	bool Mod::HandleHolsterAttempt(int a_slot, bool a_secondaryHand, bool a_handOccupied)
+	{
+		auto& mod = *this;
 		if (!mod.Working() || mod._loading) {
 			Loc::Debug(Keys::kIdleHere);
 			return true;  // not our business: let VRIK do what it always did
@@ -723,11 +847,15 @@ namespace BodyPouches
 		// inventory and placing a reference is not work to start inside somebody else's
 		// callback.
 		if (decision.act == Core::Act::Draw) {
+			const int hand = a_secondaryHand ? 1 : 0;
+			if (mod._drawQueued[hand] || mod._pendingGrab[hand].Active()) { return false; }
 			if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
+				mod._drawQueued[hand] = true;
 				tasks->AddTask([slot = decision.slot, isLeft, item = decision.item,
 					generation = mod._worldGeneration]() {
 					auto& current = GetSingleton();
 					if (!current._loading && generation == current._worldGeneration) {
+						current._drawQueued[IsSecondaryHand(isLeft) ? 1 : 0] = false;
 						current.Draw(slot, isLeft, item);
 					}
 				});
@@ -749,6 +877,7 @@ namespace BodyPouches
 		Loc::Info(Keys::kHiggsEvent, "consumed", HandName(a_isLeft));
 
 		auto& mod = GetSingleton();
+		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
 		std::scoped_lock guard(mod._lock);
 		if (const auto slot = mod._pouches.SlotOfHand(a_isLeft); slot.has_value()) {
 			Loc::Info(Keys::kPouchConsumed, *slot);
@@ -761,6 +890,7 @@ namespace BodyPouches
 		Loc::Info(Keys::kHiggsEvent, "stashed", HandName(a_isLeft));
 
 		auto& mod = GetSingleton();
+		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
 		std::scoped_lock guard(mod._lock);
 		if (const auto slot = mod._pouches.SlotOfHand(a_isLeft); slot.has_value()) {
 			Loc::Info(Keys::kPouchReturned, *slot);
@@ -772,6 +902,7 @@ namespace BodyPouches
 	void Mod::OnGrabbed(bool a_isLeft, ::TESObjectREFR* a_refr)
 	{
 		auto&     mod = GetSingleton();
+		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
 		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
 
 		// This fires for everything the player picks up, so it is only worth a word when
@@ -797,6 +928,7 @@ namespace BodyPouches
 		Loc::Info(Keys::kHiggsEvent, "dropped", HandName(a_isLeft));
 
 		auto& mod = GetSingleton();
+		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
 		if (!mod.Working() || mod._loading) {
 			return;
 		}

@@ -103,4 +103,6 @@ namespace BodyPouches::Keys
 	inline constexpr auto kHandNotFound = "hand.not_found";
 	inline constexpr auto kHandNode = "hand.node";
 	inline constexpr auto kDropFailed = "drop.failed";
+	inline constexpr auto kSharedDraw = "shared.withdrawal";
+	inline constexpr auto kSharedDrop = "shared.drop";
 }

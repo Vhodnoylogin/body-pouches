@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "core/PouchSet.h"
 #include "core/PendingGrab.h"
+#include "core/SharedInteraction.h"
 #include "game/Picture.h"
 #include "game/PlayerPack.h"
 #include "vr/HiggsLink.h"
@@ -39,10 +40,9 @@ namespace BodyPouches
 		// records found.
 		void OnDataLoaded();
 
-		// Start listening to the controllers. No button draws anything any more - VRIK
-		// raises that moment itself - but every squeeze of the grip by an empty hand is
-		// still worth a line: it says where the hand was in each pouch's own numbers,
-		// which is how a pouch is moved to where the player's hand actually goes.
+		// Listen for the actual grip/trigger edge. Native VRIK owns normal holster
+		// gestures; shared empty slots additionally arm a bounded withdrawal only
+		// on an empty hand's press inside the actual slot. Proximity alone never draws.
 		void WatchInput();
 
 		// A save was loaded. Suspension in VRIK lasts until the game is closed, so this
@@ -87,10 +87,17 @@ namespace BodyPouches
 		// A hand let go of something inside a pouch: take it in, or set the pouch up with it.
 		void StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object);
 
-		// Which pouch this hand is at this very moment, or 0. Asked of VRIK and not
-		// remembered: a bottle let go of after the hand has left the pouch is a bottle
-		// dropped, not one put away.
+		// Current filtered VRIK reach, or current shared spatial candidate when its
+		// weapon filter offers none. Never use remembered reach to accept a drop.
 		[[nodiscard]] int PouchAt(bool a_isLeft);
+		[[nodiscard]] bool SharedWorldReady();
+		[[nodiscard]] std::optional<double> SharedDistance(int a_slot, bool a_isLeft);
+		[[nodiscard]] double SharedRadius();
+		[[nodiscard]] int SharedCandidate(bool a_isLeft);
+		[[nodiscard]] bool SharedDrawAllowed(bool a_isLeft);
+		void SharedButton(bool a_isLeft, bool a_down);
+		void UpdateSharedWithdrawals();
+		bool HandleHolsterAttempt(int a_slot, bool a_secondaryHand, bool a_handOccupied);
 
 		// VRIK says "secondary hand", HIGGS says "left". This is the way back.
 		[[nodiscard]] static bool IsSecondaryHand(bool a_isLeft);
@@ -147,6 +154,8 @@ namespace BodyPouches
 		// When to look back and see whether the hand really closed on the bottle. HIGGS
 		// takes no answer and gives none, so the only honest report is one made afterwards.
 		Core::PendingGrab _pendingGrab[2];
+		Core::SharedWithdrawal _sharedWithdrawal[2];  // physical left/right
+		bool _drawQueued[2]{};  // primary/secondary, deduplicate native/fallback offers
 		RE::ObjectRefHandle _grabReference[2];
 		std::uint64_t _worldGeneration{ 0 };
 		bool _loading{ false };

@@ -35,6 +35,17 @@ namespace BodyPouches::Diagnostics
 				{ "basis", "VRIK GetSlotSuspended; not inferred from pouch mode" } });
 		}
 		result["inputHandednessAvailable"] = a_state.inputLeftHanded.has_value();
+		result["handReach"] = json::array();
+		for (const auto& hand : a_state.handReach) {
+			result["handReach"].push_back({ { "physicalHand", hand.physicalLeft ? "left" : "right" },
+				{ "secondary", hand.secondary }, { "filteredSlot", hand.filteredSlot },
+				{ "canBeHolstered", hand.canBeHolstered }, { "sharedCandidate", hand.sharedCandidate },
+				{ "distanceGameUnits", hand.distanceGameUnits ? json(*hand.distanceGameUnits) : json(nullptr) },
+				{ "activationRadiusGameUnits", hand.activationRadiusGameUnits },
+				{ "activationRadiusAvailable", hand.activationRadiusGameUnits > 0 },
+				{ "armedSharedSlot", hand.armedSharedSlot },
+				{ "basis", "Filtered VRIK reach/CanBeHolstered and current first-person hand to third-person slot bone; sequential main-thread reads, no physics/contact or private weapon state" } });
+		}
 		result["inputHandednessBasis"] = "game bLeftHandedMode:VRInput; read on game thread, not configuration file";
 		return result;
 	}
