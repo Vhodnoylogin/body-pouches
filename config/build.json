@@ -10,7 +10,8 @@
     "docs": [
       "{root}/README.md",
       "{root}/README.ru.md",
-      "{root}\\contract\\DevBenchAPI.LICENSE.txt"
+      "{root}\\contract\\DevBenchAPI.LICENSE.txt",
+      "{root}\\contract\\OpenVR.LICENSE.txt"
     ],
     "downloadsRoot": "D:/Skyrim VR Modding/MO2/ModOrganizer/Skyrim VR/downloads",
     "sevenZip": "C:/Program Files/7-Zip/7z.exe",

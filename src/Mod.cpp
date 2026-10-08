@@ -486,7 +486,7 @@ namespace BodyPouches
 			const auto button = ready ? VR::ReadControllerButton(left,
 				_vrik.GetSetting("useTriggersInstead") > .5) : VR::ControllerButton{};
 			const auto edge = _sharedButtons[hand].Sample(button.available, button.context, button.down);
-			if (!button.available || edge == Core::ButtonEdges::Edge::Up) { SharedButton(left, false); }
+			if (edge == Core::ButtonEdges::Edge::Reset || edge == Core::ButtonEdges::Edge::Up) { SharedButton(left, false); }
 			else if (edge == Core::ButtonEdges::Edge::Down) { SharedButton(left, true); }
 		}
 	}
