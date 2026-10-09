@@ -4,6 +4,7 @@
 #include "vr/Handshake.h"
 
 #include <array>
+#include <cmath>
 #include <format>
 
 namespace BodyPouches::VR
@@ -85,6 +86,16 @@ namespace BodyPouches::VR
 			static_cast<float>(GetSetting(std::format("posY{}", a_slot).c_str())),
 			static_cast<float>(GetSetting(std::format("posZ{}", a_slot).c_str())),
 		};
+	}
+
+	std::optional<RE::NiPoint3> VrikLink::CurrentHandOffset()
+	{
+		if (!Ready()) { return std::nullopt; }
+		const auto offset = _api->getCameraOffsettingAmount();
+		if (!std::isfinite(offset.x) || !std::isfinite(offset.y) || !std::isfinite(offset.z)) {
+			return std::nullopt;
+		}
+		return RE::NiPoint3{ offset.x, offset.y, offset.z };
 	}
 
 	double VrikLink::GetSetting(const char* a_name)

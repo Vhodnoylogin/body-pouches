@@ -58,6 +58,25 @@ namespace BodyPouches::Game
 		return bone->previousWorld;
 	}
 
+	RE::NiAVObject* Body::Hand(bool a_isLeft, const char** a_source)
+	{
+		if (a_source) { *a_source = nullptr; }
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		auto* root = player != nullptr ? player->Get3D(true) : nullptr;
+		if (!root) { return nullptr; }
+		if (const auto* nodes = player->GetVRNodeData()) {
+			auto* hand = a_isLeft ? nodes->NPCLHnd.get() : nodes->NPCRHnd.get();
+			if (hand) {
+				if (a_source) { *a_source = a_isLeft ? "VRNodeData.NPCLHnd" : "VRNodeData.NPCRHnd"; }
+				return hand;
+			}
+		}
+		const auto* name = a_isLeft ? "NPC L Hand [LHnd]" : "NPC R Hand [RHnd]";
+		auto* hand = root->GetObjectByName(name);
+		if (hand && a_source) { *a_source = name; }
+		return hand;
+	}
+
 	RE::NiPoint3 Body::ToSlot(const RE::NiTransform& a_bone, const RE::NiPoint3& a_world)
 	{
 		const float scale = a_bone.scale != 0.0f ? a_bone.scale : 1.0f;

@@ -41,11 +41,15 @@ namespace RE
             return it == children.end() ? nullptr : it->second;
         }
     };
+    struct NodePointer { NiAVObject* value{}; NiAVObject* get() const { return value; } };
+    struct VR_NODE_DATA { NodePointer NPCLHnd, NPCRHnd; };
     struct PlayerCharacter
     {
         static inline PlayerCharacter* instance{};
         NiAVObject* firstPerson{};
         NiAVObject* thirdPerson{};
+        VR_NODE_DATA* vrNodes{};
+        const VR_NODE_DATA* GetVRNodeData() const { return vrNodes; }
         static PlayerCharacter* GetSingleton() { return instance; }
         NiAVObject* Get3D(bool first) { return first ? firstPerson : thirdPerson; }
     };

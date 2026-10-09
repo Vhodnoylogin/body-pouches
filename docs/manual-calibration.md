@@ -8,10 +8,28 @@ actually moved the bottle right. Before 0.1.18, Body Pouches read NiAVObject+0x7
 (`world`); VRIK updates and places slots using +0xB0 (`previousWorld` in CommonLib,
 `m_oldWorldTransform` in SKSEVR). Old logged axes/distances cannot justify that
 offset or serve as native slot measurements. 0.1.18 reads the live VRIK field.
-Hand measurements now use the first-person wrist, with the node explicitly named.
-They omit VRIK's private headset bobbing/smoothing correction. Per-drop geometry
-is diagnostic only: its unadjusted distance and base radius do not override native
-selection, haptic hysteresis, hand policy or neighboring holster priority.
+0.1.18 measurements used an unadjusted recursively found first-person wrist.
+The earlier statement that VRIK's correction was private/unavailable was wrong:
+the public getCameraOffsettingAmount() exposes the CURRENT update correction.
+0.1.19 prioritizes the dedicated physical-hand VR node, falling back only to the
+first-person wrist. Shared reach and calibration measurements add the CURRENT
+offset; getFinalCameraOffsettingAmount() is for the NEXT update and is not used.
+Draw spawning retains the raw hand position. Release diagnostics record both
+raw and adjusted hands, cache/recursive node identity and object scene/reference
+positions. They do not override native exclusive selection, haptic hysteresis,
+hand policy or neighboring holster priority.
+HIGGS temporarily adjusts the cached hand while invoking its dropped callback.
+Pre-phase coordinates are observed node world, not an unadjusted wrist, and do
+not receive another offset in diagnostics. Raw/adjusted comparison is post-only.
+Queued calibration measurements are current reads, not an atomic frame snapshot.
+
+The 0.1.18 partial manual report contains ten HIGGS-confirmed draws and three
+native slot-0 releases, including a left return. The left raw wrist was 16.908
+units from the slot centre and the reference position 10.770 units away, against
+base radius 10. Source integration corrections alone cannot establish that this
+exclusive native miss is solved. Improved left draw after selfie mode is owner
+observation, not proven causation; repeat both-hand trials before/after/off-again
+with exact transition times and unchanged slot configuration.
 
 The owner now requests lowering without rotation. Preserve the accepted rotation
 exactly. Roll back the erroneous +16 X separately from a provisional negative-Z

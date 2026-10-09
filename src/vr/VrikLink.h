@@ -5,6 +5,7 @@
 #include <RE/Skyrim.h>
 
 #include <array>
+#include <optional>
 
 namespace BodyPouches::VR
 {
@@ -67,6 +68,8 @@ namespace BodyPouches::VR
 		// Where VRIK has the slot: posXN, posYN and posZN, an offset in the axes of the
 		// slot's bone (game/Body.h). As VRIK read them when the game started.
 		[[nodiscard]] RE::NiPoint3 SlotPosition(int a_slot);
+		// Current correction used by VRIK's same-update reach; Final is next-frame.
+		[[nodiscard]] std::optional<RE::NiPoint3> CurrentHandOffset();
 
 		// VRIK's own settings, the ones that live in vrikslots.ini and vrik.ini.
 		//

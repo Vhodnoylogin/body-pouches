@@ -17,6 +17,14 @@ for draw placement/measurement, and logs bounded per-release geometry before and
 after VRIK. These corrections require game verification; they do not establish
 that every native left-hand miss is fixed. It retains opt-in task/callback diagnostics. See
 [native state](docs/native-state.md) and [manual slot calibration](docs/manual-calibration.md).
+Candidate 0.1.19 selects dedicated physical-hand VR nodes before recursive wrist
+lookup and uses the CURRENT public VRIK camera offset for shared reach and
+calibration measurements. Draw placement stays raw. Bounded release diagnostics
+record node identity, adjusted wrist and object scene/reference positions.
+The partial 0.1.18 session confirmed ten acquisitions but retained a missed left
+return; improved draw after selfie mode is an observation requiring repeatable
+comparison. Exclusive selection and radius remain owned by VRIK. These changes
+do not establish left-hand reliability or release acceptance.
 Version 0.2.0 is reserved for a release-ready build.
 
 Russian: [README.ru.md](README.ru.md).

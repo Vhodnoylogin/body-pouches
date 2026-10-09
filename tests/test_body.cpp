@@ -3,6 +3,51 @@
 
 using BodyPouches::Game::Body;
 
+TEST(hand_source_matches_physical_cached_nodes_and_live_replacement)
+{
+    RE::NiAVObject root, namedLeft, namedRight, cachedLeft, cachedRight, replacement;
+    root.children["NPC L Hand [LHnd]"] = &namedLeft;
+    root.children["NPC R Hand [RHnd]"] = &namedRight;
+    RE::VR_NODE_DATA nodes{{&cachedLeft}, {&cachedRight}};
+    RE::PlayerCharacter player;
+    player.firstPerson = &root;
+    player.vrNodes = &nodes;
+    RE::PlayerCharacter::instance = &player;
+    const char* source = nullptr;
+    CHECK(Body::Hand(true, &source) == &cachedLeft);
+    CHECK_EQ(std::string(source), std::string("VRNodeData.NPCLHnd"));
+    CHECK(Body::Hand(false) == &cachedRight);
+    nodes.NPCLHnd.value = &replacement;
+    CHECK(Body::Hand(true) == &replacement);
+    nodes.NPCLHnd.value = nullptr;
+    CHECK(Body::Hand(true) == &namedLeft);
+    player.vrNodes = nullptr;
+    CHECK(Body::Hand(false) == &namedRight);
+    RE::PlayerCharacter::instance = nullptr;
+}
+
+TEST(hand_source_refuses_missing_first_person_and_controller_or_finger_substitutes)
+{
+    RE::PlayerCharacter::instance = nullptr;
+    CHECK(Body::Hand(true) == nullptr);
+    RE::NiAVObject root, wand, finger;
+    root.children["LeftWandNode"] = &wand;
+    root.children["NPC L Finger02 [LF02]"] = &finger;
+    RE::VR_NODE_DATA nodes{{&wand}, {&finger}};
+    RE::PlayerCharacter player;
+    player.thirdPerson = &root;
+    player.vrNodes = &nodes;
+    RE::PlayerCharacter::instance = &player;
+    CHECK(Body::Hand(true) == nullptr);
+    CHECK(Body::Hand(false) == nullptr);
+    player.firstPerson = &root;
+    player.vrNodes = nullptr;
+    const char* source = "stale";
+    CHECK(Body::Hand(true, &source) == nullptr);
+    CHECK(source == nullptr);
+    RE::PlayerCharacter::instance = nullptr;
+}
+
 TEST(slot_geometry_uses_live_vrik_transform_not_engine_world)
 {
     RE::NiAVObject root, bone;

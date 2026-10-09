@@ -32,10 +32,6 @@ namespace BodyPouches
 			return duration_cast<milliseconds>(steady_clock::now() - start).count();
 		}
 
-		// First-person wrist is the source VRIK uses for hand reach. Alternative
-		// nodes are confined to that same skeleton and named in diagnostics.
-		constexpr std::array kLeftNodes{ "NPC L Hand [LHnd]", "LeftWandNode", "NPC L Finger02 [LF02]" };
-		constexpr std::array kRightNodes{ "NPC R Hand [RHnd]", "RightWandNode", "NPC R Finger02 [RF02]" };
 
 		// How often the pouch is asked what it should show. It costs a walk of the
 		// inventory; a bottle drawn or put away asks at once, so this only has to catch
@@ -448,13 +444,11 @@ namespace BodyPouches
 		if (!std::isfinite(allowedHand) || (allowedHand != 0 && allowedHand != 1 && allowedHand != 2) ||
 			(a_isLeft ? allowedHand == 2 : allowedHand == 1)) { return fail("hand_policy"); }
 		const auto bone = Game::Body::Bone(a_slot);
-		auto* player = RE::PlayerCharacter::GetSingleton();
-		auto* root = player->Get3D(true);
-		auto* hand = root->GetObjectByName(a_isLeft ? "NPC L Hand [LHnd]" : "NPC R Hand [RHnd]");
+		RE::NiPoint3 hand;
 		if (!bone || !std::isfinite(bone->scale) || bone->scale <= 0) { return fail("slot_bone_unavailable"); }
-		if (hand == nullptr) { return fail("hand_node_unavailable"); }
+		if (!ReachHandPosition(a_isLeft, hand)) { return fail("hand_pose_unavailable"); }
 		const auto centre = Game::Body::ToWorld(*bone, _vrik.SlotPosition(a_slot));
-		const double distance = hand->world.translate.GetDistance(centre);
+		const double distance = hand.GetDistance(centre);
 		if (!std::isfinite(distance) || distance < 0) { return fail("distance_nonfinite"); }
 		if (a_reason) { *a_reason = "measured"; }
 		return distance;
@@ -700,8 +694,8 @@ namespace BodyPouches
 	void Mod::Measure(bool a_isLeft)
 	{
 		RE::NiPoint3 hand;
-		const char*  node = HandAt(a_isLeft, hand);
-		if (node == nullptr) {
+		const char* node = nullptr;
+		if (!ReachHandPosition(a_isLeft, hand, &node)) {
 			return;
 		}
 
@@ -735,19 +729,21 @@ namespace BodyPouches
 
 	const char* Mod::HandAt(bool a_isLeft, RE::NiPoint3& a_out)
 	{
-		auto* player = RE::PlayerCharacter::GetSingleton();
-		auto* root = player != nullptr ? player->Get3D(true) : nullptr;
-		if (root == nullptr) {
-			return nullptr;
-		}
+		const char* source = nullptr;
+		auto* node = Game::Body::Hand(a_isLeft, &source);
+		if (!node) { return nullptr; }
+		a_out = node->world.translate;
+		return std::isfinite(a_out.x) && std::isfinite(a_out.y) && std::isfinite(a_out.z) ? source : nullptr;
+	}
 
-		for (const char* name : (a_isLeft ? std::span<const char* const>(kLeftNodes) : std::span<const char* const>(kRightNodes))) {
-			if (auto* node = root->GetObjectByName(name); node != nullptr) {
-				a_out = node->world.translate;
-				return name;
-			}
-		}
-		return nullptr;
+	bool Mod::ReachHandPosition(bool a_isLeft, RE::NiPoint3& a_out, const char** a_source)
+	{
+		const auto* source = HandAt(a_isLeft, a_out);
+		const auto offset = _vrik.CurrentHandOffset();
+		if (!source || !offset) { return false; }
+		a_out = a_out + *offset;
+		if (a_source) { *a_source = source; }
+		return std::isfinite(a_out.x) && std::isfinite(a_out.y) && std::isfinite(a_out.z);
 	}
 
 	void Mod::NoteDropGeometry(bool a_isLeft, RE::TESObjectREFR* a_object,
@@ -762,6 +758,24 @@ namespace BodyPouches
 			return;
 		}
 		const auto ref = a_object->GetPosition();
+		// Bounded release diagnostics; object position never grants pickup.
+		const auto offset = _vrik.CurrentHandOffset();
+		auto* selected = Game::Body::Hand(a_isLeft);
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		auto* first = player ? player->Get3D(true) : nullptr;
+		auto* named = first ? first->GetObjectByName(a_isLeft ? "NPC L Hand [LHnd]" : "NPC R Hand [RHnd]") : nullptr;
+		// HIGGS temporarily offsets cached hands while invoking its drop callback.
+		// Only the post-VRIK phase has the unmodified node needed for this sum.
+		if (offset && std::string_view(a_phase) == "post_vrik_same_update") {
+			const auto adjusted = hand + *offset;
+			Loc::Info(Keys::kHandCoordinates, HandName(a_isLeft), a_phase, a_serial, node,
+				reinterpret_cast<std::uintptr_t>(selected), reinterpret_cast<std::uintptr_t>(named), selected == named,
+				hand.x, hand.y, hand.z, offset->x, offset->y, offset->z, adjusted.x, adjusted.y, adjusted.z);
+		}
+		if (const auto* object3D = a_object->Get3D()) {
+			const auto pos = object3D->world.translate;
+			Loc::Info(Keys::kReleaseObjectCoordinates, a_phase, a_serial, pos.x, pos.y, pos.z, ref.x, ref.y, ref.z);
+		}
 		for (const auto& setting : _settings.pouches) {
 			const auto bone = Game::Body::Bone(setting.slot);
 			if (!bone) {

@@ -106,8 +106,10 @@ namespace BodyPouches::Keys
 	inline constexpr auto kSharedDraw = "shared.withdrawal";
 	inline constexpr auto kSharedDrop = "shared.drop";
 	inline constexpr auto kDropReachProbe = "drop.reach_probe";
-	inline constexpr auto kDropGeometry = "drop.geometry";
+	inline constexpr auto kDropGeometry = "drop.geometry_phase_aware";
 	inline constexpr auto kDropGeometryMissing = "drop.geometry_unavailable";
+	inline constexpr auto kHandCoordinates = "hand.coordinate_sources";
+	inline constexpr auto kReleaseObjectCoordinates = "drop.object_coordinates";
 	inline constexpr auto kDropSharedProbe = "drop.shared_probe";
 	inline constexpr auto kDropGuard = "drop.guard";
 	inline constexpr auto kDropRelease = "drop.release_event";

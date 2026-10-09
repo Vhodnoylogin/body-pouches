@@ -158,6 +158,7 @@ namespace BodyPouches
 		// Where a hand is in the world, and the name of the node that said so; nullptr
 		// when the hand has no node at all.
 		[[nodiscard]] static const char* HandAt(bool a_isLeft, RE::NiPoint3& a_out);
+		[[nodiscard]] bool ReachHandPosition(bool a_isLeft, RE::NiPoint3& a_out, const char** a_source = nullptr);
 
 		// Where to put a bottle so that a hand can close around it. Says which node.
 		[[nodiscard]] static bool HandPosition(bool a_isLeft, RE::NiPoint3& a_out);
