@@ -108,7 +108,7 @@ namespace BodyPouches
 		[[nodiscard]] int SharedCandidate(bool a_isLeft);
 		[[nodiscard]] bool SharedDrawAllowed(bool a_isLeft);
 		void SharedButton(bool a_isLeft, bool a_down);
-		void PollSharedButtons();
+		[[nodiscard]] std::uint8_t PollSharedButtons();
 		void ResolveSharedPresses();
 		void UpdateSharedWithdrawals();
 		bool HandleHolsterAttempt(int a_slot, bool a_secondaryHand, bool a_handOccupied);

@@ -106,7 +106,9 @@ namespace BodyPouches
 				{ Keys::kSlotWhere, "slot {0} hangs on {1} at posX = {2:.3f}, posY = {3:.3f}, posZ = {4:.3f}: {5:.1f} units above the feet and {6:.1f} below the head bone (bone scale {7:.3f})" },
 				{ Keys::kBoneAxes, "the axes of {0} point, in the world: X ({1:.2f}, {2:.2f}, {3:.2f}), Y ({4:.2f}, {5:.2f}, {6:.2f}), Z ({7:.2f}, {8:.2f}, {9:.2f})" },
 				{ Keys::kFacing, "the player faces ({0:.2f}, {1:.2f}) on the ground, to read those axes against" },
-				{ Keys::kSqueezeMeasured, "the {0} hand squeezed at slot {1}'s posX = {2:.3f}, posY = {3:.3f}, posZ = {4:.3f}, {5:.1f} units from where the slot is; the hand is {6:.1f} and the slot {7:.1f} units above the feet (node {8})" },
+				{ Keys::kSqueezeMeasured, "the {0} hand squeezed at slot {1}'s posX = {2:.3f}, posY = {3:.3f}, posZ = {4:.3f}, {5:.1f} units from where the slot is; the hand is {6:.1f} and the slot {7:.1f} units above the feet (node {8}); CURRENT_adjusted, phase=post_vrik_same_update, update={9}, generation={10}, native_slot={11}; diagnostic only" },
+				{ Keys::kArtGeometry, "picture geometry: slot={0}, update={1}, generation={2}, root={3:X}, parent={4}; root_0xB0_minus_slot_bone_axes=({5:.3f},{6:.3f},{7:.3f}), bound_centre_minus_slot_bone_axes=({8:.3f},{9:.3f},{10:.3f}), bound_radius={11:.3f}; root_world=({12:.3f},{13:.3f},{14:.3f}), root_0xB0=({15:.3f},{16:.3f},{17:.3f}), local_scale={18:.3f}; bounds are not collision surfaces or neck landmarks" },
+				{ Keys::kArtGeometryMissing, "picture geometry unavailable: slot={0}, update={1}, reason={2}" },
 
 				{ Keys::kItemNotFound, "{0}|{1:08X} is not in this load order" },
 				{ Keys::kHandNotFound, "the {0} hand has no node to put a bottle at" },

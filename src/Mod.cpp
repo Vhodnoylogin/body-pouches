@@ -149,12 +149,16 @@ namespace BodyPouches
 		}
 
 		mod.ResolvePendingReleases();
-		mod.PollSharedButtons();
+		const auto measureHands = mod.PollSharedButtons();
 		mod.ResolveSharedPresses();
 		mod._inHiggsUpdate = false;
 		mod.NoteReach();
 		mod.UpdateSharedWithdrawals();
 		mod.RefreshDisplay();
+		// Diagnostics follow gameplay decisions so a scan/log flush cannot expire
+		// the shared press before its timeout check in this callback.
+		if (measureHands & 1) { mod.Measure(true); }
+		if (measureHands & 2) { mod.Measure(false); }
 	}
 
 	Diagnostics::State Mod::ReadState()
@@ -482,8 +486,9 @@ namespace BodyPouches
 			_vrik.SlotInReach(IsSecondaryHand(a_isLeft)) == 0;
 	}
 
-	void Mod::PollSharedButtons()
+	std::uint8_t Mod::PollSharedButtons()
 	{
+		std::uint8_t measureHands = 0;
 		const bool ready = SharedWorldReady();
 		for (const bool left : { true, false }) {
 			const int hand = left ? 0 : 1;
@@ -491,8 +496,14 @@ namespace BodyPouches
 				_vrik.GetSetting("useTriggersInstead") > .5) : VR::ControllerButton{};
 			const auto edge = _sharedButtons[hand].Sample(button.available, button.context, button.down);
 			if (edge == Core::ButtonEdges::Edge::Reset || edge == Core::ButtonEdges::Edge::Up) { SharedButton(left, false); }
-			else if (edge == Core::ButtonEdges::Edge::Down) { SharedButton(left, true); }
+			else if (edge == Core::ButtonEdges::Edge::Down) {
+				SharedButton(left, true);
+				// Sample diagnostic geometry once on the real edge, in this completed
+				// VRIK/HIGGS update. Never read body transforms from a queued input task.
+				if (_watchingInput && !_higgs.IsHolding(left)) { measureHands |= left ? 1 : 2; }
+			}
 		}
+		return measureHands;
 	}
 
 	void Mod::SharedButton(bool a_isLeft, bool a_down)
@@ -712,7 +723,25 @@ namespace BodyPouches
 			const auto here = Game::Body::ToSlot(*bone, hand);
 			const auto centre = Game::Body::ToWorld(*bone, _vrik.SlotPosition(setting.slot));
 			Loc::Info(Keys::kSqueezeMeasured, HandName(a_isLeft), setting.slot, here.x, here.y, here.z,
-				hand.GetDistance(centre), hand.z - feet, centre.z - feet, node);
+				hand.GetDistance(centre), hand.z - feet, centre.z - feet, node,
+				_higgsUpdate, _worldGeneration, _vrik.SlotInReach(IsSecondaryHand(a_isLeft)));
+			if (setting.slot == _picture.Slot()) {
+				if (!_vrik.IsDisplayed(setting.slot)) {
+					Loc::Info(Keys::kArtGeometryMissing, setting.slot, _higgsUpdate, "art_not_displayed");
+					continue;
+				}
+				std::string_view reason;
+				const auto geometry = _picture.ReadGeometry(&reason);
+				if (geometry) {
+					const auto root = Game::Body::ToSlot(*bone, geometry->previousWorld.translate) - _vrik.SlotPosition(setting.slot);
+					const auto bound = Game::Body::ToSlot(*bone, geometry->bound.center) - _vrik.SlotPosition(setting.slot);
+					Loc::Info(Keys::kArtGeometry, setting.slot, _higgsUpdate, _worldGeneration, geometry->root,
+						geometry->parentName, root.x, root.y, root.z, bound.x, bound.y, bound.z,
+						geometry->bound.radius, geometry->world.translate.x, geometry->world.translate.y,
+						geometry->world.translate.z, geometry->previousWorld.translate.x, geometry->previousWorld.translate.y,
+						geometry->previousWorld.translate.z, geometry->local.scale);
+				} else { Loc::Info(Keys::kArtGeometryMissing, setting.slot, _higgsUpdate, reason); }
+			}
 		}
 	}
 
@@ -1046,14 +1075,8 @@ namespace BodyPouches
 				Loc::Debug(Keys::kButtonElsewhere, HandName(isLeft), id);
 			}
 
-			// The grip of an empty hand is measured wherever the hand is: the place the
-			// player reaches for is exactly the place the pouch is not yet. Out of the
-			// input handler and onto the game queue, like everything that reads the body.
-			if (id == kGripButton && !mod._higgs.IsHolding(isLeft)) {
-				if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
-					tasks->AddTask([isLeft]() { GetSingleton().Measure(isLeft); });
-				}
-			}
+			// Geometry is measured from original runtime edges in OnFrame, not here:
+			// input events/tasks can observe transient VRIK bone transforms.
 		}
 
 		return RE::BSEventNotifyControl::kContinue;

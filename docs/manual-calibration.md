@@ -21,7 +21,22 @@ hand policy or neighboring holster priority.
 HIGGS temporarily adjusts the cached hand while invoking its dropped callback.
 Pre-phase coordinates are observed node world, not an unadjusted wrist, and do
 not receive another offset in diagnostics. Raw/adjusted comparison is post-only.
-Queued calibration measurements are current reads, not an atomic frame snapshot.
+0.1.19 queued calibration measurements were current reads, not an atomic frame
+snapshot. The last manual packet contains202invalid queued samples exceeding
+1000units at19:53:14; they cannot establish grip geometry. Candidate0.1.20 samples
+one observed original-runtime press edge post-VRIK/HIGGS instead. It logs the
+current update/generation/native selection and copies geometry from the exact
+active player art effect. Missing/ambiguous geometry stays unavailable.
+
+VRIK aligns the displayed art ROOT to the slot origin, without bounds-based
+centering; children retain original NIF transforms. The suspended slot's None
+distance class is wrist-to-origin, not fingers-to-mesh. Display scale uses handSize,
+whereas base activation distance uses slotActivationDistance * bodySize. Thus a
+visible neck can lie away from the native detection centre without a wrong root
+translation. Root/world-bound offsets are descriptive, not neck/collision proof.
+The owner's perceived right/inward shift remains unmeasured; no arbitrary offset
+or radius change follows. Compare actual neck/middle/base attempts by both hands
+with time-aligned images and post-phase native/geometry samples before tuning.
 
 The 0.1.18 partial manual report contains ten HIGGS-confirmed draws and three
 native slot-0 releases, including a left return. The left raw wrist was 16.908

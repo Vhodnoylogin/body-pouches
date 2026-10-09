@@ -96,7 +96,9 @@ namespace BodyPouches::Keys
 	inline constexpr auto kSlotWhere = "body.slot_where";
 	inline constexpr auto kBoneAxes = "body.bone_axes";
 	inline constexpr auto kFacing = "body.facing";
-	inline constexpr auto kSqueezeMeasured = "body.squeeze";
+	inline constexpr auto kSqueezeMeasured = "body.squeeze_post_vrik";
+	inline constexpr auto kArtGeometry = "picture.geometry";
+	inline constexpr auto kArtGeometryMissing = "picture.geometry_unavailable";
 
 	// Things that can go wrong at the boundary with the game
 	inline constexpr auto kItemNotFound = "item.not_found";

@@ -25,6 +25,13 @@ The partial 0.1.18 session confirmed ten acquisitions but retained a missed left
 return; improved draw after selfie mode is an observation requiring repeatable
 comparison. Exclusive selection and radius remain owned by VRIK. These changes
 do not establish left-hand reliability or release acceptance.
+The next diagnostic candidate, 0.1.20, measures one real controller press after
+VRIK/HIGGS rather than reading transforms from queued input tasks. It compares
+the exact active player art root/bound with the slot origin; bounds do not identify
+the neck or a collision surface. The owner was broadly satisfied with 0.1.19,
+with a remaining difficulty drawing near the neck. VRIK tests wrist distance to
+the suspended slot origin, while art placement preserves model-internal offsets.
+No radius, slot placement or drawing rule is changed on that subjective finding.
 Version 0.2.0 is reserved for a release-ready build.
 
 Russian: [README.ru.md](README.ru.md).
