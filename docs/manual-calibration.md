@@ -3,6 +3,20 @@
 The pouch uses the position and rotation of its VRIK slot, including an existing
 weapon's rotation. Slot 13 is attached to `NPC Spine1 [Spn1]`, not the pelvis.
 An arbitrary bone-space offset or 90-degree rotation is not a verified fit.
+The 2026-10-09 owner screenshot confirmed that the attempted +16 X lowering
+actually moved the bottle right. Before 0.1.18, Body Pouches read NiAVObject+0x7C
+(`world`); VRIK updates and places slots using +0xB0 (`previousWorld` in CommonLib,
+`m_oldWorldTransform` in SKSEVR). Old logged axes/distances cannot justify that
+offset or serve as native slot measurements. 0.1.18 reads the live VRIK field.
+Hand measurements now use the first-person wrist, with the node explicitly named.
+They omit VRIK's private headset bobbing/smoothing correction. Per-drop geometry
+is diagnostic only: its unadjusted distance and base radius do not override native
+selection, haptic hysteresis, hand policy or neighboring holster priority.
+
+The owner now requests lowering without rotation. Preserve the accepted rotation
+exactly. Roll back the erroneous +16 X separately from a provisional negative-Z
+trial; accept downward movement only from actual images and corrected live axes.
+Do not present a proposed local offset as verified anatomical placement.
 The owner reported the installed 0.1.16 bottle looked attached base-first to the
 body and asked for a lower belt/hip placement. There is no screenshot of that run.
 
@@ -12,8 +26,8 @@ During a separately authorized headset session:
    pouch's actual slot and prevent another nearby holster from being mistaken for it.
 2. Use VRIK's holster adjustment mode with an empty hand. With holsters unlocked,
    grip the pouch slot and hold for the native reposition pulse (about two seconds).
-   Move the slot toward the owner's chosen lower belt/hip position and rotate the
-   wrist until the bottle's neck points upward beside the body. Release to save.
+   Move the slot toward the owner's chosen lower belt/hip position while preserving
+   the accepted bottle rotation. Release to save.
    Do this while looking at the actual bottle; no fixed rotation matrix is prescribed.
 3. Respect VRIK's movement limit (35 game units from the slot bone). If the desired
    lower location exceeds it, stop and choose a suitable lower slot in a separately

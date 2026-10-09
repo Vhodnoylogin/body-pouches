@@ -39,3 +39,12 @@ if(MSVC)
     target_compile_options(bodypouches_form_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
 endif()
 add_test(NAME forms COMMAND bodypouches_form_tests)
+
+add_executable(bodypouches_body_tests main.cpp test_body.cpp ../src/game/Body.cpp)
+target_include_directories(bodypouches_body_tests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/body-fixture" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(bodypouches_body_tests PRIVATE BodyPouchesCore)
+if(MSVC)
+    target_compile_options(bodypouches_body_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+endif()
+add_test(NAME body COMMAND bodypouches_body_tests)

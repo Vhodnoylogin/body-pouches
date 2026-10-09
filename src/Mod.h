@@ -147,6 +147,8 @@ namespace BodyPouches
 		// Where this hand is in each pouch's own numbers: the posX, posY and posZ that
 		// would put the pouch right there, and how far that is from where it is now.
 		void Measure(bool a_isLeft);
+		void NoteDropGeometry(bool a_isLeft, RE::TESObjectREFR* a_object,
+			const char* a_phase, std::uint64_t a_serial);
 
 		// VRIK says "the secondary hand"; HIGGS and the game say "the left hand". The
 		// two only agree for a right-handed player, so the translation is made once,

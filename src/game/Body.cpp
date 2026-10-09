@@ -52,7 +52,10 @@ namespace BodyPouches::Game
 		if (bone == nullptr) {
 			return std::nullopt;
 		}
-		return bone->world;
+		// VRIK updates and uses NiAVObject+0xB0 (m_oldWorldTransform) for slots.
+		// CommonLib names this previousWorld; +0x7C/world is a different pose.
+		// Read the live field, never a cached transform from an earlier callback.
+		return bone->previousWorld;
 	}
 
 	RE::NiPoint3 Body::ToSlot(const RE::NiTransform& a_bone, const RE::NiPoint3& a_world)

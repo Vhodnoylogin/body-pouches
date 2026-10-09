@@ -8,10 +8,14 @@ all 103; a separate focused collection run passed all 214 assertions and collect
 the 73 previously omitted observations. Continuous native ownership, genuine
 task/callback contention, first render-frame behavior, complete input consumption
 and ordinary weapon registration remain separate unconfirmed release criteria.
-Candidate 0.1.17 resolves exclusive as well as shared potion releases after VRIK
-in the release's own HIGGS update, instead of accepting the previous native hover.
-Its game verification is pending; the installed 0.1.16 manual observations remain
-separate. It retains 0.1.16's opt-in task/callback diagnostics. See
+Build 0.1.17 resolves exclusive as well as shared potion releases after VRIK
+in the release's own HIGGS update. The owner's 2026-10-09 manual session found
+right-hand returns working but difficult left draws and missed left returns;
+the attempted lowering moved the bottle right. Candidate 0.1.18 corrects the slot
+geometry to VRIK's live transform at NiAVObject+0xB0, uses first-person hand nodes
+for draw placement/measurement, and logs bounded per-release geometry before and
+after VRIK. These corrections require game verification; they do not establish
+that every native left-hand miss is fixed. It retains opt-in task/callback diagnostics. See
 [native state](docs/native-state.md) and [manual slot calibration](docs/manual-calibration.md).
 Version 0.2.0 is reserved for a release-ready build.
 

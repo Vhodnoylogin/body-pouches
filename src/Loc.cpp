@@ -57,6 +57,8 @@ namespace BodyPouches
 				{ Keys::kSharedDraw, "shared spatial withdrawal offers slot {0} to the {1} hand; native weapon hover offered none" },
 				{ Keys::kSharedDrop, "shared current-pose drop at slot {0}, {1} hand, distance {2:.3f} game units, radius {3:.3f} game units" },
 				{ Keys::kDropReachProbe, "release reach: {0} hand, filtered native slot {1}, chosen pouch {2}; phase={3}, no remembered reach" },
+				{ Keys::kDropGeometry, "release geometry: {0}, phase={1}, serial={2}, update={3}, generation={4}, slot={5}; first_person_unadjusted node={6} hand=({7:.3f},{8:.3f},{9:.3f}); VRIK_0xB0 centre=({10:.3f},{11:.3f},{12:.3f}), distance={13:.3f}, base_radius={14:.3f}; reference_position=({15:.3f},{16:.3f},{17:.3f}); native selection remains authoritative" },
+				{ Keys::kDropGeometryMissing, "release geometry unavailable: {0}, phase={1}, serial={2}, reason={3}" },
 				{ Keys::kDropSharedProbe, "release shared probe: {0} hand, slot {1}, distance {2:.3f} game units (available={3}), radius {4:.3f} game units, reason={5}, phase={6}; sequential reads, not contact proof" },
 				{ Keys::kDropGuard, "drop-time guard: working={0}, loading={1}, referenceAvailable={2}" },
 				{ Keys::kDropRelease, "pouch release event: {0} hand, handle {1}, HIGGS update {2}, world {3}; resolve only in this update after VRIK" },

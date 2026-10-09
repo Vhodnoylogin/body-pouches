@@ -32,11 +32,10 @@ namespace BodyPouches
 			return duration_cast<milliseconds>(steady_clock::now() - start).count();
 		}
 
-		// Where a bottle is put so that the hand can close on it. The first node that
-		// exists wins; the VR wand nodes are tried first because in VR they are where
-		// the controller actually is, and the skeleton hands follow them with a lag.
-		constexpr std::array kLeftNodes{ "LeftWandNode", "NPC L Hand [LHnd]", "NPC L Finger02 [LF02]" };
-		constexpr std::array kRightNodes{ "RightWandNode", "NPC R Hand [RHnd]", "NPC R Finger02 [RF02]" };
+		// First-person wrist is the source VRIK uses for hand reach. Alternative
+		// nodes are confined to that same skeleton and named in diagnostics.
+		constexpr std::array kLeftNodes{ "NPC L Hand [LHnd]", "LeftWandNode", "NPC L Finger02 [LF02]" };
+		constexpr std::array kRightNodes{ "NPC R Hand [RHnd]", "RightWandNode", "NPC R Finger02 [RF02]" };
 
 		// How often the pouch is asked what it should show. It costs a walk of the
 		// inventory; a bottle drawn or put away asks at once, so this only has to catch
@@ -363,6 +362,8 @@ namespace BodyPouches
 			// A different native holster keeps priority over the shared spatial path.
 			const int native = _vrik.SlotInReach(IsSecondaryHand(isLeft));
 			const int slot = PouchAt(isLeft, native);
+			const auto object = release.handle.get();
+			NoteDropGeometry(isLeft, object.get(), "post_vrik_same_update", release.serial);
 			Loc::Info(Keys::kDropResolved, HandName(isLeft), release.handle.native_handle(),
 				_higgsUpdate, _worldGeneration, slot);
 			if (slot != 0) {
@@ -735,7 +736,7 @@ namespace BodyPouches
 	const char* Mod::HandAt(bool a_isLeft, RE::NiPoint3& a_out)
 	{
 		auto* player = RE::PlayerCharacter::GetSingleton();
-		auto* root = player != nullptr ? player->Get3D() : nullptr;
+		auto* root = player != nullptr ? player->Get3D(true) : nullptr;
 		if (root == nullptr) {
 			return nullptr;
 		}
@@ -747,6 +748,32 @@ namespace BodyPouches
 			}
 		}
 		return nullptr;
+	}
+
+	void Mod::NoteDropGeometry(bool a_isLeft, RE::TESObjectREFR* a_object,
+		const char* a_phase, std::uint64_t a_serial)
+	{
+		std::string_view reason;
+		RE::NiPoint3 hand;
+		const auto* node = HandAt(a_isLeft, hand);
+		if (!SharedWorldReady(&reason) || node == nullptr || a_object == nullptr) {
+			Loc::Info(Keys::kDropGeometryMissing, HandName(a_isLeft), a_phase, a_serial,
+				node == nullptr ? "first_person_hand_missing" : (a_object == nullptr ? "reference_missing" : reason));
+			return;
+		}
+		const auto ref = a_object->GetPosition();
+		for (const auto& setting : _settings.pouches) {
+			const auto bone = Game::Body::Bone(setting.slot);
+			if (!bone) {
+				Loc::Info(Keys::kDropGeometryMissing, HandName(a_isLeft), a_phase, a_serial, "slot_bone_missing");
+				continue;
+			}
+			const auto centre = Game::Body::ToWorld(*bone, _vrik.SlotPosition(setting.slot));
+			Loc::Info(Keys::kDropGeometry, HandName(a_isLeft), a_phase, a_serial,
+				_higgsUpdate, _worldGeneration, setting.slot, node,
+				hand.x, hand.y, hand.z, centre.x, centre.y, centre.z,
+				hand.GetDistance(centre), SharedRadius(), ref.x, ref.y, ref.z);
+		}
 	}
 
 	bool Mod::HandPosition(bool a_isLeft, RE::NiPoint3& a_out)
@@ -1199,6 +1226,7 @@ namespace BodyPouches
 			auto& release = mod._pendingReleases[a_isLeft ? 0 : 1];
 			release.handle = reinterpret_cast<RE::TESObjectREFR*>(a_refr)->GetHandle();
 			release.serial = ++mod._dropSerial;
+			mod.NoteDropGeometry(a_isLeft, object, "pre_vrik_observation_only", release.serial);
 			release.event.Arm(mod._worldGeneration, mod._higgsUpdate);
 			mod._queuedDrops[release.handle.native_handle()] = release.serial;
 			Loc::Info(Keys::kDropRelease, HandName(a_isLeft), release.handle.native_handle(),
