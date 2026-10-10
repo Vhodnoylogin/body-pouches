@@ -3,6 +3,8 @@
 Potions within reach in Skyrim VR. Turn a VRIK body slot into a potion pouch:
 draw a bottle with either hand, drink it through HIGGS, or return it to the slot.
 No inventory menu, wheel or separate hotkey is needed for the pouch interaction.
+Release archives contain the runtime files and required license notices only;
+installation instructions are on the Nexus page and retained here in the source.
 
 Russian: [README.ru.md](README.ru.md).
 
@@ -62,3 +64,7 @@ cmake --build build-core --config Release
 cmake -S . -B build
 cmake --build build --config Release --target BodyPouches
 ```
+
+Release builds omit the DevBench inspection bridge. For development testing,
+configure with `-DBODYPOUCHES_WITH_DEVBENCH=ON`; that build includes the API glue
+and requires its license notice when distributed. The default is `OFF`.

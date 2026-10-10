@@ -22,6 +22,7 @@ set(CMAKE_SKIP_INSTALL_RULES ON)
 
 option(BODYPOUCHES_BUILD_PLUGIN "Build the SKSE plugin (needs CommonLibSSE-NG)" ON)
 option(BODYPOUCHES_BUILD_TESTS  "Build the checks of the core" ON)
+option(BODYPOUCHES_WITH_DEVBENCH "Include the development-only DevBench inspection bridge" OFF)
 
 # ------------------------------------------------------------------------ core
 # No dependencies by design. A new file under src/core is picked up by the next
@@ -113,12 +114,18 @@ file(GLOB_RECURSE BODYPOUCHES_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_
 file(GLOB_RECURSE BODYPOUCHES_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 list(REMOVE_ITEM BODYPOUCHES_SOURCES ${BODYPOUCHES_CORE_SOURCES})
 list(REMOVE_ITEM BODYPOUCHES_HEADERS ${BODYPOUCHES_CORE_HEADERS})
+if(NOT BODYPOUCHES_WITH_DEVBENCH)
+    list(REMOVE_ITEM BODYPOUCHES_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/diagnostics/Inspect.cpp")
+endif()
 
 add_library(BodyPouches SHARED
     ${BODYPOUCHES_SOURCES}
     ${BODYPOUCHES_HEADERS}
-    contract/DevBenchAPI.cpp
 )
+if(BODYPOUCHES_WITH_DEVBENCH)
+    target_sources(BodyPouches PRIVATE contract/DevBenchAPI.cpp)
+    target_compile_definitions(BodyPouches PRIVATE BODYPOUCHES_WITH_DEVBENCH=1)
+endif()
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${BODYPOUCHES_SOURCES} ${BODYPOUCHES_HEADERS})
 

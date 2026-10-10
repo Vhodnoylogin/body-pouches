@@ -8,12 +8,6 @@
     "plugin": "{root}/build/BodyPouches.esp",
     "pluginScript": "{root}/tools/make-esp.py",
     "docs": [
-      "{root}/README.md",
-      "{root}/README.ru.md",
-      "{root}/CHANGELOG.md",
-      "{root}/docs/quick-start.en.md",
-      "{root}/docs/quick-start.ru.md",
-      "{root}\\contract\\DevBenchAPI.LICENSE.txt",
       "{root}\\contract\\OpenVR.LICENSE.txt"
     ],
     "downloadsRoot": "D:/Skyrim VR Modding/MO2/ModOrganizer/Skyrim VR/downloads",

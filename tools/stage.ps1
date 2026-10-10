@@ -42,10 +42,21 @@ $plugin = Expand-Path $d.plugin
 if ($LASTEXITCODE -ne 0) { throw "the plugin could not be written: $plugin" }
 Copy-Item -LiteralPath $plugin -Destination $mod -Force
 
-foreach ($doc in $d.docs) {
+$packageNotices = @($d.docs)
+$cache = Join-Path (Split-Path -Parent (Split-Path -Parent $dll)) 'CMakeCache.txt'
+if (-not (Test-Path -LiteralPath $cache -PathType Leaf)) {
+    throw "missing build configuration: $cache"
+}
+$bridgeSetting = @(Select-String -LiteralPath $cache -Pattern '^BODYPOUCHES_WITH_DEVBENCH:BOOL=(ON|OFF)$')
+if ($bridgeSetting.Count -ne 1) { throw 'reconfigure the build before packaging: DevBench option is missing' }
+if ($bridgeSetting[0].Line.EndsWith('=ON')) {
+    $packageNotices += '{root}/contract/DevBenchAPI.LICENSE.txt'
+}
+foreach ($doc in $packageNotices) {
     $path = Expand-Path $doc
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "missing package document: $path" }
-    # Keep docs/ links usable in the installed readmes; license notices stay at root.
+    # The runtime archive carries required notices only. User instructions live
+    # on the Nexus page; source documentation remains in the repository.
     $fullPath = [IO.Path]::GetFullPath($path)
     $docsPrefix = [IO.Path]::GetFullPath((Join-Path $root 'docs')) + [IO.Path]::DirectorySeparatorChar
     $relative = if ($fullPath.StartsWith($docsPrefix, [StringComparison]::OrdinalIgnoreCase)) {
