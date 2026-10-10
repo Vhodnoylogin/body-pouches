@@ -28,6 +28,27 @@ This could make several visible additions practical: independently displayed pou
 
 The simpler mod would register its slot definitions, content rules and executors, publish previews, and react to confirmed results. Request correlation and invalidation would still exist, but their shared implementation would replace private reconstructions in each consumer. These are proposed changes; they do not describe additional features already shipped in Body Pouches 0.2.0.
 
+## Shields and 2H Weapons Unlocked with the shared services
+
+[Shields and 2H Weapons Unlocked — VR](https://www.nexusmods.com/skyrimspecialedition/mods/184001), by TheMachinaGod, allows shields and two-handed weapons in either hand. Its unconventional equipment uses substitute items, or proxies, and its own shoulder holsters. In the [original implementation](https://github.com/SamuelJohnBrown/Weapons-shields-unlocked-skyrim-VR-framework-/blob/7518a1879a78ca494e77cd4d60c76ca5cba77172/main.cpp), those holsters replace VRIK's two shoulder slots by disabling their item permissions; this disabling is skipped when FalseEdgeVR is present. The conflict concerns the shoulder holsters, not every VRIK slot.
+
+My experimental adaptation aims to retain the equipment feature while using VRIK's own zones, placement and display through its public ABI. The tested adaptation displays a sword on the back, draws it into the right hand and preserves it across save/load. However, an empty left hand receives no offer from the occupied shoulder slot. The interface also cannot explicitly address both a particular slot and a target physical hand. Adapting the proxy's type to satisfy equipment, holster and display rules therefore requires coordinating inventory, Papyrus, models and physical state through local workarounds.
+
+| What the original mod or experimental adaptation has to do | What shared services could provide |
+|---|---|
+| Original: create private shoulder zones and disable VRIK's shoulder holsters to avoid competing actions | VRIK: native slot bindings, shared placement and presentation, with content-provider action rights instead of disabling the player's holsters |
+| Adaptation: rely on weapon-type and hand filtering before receiving an occupied slot's action offer; the empty left hand is filtered out | VRIK: independent zone observations and provider-defined action offers, while preserving the player's explicit access restrictions |
+| Adaptation: fit drawing into VRIK's internal hand choice; the existing call cannot name both slot and destination hand | VRIK: an explicit slot-to-physical-hand request routed to the mod's equipment executor, with a confirmed result |
+| Adaptation: use proxy type for equipment, display and holster eligibility at once; changing it for one purpose affects the others | VRIK: separate content and presentation rules, distinguishing original item, proxy and displayed model |
+| Maintain original/proxy identity, instance properties, counts, restoration and drop handling while other systems observe inventory changes | A shared operation contract with instance identity, reservations and one authorized inventory executor; the mod retains property-transfer policy |
+| Reconcile the mod's records, VRIK's Papyrus content and the displayed model | VRIK: committed slot content and version, plus presentation readiness tied to that version |
+| Coordinate delayed tasks and later Papyrus checks that may observe an already changed proxy type | Executor contract: an immutable request, a legal execution phase and correlated accepted, committed and completed results |
+| Guard against a draw immediately following holstering while the same hand remains near the shoulder | HIGGS and VRIK: correlated input sequences and spatial offers that distinguish continuation of a gesture from a new action |
+| Reconstruct hand occupancy and equipment readiness from game equipment, HIGGS grip state and VRIK flags | HIGGS: distinct equipment/physical-possession/two-hand observations and confirmed grip or transfer results; VRIK: presentation readiness. Transfers reserve affected hands together and preserve the other hand's item |
+| Restore proxy/slot associations after loading and investigate undocumented meanings or call ordering | Providers: stable keys, lifecycle events and documented observations; CommonLib: verified engine operations. The mod retains its own saved state |
+
+The equipment mod still owns unconventional equip rules, proxy selection and preservation of instance properties. VRIK owns body zones, slot placement, committed content and display; HIGGS owns physical possession and coordinates input and hand resources. A valid equipment record alone does not prove a visible model, physical body or working collision. Shared results make those stages observable; they do not guarantee rollback after arbitrary gameplay side effects. PLANCK participates in physical hits involving NPCs and need not become a required inventory or holster executor. These are proposed services, not a completed port or guarantees of today's ABI.
+
 ## Climbing and harvesting
 
 [VR Climbing](https://www.nexusmods.com/skyrimspecialedition/mods/170321) manages its own temporary HIGGS restrictions so a grip on a wall does not also grab an item. It changes shared HIGGS settings while climbing and restores them afterward. In effect, it creates its own way to reserve hand interactions for its gameplay.
