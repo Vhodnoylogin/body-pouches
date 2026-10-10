@@ -409,18 +409,6 @@ These published mods were used as concrete requirements for ABI expressiveness. 
 
 These are proposed requirements derived from those consumers, not promises that their current binaries already implement this integration.
 
-## User priority and mod order
-
-The user should control which eligible action takes precedence. A grip beside a plant and a wall can mean harvesting, grabbing an item or starting a climb. The broker should expose priority for that context and explain the decision.
-
-Mod order can be one supported way to express that choice. One proposed route is compatibility-rule files sharing a path, so the user chooses the winning file through MO2/Vortex file priority. An explicitly enabled per-action setting can override that order. An optional adapter could import a chosen mod ordering into the priority list. DLL-only mods have no ESP whose position establishes this arbitration; the connection between user ordering and action selection must be implemented rather than assumed.
-
-For eligible new actions, the proposed resolution is an explicit user assignment for the context, then the selected user priority list, then a stable action ID for ties. A visible default profile handles missing custom rules. A consumer or callback registration timestamp cannot silently override the user's choice.
-
-The broker also issues provisional hold/multi-tap reservations under that priority. They have a bounded decision window and declared preemption rules. A recognizer cannot reserve first and make the preferred action ineligible on its own authority. Each input sequence pins a priority-rule version. Configuration changes apply to the next sequence or explicitly cancel the current one under a user-selected policy.
-
-Priority applies to **eligible new actions**. Existing possession and committed hand reservations are checked first: harvesting must not steal a hand already supporting a climb. Release or interruption is an explicit action. Reordering priority cannot duplicate a committed transfer. The user controls gameplay choice while ownership, object validity and exactly-once commitment remain enforced.
-
 ## Shared physical operation
 
 Each owned hand/weapon body has one final actuator, managed or explicitly delegated by HIGGS. Contact constraints, weight/impedance objectives and an accepted embedded attachment contribute to one physical recipe. They cannot be resolved by allowing each callback to overwrite the pose in turn. Havok still solves world contacts; PLANCK still controls NPC physical animation. A penetration provider owns wound and extraction policy while PLANCK validates the NPC attachment endpoint.
@@ -502,3 +490,15 @@ This includes function/data address definitions and resolution, typed object acc
 Start with the capabilities of the current CommonLib build. When an operation is missing, extend the library with a verified method: establish its signature, data layout, address for the supported game version and call behavior. A common operation should serve both the three frameworks and external mods, with an interface that encapsulates engine access details.
 
 On this foundation, HIGGS manages input and physical possession, VRIK manages the body and slots, and PLANCK manages NPC physics. CommonLib provides their shared technical tools; decisions about pouch contents, climbing, harvesting and hits belong to the owners of those mechanics. The two levels complement each other: common engine code in the library and coordinated gameplay interaction through the mods' APIs/ABIs.
+
+## User priority and mod order
+
+The user should control which eligible action takes precedence. A grip beside a plant and a wall can mean harvesting, grabbing an item or starting a climb. The broker should expose priority for that context and explain the decision.
+
+Mod order can be one supported way to express that choice. One proposed route is compatibility-rule files sharing a path, so the user chooses the winning file through MO2/Vortex file priority. An explicitly enabled per-action setting can override that order. An optional adapter could import a chosen mod ordering into the priority list. DLL-only mods have no ESP whose position establishes this arbitration; the connection between user ordering and action selection must be implemented rather than assumed.
+
+For eligible new actions, the proposed resolution is an explicit user assignment for the context, then the selected user priority list, then a stable action ID for ties. A visible default profile handles missing custom rules. A consumer or callback registration timestamp cannot silently override the user's choice.
+
+The broker also issues provisional hold/multi-tap reservations under that priority. They have a bounded decision window and declared preemption rules. A recognizer cannot reserve first and make the preferred action ineligible on its own authority. Each input sequence pins a priority-rule version. Configuration changes apply to the next sequence or explicitly cancel the current one under a user-selected policy.
+
+Priority applies to **eligible new actions**. Existing possession and committed hand reservations are checked first: harvesting must not steal a hand already supporting a climb. Release or interruption is an explicit action. Reordering priority cannot duplicate a committed transfer. The user controls gameplay choice while ownership, object validity and exactly-once commitment remain enforced.
