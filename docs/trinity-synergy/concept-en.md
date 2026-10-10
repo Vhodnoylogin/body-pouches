@@ -14,7 +14,7 @@ The intended benefit is concrete: a mod author can ask for a body zone, a physic
 | VRIK | Player body and final skeletal pose; body anchors, spatial hand interpretation, zones, persistent configurable slots and their presentation | Slot creation through API, equipment-bound slots and visuals, coherent pose and zone snapshots, zone transitions, eligible actions, content previews, named-hand requests and scoped reservations |
 | PLANCK | NPC physical animation and ragdoll lifecycle; its physical-hit interpretation and commitment | Actor/body/bone metadata, validated attachment endpoints, candidate/committed hit data, scoped interaction policies and lifecycle events |
 | External mod | Its gameplay feature and content policy | Pouch selection, unconventional equipment/proxies, handling gestures, weight response, penetration/extraction or parry rules, expressed through provider contracts |
-| CommonLib | Generic engine types, references, locks, math and verified scene/Havok wrappers | Technical building blocks for all providers; gameplay arbitration remains in runtime services owned by the mods |
+| CommonLib | Engine addresses and types, reusable technical operations and verified wrappers | A common implementation of engine access, geometry, scene and physics operations for the three frameworks and external mods |
 
 Input brokerage does not move every gesture into HIGGS. VRIK can recognize spatial gestures and a handling mod can recognize taps/holds. They use a common input stream and submit candidates; the broker resolves ownership before defaults act. Equally, forwarding an action result does not make HIGGS the authority for damage, pouch contents or every inventory operation. The result identifies its executor.
 
@@ -44,7 +44,7 @@ Status SubmitActionCandidate(ClientToken, const ActionCandidate*, RequestId* out
 
 The broker exposes the effective priority and the reason for its decision. A consumer can inspect these without acquiring the right to consume the same input again. Haptic requests enter one coordinated schedule.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace HIGGS {
@@ -64,7 +64,7 @@ Status RequestHaptic(ClientToken, const HapticRequest*, RequestId* outRequest);
 
 CopyHandState names physical left/right separately from dominant/off hand. An input or release observation identifies the sample used for its spatial decision: VRIK tests the corresponding probe and zone rather than combining an earlier drop with an arbitrary current pose. A post-update callback alone cannot guarantee this. Regrabbing, consuming, loading or losing tracking invalidates pending offers before execution.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace HIGGS {
@@ -80,7 +80,7 @@ Status CopyReleaseObservation(ClientToken, uint64_t releaseId, ReleaseObservatio
 
 Motion samples distinguish controller movement in VR tracking space from item movement in world space, and identify the tracking-to-world transform version. Locomotion, teleportation and recentering may change that transform without replacing the world or body. Contact snapshots carry source, object, point, normal, motion and body generations; contact with a plant or wall is distinct from an NPC hit.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace HIGGS {
@@ -98,7 +98,7 @@ Status CopyContactSnapshot(ClientToken, const ContactQuery*, ContactSnapshot*);
 
 Grab, release and transfer requests name the hand and report what actually happened. An inventory-to-hand transfer confirms inventory commitment and physical grip separately, including item reference, quantity and final disposition. It reserves source, destination and possession, preserves item instance data and uses one authorized inventory mutation path exactly once. If gripping fails after removal, the assigned executor applies the declared compensation. Retrying or updating a preview cannot create another item; arbitrary script side effects prevent a promise of full rollback.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace HIGGS {
@@ -118,7 +118,7 @@ Status RequestTransfer(ClientToken, const TransferRequest*, RequestId* outReques
 
 Grip, drive and constraint changes apply at the documented safe phase and have receipts. Temporary effects name their owner, hand/item and lifetime. Suppression limits named features without releasing an item; release is a separate request. Ending a climb removes only its owner's effects, leaving another consumer's restrictions intact.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace HIGGS {
@@ -140,7 +140,7 @@ Status RequestSuppression(ClientToken, const SuppressionRequest*, Lease* outLeas
 
 Consumers register an execution route; recognition and eligibility callbacks do not mutate inventory. A result is accepted only from the assigned executor, with matching request provider and epoch. Duplicate reports are ignored and a committed stage cannot regress. HIGGS forwards the receipt while preserving that executor's authority over the operation.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace HIGGS {
@@ -160,7 +160,7 @@ VRIK owns the virtual body and spatial interpretation of the hands. **IK means i
 
 Tracked controller, resolved palm/grip and rendered IK hand are distinct observations. Samples name time, validity, space and generation, including any previous-frame input. Final IK must not feed back as the same cycle's physical target. CopyHandPose selects the observation; RequestHandGoal expresses a pose objective, without permission to write bones directly.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace VRIK {
@@ -180,7 +180,7 @@ A zone is an anchored spatial region with an explicit probe: normally the resolv
 
 Body anchors are primary. An optional world-reference anchor could reuse the contract around a plant or wall; target discovery, harvesting and climbability rules remain with consumers using CommonLib queries. Losing an anchor invalidates the zone.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace VRIK {
@@ -202,7 +202,7 @@ Status QueryZones(ClientToken, const ZoneProbe*, ZoneSnapshot* outZones, uint32_
 
 A slot adds content policy and presentation to a zone. API creation extends beyond numbered holsters. VRIK saves and edits stable identity, anchor, geometry, hand access, enabled state and visuals. Definition/profile defaults remain separate from save-specific instances and player adjustments; re-registration preserves those adjustments. Runtime IDs and reservations are recreated after loading.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace VRIK {
@@ -228,7 +228,7 @@ An equippable potion bag can add one or more slots. Its mod supplies equipment r
 
 The persistent key combines provider definition, particular equipment instance and slot within it: identical bags keep separate assignments. The equipment provider validates save-scoped durable instance keys and declares stack split/merge, cloning and ownership-transfer rules. Rebinding restores one slot set. Missing equipment, providers or unresolved identity leave the association unavailable, without rebinding it to another item. VRIK saves placement/visual overrides; content providers save their rules under the same key.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace VRIK {
@@ -242,7 +242,7 @@ Status BindEquipmentSlotSet(ClientToken, const EquipmentSlotBinding*, SlotSetId*
 
 VRIK supports editable bag/holder visuals separately from item previews. The binding identifies whether equipment or VRIK renders the bag, preventing duplication. Model-defined access/grip regions are explicit; model bounds do not automatically become activation geometry. Visual changes version their anchors and report readiness/failure; preview readiness identifies the displayed content version.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace VRIK {
@@ -260,7 +260,7 @@ Status RequestItemPreview(ClientToken, SlotId, const ItemPreview*, RequestId* ou
 
 Type, keyword, form-list filters and bounded eligibility callbacks support weapons, shields, torches, potions, food and tools. BindSlotContent attaches a provider to an existing slot with exclusive/shared action rights; BindNativeSlot reuses native geometry and user placement without a fictitious weapon category. Releasing callback-bearing bindings drains their calls; new services preserve the existing holster interface.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace VRIK {
@@ -276,7 +276,7 @@ A slot can represent stored content or a selection from shared inventory. A prev
 
 Eligible actions name a registered executor. VRIK publishes committed occupancy/content from that executor's receipt, validating expected slot version; previews name that version. An unrelated or stale receipt cannot update the slot. HIGGS coordinates physical possession and transfer results.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace VRIK {
@@ -302,7 +302,7 @@ Status UpdateSlotContentFromCommit(ClientToken, SlotId, const SlotContentCommit*
 
 PLANCK owns NPC physical animation, ragdoll transitions and body lifetime. It supplies actor/bone/body metadata and validated attachment endpoints. A penetration mod owns wound and extraction rules; PLANCK validates the target body and HIGGS applies the weapon constraint.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace PLANCK {
@@ -318,7 +318,7 @@ Status AcquireAttachmentEndpoint(ClientToken, const AttachmentQuery*, Attachment
 
 Endpoints identify world, actor and body generations. Ragdoll replacement, NPC unload or game load invalidates dependent endpoints and constraints safely. An actor policy affects its declared scope instead of changing thresholds for every weapon. Flora and scripted activators need PLANCK only when their feature actually interacts with its actors.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace PLANCK {
@@ -334,7 +334,7 @@ Status RequestActorPolicy(ClientToken, const ActorPolicy*, Lease* outPolicy, Req
 
 PLANCK owns interpretation and commitment of its physical hits. A bounded hit-policy callback runs before the relevant commitment without writing live engine objects; HitCommitted reports the outcome. Observing HitCandidateObserved alone is not a writable damage hook. Policy conflicts follow declared rules and user-visible priorities where alternatives are selectable.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 namespace PLANCK {
@@ -386,7 +386,7 @@ Requests, reservations and subscriptions identify their owner. One consumer cann
 
 The illustrative ABI is embedded in each provider section. Supporting records are abbreviated; numeric values, layouts, calling convention and transport are not final. Each provider exposes the same lifecycle operations:
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 enum class PhysicalHand : uint32_t { Left, Right };
@@ -401,7 +401,7 @@ enum class RequestStage : uint32_t {
 
 RegisterClient establishes ownership of requests and resources; ReleaseClient ends that client lifetime.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 Status RegisterClient(const ClientIdentity*, ClientToken*);
@@ -413,7 +413,7 @@ Status ReleaseClient(ClientToken);
 
 Queued operations return a request ID. Temporary effects also return a provisional lease that becomes effective on commitment and retires on rejection/cancellation. ReleaseClient and Unsubscribe prevent new dispatch and confirm in-flight drainage; callback-bearing registrations follow the same rule. Free code/context only after every relevant provider confirms drainage. Do not block physics or a callback.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 Status GetRequestResult(ClientToken, RequestId, RequestResult*);
@@ -427,7 +427,7 @@ Status ReleaseLease(ClientToken, Lease, RequestId*);
 
 Copied records use caller buffers and report required capacity when insufficient. Hit policies and eligibility callbacks are bounded and never mutate inventory. Main-frame and physics-tick identities remain separate. Loading changes epochs; runtime lease values are not persistent slot IDs.
 
-**Pseudo-ABI — illustrative example, not a final interface.**
+**Pseudo-ABI**
 
 ```cpp
 Status Subscribe(ClientToken, uint64_t eventMask, EventCallback, void* context, Subscription*);
@@ -442,11 +442,15 @@ Status CopyEventPayload(ClientToken, SnapshotId, void* callerBuffer, uint32_t bu
 
 Slot definitions and user customization persist under stable keys. Runtime instances, equipment anchors, previews and bindings are rebuilt and validated after loading; readiness is reported before dependent actions resume. Content providers retain their own saved gameplay state under the same keys. Provider removal, slot unavailability and explicit deletion of saved customization have different meanings and must not silently erase each other's data.
 
-## CommonLib responsibilities
+## CommonLib as the second level of synergy
 
-CommonLib supplies generic engine types and verified operations: references, geometry/transforms, locks, scene and physics access, ray queries and character controller wrappers. Existing coverage should be reused; missing methods are candidates only after signature, layout, address and behavior verification. This is not a claim that the current library already covers every operation.
+The synergy has two levels. The first coordinates HIGGS, VRIK and PLANCK through their APIs/ABIs: each mod provides its own observations and actions. The second establishes a common technical foundation in CommonLib, moving engine address handling and repeated code out of individual mods into the library.
 
-Input arbitration, hand possession, slots and hit policies remain runtime services owned by the frameworks. Linking CommonLib into three DLLs creates three copies of code, not a shared ownership service. Harvest, climbing and fall rules remain consumer gameplay even when they use CommonLib engine methods.
+This includes function/data address definitions and resolution, typed object access, references and locks, coordinate transforms, scene and Havok operations, ray queries and character controller access. Mods use common CommonLib methods instead of maintaining their own addresses and similar low-level implementations. A fix to an operation is maintained in one place and becomes available to consumers when they adopt the corresponding library version.
+
+Start with the capabilities of the current CommonLib build. When an operation is missing, extend the library with a verified method: establish its signature, data layout, address for the supported game version and call behavior. A common operation should serve both the three frameworks and external mods, with an interface that encapsulates engine access details.
+
+On this foundation, HIGGS manages input and physical possession, VRIK manages the body and slots, and PLANCK manages NPC physics. CommonLib provides their shared technical tools; decisions about pouch contents, climbing, harvesting and hits belong to the owners of those mechanics. The two levels complement each other: common engine code in the library and coordinated gameplay interaction through the mods' APIs/ABIs.
 
 ## Mods used to assess ABI expressiveness
 
