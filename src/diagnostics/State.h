@@ -2,6 +2,7 @@
 
 #include "Config.h"
 #include "core/PouchSet.h"
+#include "core/Assignments.h"
 #include "diagnostics/Trace.h"
 
 #include <atomic>
@@ -35,6 +36,7 @@ namespace BodyPouches::Diagnostics
 		std::string reason{ "not_initialized" };
 		Settings settings;
 		std::vector<Core::PouchState> pouches;
+		Core::Assignments assignments;
 		std::vector<BodySlot> bodySlots;
 		std::vector<HandReach> handReach;
 		std::optional<bool> inputLeftHanded;

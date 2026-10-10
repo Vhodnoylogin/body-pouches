@@ -4,6 +4,19 @@
 
 using namespace BodyPouches;
 
+TEST(assignment_diagnostics_expose_actual_filter_identity_not_only_count)
+{
+	Diagnostics::State state;
+	state.available = true;
+	state.pouches.push_back({ 13, Core::Mode::Exclusive, true });
+	state.assignments.push_back({ 13, { {}, { { "Skyrim.esm", 0x4250 } } } });
+	const auto result = Diagnostics::StateValues(state);
+	const auto& entry = result.at("runtime").at("assignments").at(0);
+	CHECK_EQ(entry.at("slot"), 13);
+	CHECK_EQ(entry.at("effects").at(0).at("plugin"), "Skyrim.esm");
+	CHECK_EQ(entry.at("effects").at(0).at("localId"), 0x4250);
+}
+
 TEST(shared_reach_diagnostics_keep_units_physical_mapping_and_unavailable_distance)
 {
 	Diagnostics::State state;

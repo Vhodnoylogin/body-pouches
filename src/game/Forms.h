@@ -14,8 +14,8 @@ namespace BodyPouches::Game
 	// think about it.
 
 	// A form's name as the core writes it. A form created at runtime belongs to no
-	// plugin and gets an empty one - it can still be compared within a session, which
-	// is all such a form is good for anyway.
+	// plugin and gets an empty one. Persistence remaps its full ID through SKSE and
+	// checks the loaded form's existence/type before restoring a filter.
 	[[nodiscard]] Core::FormKey KeyOf(const RE::TESForm* a_form);
 
 	// The form that key names in this load order, or nullptr if this load order has no

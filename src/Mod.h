@@ -2,6 +2,8 @@
 
 #include "Config.h"
 #include "core/PouchSet.h"
+#include "core/Assignments.h"
+#include "core/LoadGate.h"
 #include "core/PendingGrab.h"
 #include "core/SharedInteraction.h"
 #include "core/CurrentUpdateRelease.h"
@@ -47,11 +49,14 @@ namespace BodyPouches
 		// on an empty hand's press inside the actual slot. Proximity alone never draws.
 		void WatchInput();
 
-		// A save was loaded. Suspension in VRIK lasts until the game is closed, so this
-		// only matters for the picture - but it is also the one load message that has
-		// ever arrived, and the slots are arranged here as well as at the first frame.
+		// Successful load stages per-save assignment restoration and refreshes the
+		// picture. Pre-load/Revert discard prior save state even without a co-save.
 		void OnGameLoaded();
 		void OnGameLoading();
+		void OnGameRevert();
+		void OnGameLoadFailed();
+		[[nodiscard]] Core::Assignments SavedAssignments();
+		void SetLoadedAssignments(Core::Assignments a_saved);
 
 		[[nodiscard]] bool Working() const noexcept { return _vrik.Ready() && _higgs.Ready(); }
 		// Called only from a bounded SKSE main-thread inspection task.
@@ -117,6 +122,10 @@ namespace BodyPouches
 		[[nodiscard]] static bool IsSecondaryHand(bool a_isLeft);
 
 		void BuildPouches(const Settings& a_settings);
+		void InvalidateWorld();
+		bool ApplyLoadedAssignments();
+		Core::Assignments _loadedAssignments;
+		bool _restorePending{ false };
 
 		// Once a frame, on the game's own thread, given to us by HIGGS. Everything that
 		// has to be asked over and over rather than waited for happens here: which slot
@@ -180,7 +189,7 @@ namespace BodyPouches
 		bool _drawQueued[2]{};  // primary/secondary, deduplicate native/fallback offers
 		RE::ObjectRefHandle _grabReference[2];
 		std::uint64_t _worldGeneration{ 0 };
-		bool _loading{ false };
+		Core::LoadGate _loadState;
 		std::uint64_t _dropSerial{ 0 };
 		std::unordered_map<std::uint32_t, std::uint64_t> _queuedDrops;
 		struct PendingRelease

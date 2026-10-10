@@ -9,6 +9,7 @@
 
 #include "Loc.h"
 #include "Mod.h"
+#include "Serialization.h"
 #include "diagnostics/Inspect.h"
 
 #include <RE/Skyrim.h>
@@ -91,7 +92,17 @@ namespace
 			BodyPouches::Mod::GetSingleton().OnGameLoading();
 			break;
 		case SKSE::MessagingInterface::kPostLoadGame:
+			if (a_message->data == nullptr) {
+				BodyPouches::Diagnostics::Invalidate();
+				BodyPouches::Diagnostics::SetLoadResult(false);
+				BodyPouches::Mod::GetSingleton().OnGameLoadFailed();
+				break;
+			}
+			[[fallthrough]];
 		case SKSE::MessagingInterface::kNewGame:
+			if (a_message->type == SKSE::MessagingInterface::kNewGame) {
+				BodyPouches::Mod::GetSingleton().OnGameLoading();
+			}
 			BodyPouches::Diagnostics::Invalidate();
 			BodyPouches::Diagnostics::SetLoadResult(
 				a_message->type != SKSE::MessagingInterface::kPostLoadGame || a_message->data != nullptr);
@@ -127,7 +138,7 @@ extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Query(const SKSE::Query
 
 extern "C" __declspec(dllexport) constinit auto SKSEPlugin_Version = []() {
 	SKSE::PluginVersionData v;
-	v.PluginVersion(REL::Version{ 0, 1, 11 });
+	v.PluginVersion(REL::Version{ 0, 1, 21 });
 	v.PluginName(PLUGIN_NAME);
 	v.AuthorName(PLUGIN_AUTHOR);
 	v.UsesAddressLibrary(true);
@@ -143,6 +154,7 @@ extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadIn
 
 	BodyPouches::Loc::Load();
 	BodyPouches::Loc::Info("plugin.loaded", PLUGIN_NAME, PLUGIN_VERSION);
+	if (!BodyPouches::Serialization::Register()) { return false; }
 
 	if (auto* messaging = SKSE::GetMessagingInterface(); messaging != nullptr) {
 		messaging->RegisterListener(OnMessage);

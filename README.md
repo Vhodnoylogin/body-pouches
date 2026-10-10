@@ -34,6 +34,17 @@ the suspended slot origin, while art placement preserves model-internal offsets.
 No radius, slot placement or drawing rule is changed on that subjective finding.
 Version 0.2.0 is reserved for a release-ready build.
 
+Candidate 0.1.21 fixes process-only pouch assignments: each save now records its
+slot filters in the paired SKSE co-save. Loading clears the previous save's
+assignment, restores valid effect/form identities in the loaded world and rebuilds
+the picture from the game's inventory. Old saves without a Body record start
+unassigned; they need one bottle returned to assign a pouch. Inventory is never
+serialized or replenished by this feature. Keep the ESS and SKSE files together.
+Malformed/unsupported records or missing forms leave affected pouches unassigned
+and are logged. The candidate includes the 0.1.20 coherent hand diagnostics;
+it does not claim to fix the reported intermittent left-hand entry. Restart and
+save-isolation acceptance remain pending live testing.
+
 Russian: [README.ru.md](README.ru.md).
 
 The mod turns the VRIK holsters worn on the body into pouches: a slot holds not only a weapon but
@@ -132,8 +143,9 @@ shield or a torch it records "empty".
 
 ## What is not written yet
 
-**A pouch forgets what it is for when the game is closed.** It is set up by letting go of a bottle
-in it, and that choice lives in memory only.
+**A pouch's assignment is saved per game save from 0.1.21.** Let go of a bottle
+inside it to assign the pouch, then save normally. A save created before this
+feature has no assignment to recover: assign it once and save with the new build.
 
 **The pouch sits wherever VRIK's Stomach slot sits and inherits its rotation.**
 Position and rotation must be calibrated on the actual body, then locked against
@@ -225,8 +237,8 @@ uses reference handles and a world generation for queued returns. A reference
 currently held by either hand is not picked up by a delayed return; regrabbing
 also cancels that reference's earlier queued return. Loading clears
 hand bookkeeping and pending grabs and refreshes the picture from current stock.
-Pouch assignment still lasts only for the current process. These changes require
-game regression testing; a grab confirmation log alone is not proof of handover.
+These original changes required game regression testing; a grab confirmation log
+alone is not proof of uninterrupted handover. Assignment persistence is added in0.1.21.
 
 Runtime-created potions are identified by their full runtime form ID, including
 when they have no source plugin. Missing `pouches` in an older settings file now

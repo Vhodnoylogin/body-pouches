@@ -27,6 +27,16 @@ namespace BodyPouches::Diagnostics
 			{ "mayEnableSlots", a_state.settings.mayEnableSlots }, { "pouches", pouches },
 			{ "inputHandedness", a_state.inputLeftHanded ? json(*a_state.inputLeftHanded ? "left" : "right") : json(nullptr) } };
 		result["runtime"] = { { "assignmentCount", assignments }, { "assignmentCountUnits", "assigned_pouches" } };
+		result["runtime"]["assignments"] = json::array();
+		const auto keyValue = [](const Core::FormKey& key) {
+			return json{ { "plugin", key.plugin }, { "localId", key.localId } };
+		};
+		for (const auto& assignment : a_state.assignments) {
+			json effects = json::array();
+			for (const auto& effect : assignment.filter.effects) { effects.push_back(keyValue(effect)); }
+			result["runtime"]["assignments"].push_back({ { "slot", assignment.slot },
+				{ "exact", keyValue(assignment.filter.exact) }, { "effects", effects } });
+		}
 		result["bodySlots"] = json::array();
 		for (const auto& slot : a_state.bodySlots) {
 			result["bodySlots"].push_back({ { "slot", slot.slot },

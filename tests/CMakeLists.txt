@@ -16,6 +16,7 @@ add_executable(bodypouches_tests
     "${CMAKE_CURRENT_SOURCE_DIR}/test_currentupdaterelease.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/test_buttonedges.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/test_trace.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test_assignments.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
 )
 

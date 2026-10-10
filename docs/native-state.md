@@ -29,6 +29,13 @@ are meaningful. Samples from different process/load identities must not be joine
 An unavailable subject has a reason and no settings/runtime values. Consumers
 must propagate unavailable data, not translate absence into zero or false.
 
+From0.1.21, `subject.runtime.assignments` exposes each assigned slot's actual
+`exact` key and `effects` keys (`plugin`, numeric `localId`). Empty exact is
+`{"plugin":"","localId":0}` for an effect-based filter. Empty plugin with a
+nonzero full0xFF form ID denotes a runtime form, not a guessed disk-plugin index.
+These values describe the restored current save, not the requested settings.
+Pending restoration leaves the snapshot unavailable until a suitable world frame.
+
 | Path | Meaning |
 |---|---|
 | `subject.settings.language` | Actual `Loc::Language()` selector; individual untranslated keys may still use built-in English |

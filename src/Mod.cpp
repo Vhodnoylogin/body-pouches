@@ -130,7 +130,7 @@ namespace BodyPouches
 	void Mod::OnFrame()
 	{
 		auto& mod = GetSingleton();
-		if (!mod.Working() || mod._loading) {
+		if (!mod.Working() || mod._loadState.Blocked()) {
 			mod.CancelPendingRelease(true);
 			mod.CancelPendingRelease(false);
 			mod._sharedPresses[0].Clear();
@@ -146,6 +146,12 @@ namespace BodyPouches
 		if (!mod._frameSeen) {
 			mod._frameSeen = true;
 			mod.FirstFrame();
+		}
+		if (!mod.ApplyLoadedAssignments()) {
+			mod._inHiggsUpdate = false;
+			mod.CancelPendingRelease(true);
+			mod.CancelPendingRelease(false);
+			return;
 		}
 
 		mod.ResolvePendingReleases();
@@ -171,7 +177,7 @@ namespace BodyPouches
 		if (!_dataLoaded || !Working()) {
 			return result;
 		}
-		if (_loading || !_frameSeen || _frameGeneration != _worldGeneration) {
+		if (_loadState.Blocked() || _restorePending || !_frameSeen || _frameGeneration != _worldGeneration) {
 			result.reason = "loading_or_no_callback_in_current_generation";
 			return result;
 		}
@@ -199,6 +205,7 @@ namespace BodyPouches
 		const auto level = spdlog::level::to_string_view(spdlog::get_level());
 		result.settings.logLevel = std::string(level.data(), level.size());
 		result.pouches = _pouches.Snapshot();
+		result.assignments = Core::CaptureAssignments(_pouches);
 		result.bodySlots = Diagnostics::ReadBodySlots(_vrik.Ready(),
 			[this](int a_slot) { return _vrik.IsSuspended(a_slot); });
 		if (const auto* setting = RE::GetINISetting("bLeftHandedMode:VRInput"); setting != nullptr) {
@@ -382,7 +389,7 @@ namespace BodyPouches
 			tasks->AddTask([a_slot, a_isLeft, a_handle, a_serial, generation = _worldGeneration]() {
 				auto& current = GetSingleton();
 				current.Trace(Diagnostics::Event::StowTask, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
-				if (!current._loading && generation == current._worldGeneration) {
+				if (!current._loadState.Blocked() && generation == current._worldGeneration) {
 					const auto pending = current._queuedDrops.find(a_handle.native_handle());
 					if (pending == current._queuedDrops.end() || pending->second != a_serial) {
 						current.Trace(Diagnostics::Event::StowSerialCancelled, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
@@ -410,7 +417,7 @@ namespace BodyPouches
 		auto* player = RE::PlayerCharacter::GetSingleton();
 		auto* ui = RE::UI::GetSingleton();
 		const auto* cell = player != nullptr ? player->GetParentCell() : nullptr;
-		if (_loading || !_frameSeen || _frameGeneration != _worldGeneration) { return fail("loading_or_callback_generation"); }
+		if (_loadState.Blocked() || _restorePending || !_frameSeen || _frameGeneration != _worldGeneration) { return fail("loading_or_callback_generation"); }
 		if (player == nullptr) { return fail("player_missing"); }
 		if (player->Get3D(true) == nullptr || player->Get3D(false) == nullptr) { return fail("player_3d_missing"); }
 		if (player->AsActorState()->IsSwimming()) { return fail("swimming"); }
@@ -568,7 +575,46 @@ namespace BodyPouches
 
 	void Mod::OnGameLoading()
 	{
-		_loading = true;
+		InvalidateWorld();
+		std::scoped_lock guard(_lock);
+		_loadedAssignments.clear();
+		_restorePending = false;
+		Core::RestoreAssignments(_pouches, {});
+	}
+
+	Core::Assignments Mod::SavedAssignments()
+	{
+		std::scoped_lock guard(_lock);
+		return _restorePending ? _loadedAssignments : Core::CaptureAssignments(_pouches);
+	}
+
+	void Mod::OnGameRevert()
+	{
+		// Pre-load blocks callbacks until successful post-load. A new game can revert
+		// without kNewGame; in that case defer empty restoration to its first ready frame.
+		auto state = _loadState;
+		OnGameLoading();
+		state.Revert();
+		_loadState = state;
+		_restorePending = true;
+	}
+
+	void Mod::OnGameLoadFailed()
+	{
+		OnGameLoading();
+		_loadState.Fail();
+	}
+
+	void Mod::SetLoadedAssignments(Core::Assignments a_saved)
+	{
+		std::scoped_lock guard(_lock);
+		_loadedAssignments = std::move(a_saved);
+		_restorePending = true;
+	}
+
+	void Mod::InvalidateWorld()
+	{
+		_loadState.Begin();
 		++_worldGeneration;
 		Trace(Diagnostics::Event::LoadBegin);
 		_inHiggsUpdate = false;
@@ -595,18 +641,47 @@ namespace BodyPouches
 	void Mod::OnGameLoaded()
 	{
 		// Also invalidate here for a new game or a missed pre-load notification.
-		OnGameLoading();
-		_loading = false;
-		Trace(Diagnostics::Event::LoadEnd);
-		// Said out loud on purpose. A run of this mod once ended with a log that stopped
-		// after the settings were read, and nothing in it could tell "the message never
-		// arrived" from "it arrived and every step of it quietly did nothing".
+		InvalidateWorld();
+		_loadState.Complete();
+		_restorePending = true;
 		Loc::Info(Keys::kGameLoaded, _settings.pouches.size());
 		ApplySlots();
-		// Again here and not only at the first frame: that frame may come in the start
-		// cave, where the player has no body yet to measure the slot against.
 		DescribeSlots();
 		_picture.Reset(Now());
+	}
+
+	bool Mod::ApplyLoadedAssignments()
+	{
+		if (!_restorePending) { return true; }
+		// Runtime forms need a suitable loaded world, not just a successful ID remap.
+		const auto* player = RE::PlayerCharacter::GetSingleton();
+		const auto* cell = player ? player->GetParentCell() : nullptr;
+		auto* ui = RE::UI::GetSingleton();
+		if (!_dataLoaded || _loadState.Blocked() || !player || !player->Get3D(true) || !player->Get3D(false) || !cell || !cell->IsAttached() ||
+			!ui || ui->GameIsPaused() || ui->IsMenuOpen("Main Menu") || ui->IsMenuOpen("Loading Menu") ||
+			ui->IsMenuOpen("Fader Menu") || ui->IsMenuOpen("RaceSex Menu")) { return false; }
+		const auto* id = cell->GetFormEditorID();
+		if (!id || std::string_view(id) == "VRPlayroom01") { return false; }
+		{
+			std::scoped_lock guard(_lock);
+			const auto saved = Core::ResolveAssignments(_loadedAssignments,
+				[](const Core::FormKey& key, bool effect) -> std::optional<Core::FormKey> {
+					auto* form = Game::Lookup(key);
+					if (!form || (effect ? form->As<RE::EffectSetting>() == nullptr : form->As<RE::AlchemyItem>() == nullptr)) {
+						return std::nullopt;
+					}
+					return Game::KeyOf(form);
+				});
+			Core::RestoreAssignments(_pouches, saved);
+			spdlog::info("persistence.applied: {} saved filters, {} restored to current slots", _loadedAssignments.size(), Core::CaptureAssignments(_pouches).size());
+			_loadedAssignments.clear();
+			_restorePending = false;
+		}
+		Trace(Diagnostics::Event::LoadEnd);
+		// Rebuild display from this save's inventory after assignment restoration.
+		_displayAt = 0;
+		_picture.Reset(Now());
+		return true;
 	}
 
 	void Mod::BuildPouches(const Settings& a_settings)
@@ -864,7 +939,7 @@ namespace BodyPouches
 	bool Mod::Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item, std::uint64_t a_causalId)
 	{
 		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
-		if (_loading || _pendingGrab[hand].Active() || _higgs.IsHolding(a_isLeft) ||
+		if (_loadState.Blocked() || _restorePending || _pendingGrab[hand].Active() || _higgs.IsHolding(a_isLeft) ||
 			!_higgs.CanGrab(a_isLeft)) {
 			Trace(Diagnostics::Event::DrawGuardRejected, a_isLeft ? 0 : 1, a_slot, 0, a_causalId);
 			return false;
@@ -938,7 +1013,7 @@ namespace BodyPouches
 
 	void Mod::StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial)
 	{
-		if (_loading || a_object == nullptr || a_object->IsDeleted() || a_object->IsDisabled() ||
+		if (_loadState.Blocked() || _restorePending || a_object == nullptr || a_object->IsDeleted() || a_object->IsDisabled() ||
 			_higgs.Held(false) == a_object || _higgs.Held(true) == a_object) {
 			return;
 		}
@@ -1108,7 +1183,7 @@ namespace BodyPouches
 	bool Mod::HandleHolsterAttempt(int a_slot, bool a_secondaryHand, bool a_handOccupied)
 	{
 		auto& mod = *this;
-		if (!mod.Working() || mod._loading) {
+		if (!mod.Working() || mod._loadState.Blocked() || mod._restorePending) {
 			Loc::Debug(Keys::kIdleHere);
 			return true;  // not our business: let VRIK do what it always did
 		}
@@ -1147,7 +1222,7 @@ namespace BodyPouches
 					generation = mod._worldGeneration, causalId]() {
 					auto& current = GetSingleton();
 					current.Trace(Diagnostics::Event::DrawTask, isLeft ? 0 : 1, slot, 0, causalId, 0, generation);
-					if (!current._loading && generation == current._worldGeneration) {
+					if (!current._loadState.Blocked() && generation == current._worldGeneration) {
 						current._drawQueued[IsSecondaryHand(isLeft) ? 1 : 0] = false;
 						current.Draw(slot, isLeft, item, causalId);
 					} else {
@@ -1223,7 +1298,7 @@ namespace BodyPouches
 		const auto pendingBefore = mod._pendingGrab[hand];
 		const auto callbackAt = Now();
 		// No recording or world reads between this timestamp and the pure Confirm.
-		const bool accepted = !mod._loading && object != nullptr &&
+		const bool accepted = !mod._loadState.Blocked() && object != nullptr &&
 			mod._pendingGrab[hand].Confirm(callbackHandle, callbackAt);
 		mod.Trace(Diagnostics::Event::GrabCallback, a_isLeft ? 0 : 1, mod._drawnFrom[hand], callbackHandle, causalId, 0, 0, 0, callbackAt, &pendingBefore);
 		if (!accepted) {
@@ -1245,8 +1320,8 @@ namespace BodyPouches
 		auto& mod = GetSingleton();
 		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
 		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
-		if (!mod.Working() || mod._loading) {
-			Loc::Info(Keys::kDropGuard, mod.Working(), mod._loading, a_refr != nullptr);
+		if (!mod.Working() || mod._loadState.Blocked() || mod._restorePending) {
+			Loc::Info(Keys::kDropGuard, mod.Working(), mod._loadState.Blocked(), a_refr != nullptr);
 			return;
 		}
 
