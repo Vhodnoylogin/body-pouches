@@ -1,269 +1,64 @@
-# body-pouches — pouches worn on the body
+# Body Pouches — 0.2.0
 
-A working name for the module. The name the mod is released under will be a different one.
-
-Current automatic evidence for 0.1.15: the complete 512-step regression passed
-all 613 authored assertions; the genuine physical stack-of-five scenario passed
-all 103; a separate focused collection run passed all 214 assertions and collected
-the 73 previously omitted observations. Continuous native ownership, genuine
-task/callback contention, first render-frame behavior, complete input consumption
-and ordinary weapon registration remain separate unconfirmed release criteria.
-Build 0.1.17 resolves exclusive as well as shared potion releases after VRIK
-in the release's own HIGGS update. The owner's 2026-10-09 manual session found
-right-hand returns working but difficult left draws and missed left returns;
-the attempted lowering moved the bottle right. Candidate 0.1.18 corrects the slot
-geometry to VRIK's live transform at NiAVObject+0xB0, uses first-person hand nodes
-for draw placement/measurement, and logs bounded per-release geometry before and
-after VRIK. These corrections require game verification; they do not establish
-that every native left-hand miss is fixed. It retains opt-in task/callback diagnostics. See
-[native state](docs/native-state.md) and [manual slot calibration](docs/manual-calibration.md).
-Candidate 0.1.19 selects dedicated physical-hand VR nodes before recursive wrist
-lookup and uses the CURRENT public VRIK camera offset for shared reach and
-calibration measurements. Draw placement stays raw. Bounded release diagnostics
-record node identity, adjusted wrist and object scene/reference positions.
-The partial 0.1.18 session confirmed ten acquisitions but retained a missed left
-return; improved draw after selfie mode is an observation requiring repeatable
-comparison. Exclusive selection and radius remain owned by VRIK. These changes
-do not establish left-hand reliability or release acceptance.
-The next diagnostic candidate, 0.1.20, measures one real controller press after
-VRIK/HIGGS rather than reading transforms from queued input tasks. It compares
-the exact active player art root/bound with the slot origin; bounds do not identify
-the neck or a collision surface. The owner was broadly satisfied with 0.1.19,
-with a remaining difficulty drawing near the neck. VRIK tests wrist distance to
-the suspended slot origin, while art placement preserves model-internal offsets.
-No radius, slot placement or drawing rule is changed on that subjective finding.
-Version 0.2.0 is reserved for a release-ready build.
-
-Candidate 0.1.21 fixes process-only pouch assignments: each save now records its
-slot filters in the paired SKSE co-save. Loading clears the previous save's
-assignment, restores valid effect/form identities in the loaded world and rebuilds
-the picture from the game's inventory. Old saves without a Body record start
-unassigned; they need one bottle returned to assign a pouch. Inventory is never
-serialized or replenished by this feature. Keep the ESS and SKSE files together.
-Malformed/unsupported records or missing forms leave affected pouches unassigned
-and are logged. The candidate includes the 0.1.20 coherent hand diagnostics;
-it does not claim to fix the reported intermittent left-hand entry. Restart and
-save-isolation acceptance remain pending live testing.
+Potions within reach in Skyrim VR. Turn a VRIK body slot into a potion pouch:
+draw a bottle with either hand, drink it through HIGGS, or return it to the slot.
+No inventory menu, wheel or separate hotkey is needed for the pouch interaction.
 
 Russian: [README.ru.md](README.ru.md).
 
-The mod turns the VRIK holsters worn on the body into pouches: a slot holds not only a weapon but
-a flask, food or a throwing knife, and the hand takes it straight out of there — no menu, no wheel,
-no hotkey. Take a potion off the hip, bring it to the mouth, drink it, put the empty flask back.
+## Features
 
-## How this differs from what already exists
+- One exclusive pouch on the stomach slot (13) by default.
+- A visible preview of the next matching potion.
+- Hand-based assignment, drawing and return.
+- Selection from your existing inventory by potion effects, including multi-effect potions.
+- Separate assignments for each save, preserved through loading and complete restarts.
+- Poison rejection; the pouch does not create a separate stock of items.
 
-| Mod | What it does | What it does not |
-|---|---|---|
-| HIGGS | drink by bringing a bottle to the mouth; stow an item over the shoulder | does not keep potions on the body |
-| VRIK | 14 holsters on the body, tied to the figure and surviving calibration | only weapons, shields and torches go into them |
-| Spell Wheel VR | puts a potion in the hand | the item comes out of a menu, not off the body |
-| Immersive Equipment Displays | shows an arbitrary item on the body | it is a display case: nothing can be taken from it by hand |
+## Requirements and quick start
 
-Half the work is therefore already done by other people. VRIK supplies the body-slot positions;
-Body Pouches uses its native detection for exclusive slots and a current-pose fallback for shared
-slots that VRIK filters out for nonweapon hands. It sits exactly in the middle: the
-place on the body comes from VRIK, handing the item over and drinking come from HIGGS, and what
-belongs to the mod is only the rule of what lies in this slot and what to do when somebody reaches
-for it.
+For Skyrim VR. Install the dependencies below, enable `BodyPouches.esp` and launch through SKSEVR. DevBench is not required to play.
 
-## Where the mechanic comes from
+- [SKSEVR](https://skse.silverlock.org/)
+- [VR Address Library for SKSEVR](https://www.nexusmods.com/skyrimspecialedition/mods/58101)
+- [VRIK Player Avatar](https://www.nexusmods.com/skyrimspecialedition/mods/23416), 0.8.7
+- [HIGGS](https://www.nexusmods.com/skyrimspecialedition/mods/43930)
+- [SkyUI-VR](https://github.com/Odie/skyui-vr/releases) for VRIK MCM; install its listed requirements.
+- Microsoft Visual C++ Redistributable x64 runtime (v14), required by the compiled DLL.
 
-VRIK owns the place on the body and the moment of taking out; HIGGS owns the moment of putting in.
-How VRIK behaves was settled by a reading of its own code (`claude-skyrim-vr/knowledge/vrik-holster-api.md`
-in the project journal), and the mod is built on exactly that:
 
-    taking out    close the grip inside the pouch and pull the hand out with it still closed:
-                  VRIK raises a holster attempt for the empty hand, and the mod puts a bottle in it
-    putting in    let go of the bottle inside the pouch: HIGGS says "dropped", VRIK says the hand
-                  is at the pouch at that very moment, and the bottle goes back into the pack
-    carrying off  a hand holding a bottle that leaves the pouch with the grip closed keeps it
+Enable VRIK stomach holster13, take a drinkable potion in hand and release it
+inside that slot to assign the pouch. To draw, close the grip with an empty hand
+inside the zone and withdraw while keeping it held. Bring the bottle to your mouth
+to drink through HIGGS, or release inside the slot to return it. Save normally;
+keep the ESS/SKSE pair together. Older saves without an assignment need one new
+assignment and save.
 
-The pouch's slot is suspended, and that does three things at once: VRIK neither draws a weapon from
-it nor holsters one into it; an empty hand sees the slot at all, where without suspension VRIK looks
-straight past a free hand at an empty slot; and the controller buzzes as a hand enters it.
-Suspension lasts until the game is closed and is set at the first frame of play, because a new game
-sends a plugin no message to set it on.
+See the [complete quick start](docs/quick-start.en.md) for configuration,
+multi-effect selection, VRIK positioning and updating.
 
-Build 0.1.12 introduced a spatial path intended to accept a potion into an empty shared slot
-without an equipped weapon; game test 30 still failed the shared return criterion. VRIK's
-filtered weapon-hover API cannot report that case, so the mod measures the current first-person
-hand against the configured third-person slot bone, using VRIK's loaded activation distance and
-body scale. A shared draw requires a real grip (or configured trigger) press inside the slot and
-withdrawal while held within three seconds. Release, load, unavailable geometry, a newly held
-object or native VRIK ownership cancels it. Native offers take priority and queued draws are
-deduplicated. Shared slots remain unsuspended and their weapon display stays owned by VRIK.
+## Known limitations
 
-Test build 0.1.13 adds drop-callback diagnostics: the actual native/chosen slot, each configured
-shared slot's distance/radius and the precise unavailable-world/geometry/policy guard. These
-callback reads differ in phase from the post-VRIK state snapshots. The diagnostics investigate
-the failed shared seed return in build 0.1.12; they do not claim that the failure is fixed.
+The accepted baseline is the default exclusive potion pouch. The two hands can
+reach its native activation zone at different visible points; the visible neck
+is not the detection centre. This remaining ergonomic issue is under investigation.
+Shared/multiple-slot configurations are advanced options with narrower acceptance.
+Owner manual testing accepted placement, both-hand draw/return, drinking and
+independent healing/magicka assignments after loading and full restarts.
 
-Test 31 measured 12.201 game units inside the dropped callback against radius 10, while
-surrounding post-VRIK snapshots measured about 1.2. Build 0.1.14 therefore resolves only the
-shared spatial release after VRIK in the **same HIGGS update**. It stores an actual release
-event and reference handle, never reach or a hand position. Missing post-update, another update,
-load, regrab or native priority cancels it; existing queued-pickup identity checks remain.
-The radius is unchanged. This correction still needs game verification.
-Real shared grip edges likewise wait for coherent geometry in their current/next HIGGS update,
-expire after 100 ms, and cancel on release, load, regrab or a native holster offer. They never arm
-from proximity alone; ordinary native/exclusive input processing is retained.
+## Credits and source
 
-Game test32 verified the shared release correction and unchanged stock on cancellation, but
-failed the following shared withdrawal with no observed shared press in the native log.
-Build0.1.15 reads physical grip/trigger transitions through Skyrim's existing original OpenVR
-interface during the post-VRIK callback: VRIK can hide these buttons from Skyrim's input-event
-sink. It never injects input or initializes/shuts down the runtime. A held button at first
-observation, loading, reconnecting, or changing controller/binding cannot synthesize a press.
-Unavailable input cancels the gesture; native priority and the unchanged spatial radius remain.
-This is a source correction pending game verification, not release acceptance. Sampling can
-miss a press/release entirely between callbacks and does not prove every input was consumed.
+Thanks to the authors of VRIK, HIGGS, SKSEVR and CommonLibSSE-NG for the functionality
+that makes this mod possible. Third-party integration notices are included in the archive.
 
-There is no hotkey or proximity-only draw, and a drop never uses remembered reach. Run 7 showed
-what they cost: a press drew a bottle, the hand leaving the pouch with it
-was taken for putting it back, and a bottle let go of a second after the hand had left still
-counted as put away.
+Source: https://github.com/Vhodnoylogin/body-pouches (main; one mod at repository root).
+[Changelog](CHANGELOG.md). Historical development notes are preserved separately in the source repository.
 
-## What a pouch shows
+## Building from source
 
-The potion it would hand over, hanging on the body where the pouch is - and only for a pouch the
-slot was given over to entirely; a shared slot still shows the sword VRIK keeps there.
-
-VRIK draws a thing in a slot only as an art object played on the player: its DLL catches the moment
-the art's model is set up, hangs the model on the slot's bone and keeps it in the middle of the
-slot. So the mod carries a small plugin, `BodyPouches.esp`, written by `tools\make-esp.py`: an art,
-a constant effect whose hit effect is that art, and an ability made of the effect. The DLL gives
-VRIK the art once per game (`VrikSetSlotForArt`), gives the art the model of the potion that would
-come out next, and adds the ability to the player - or takes it away when the pack has none left.
-Changing the potion is taking the ability off, waiting until VRIK says the old model is gone
-(`VrikGetSlotDisplayed`), and putting it on again.
-
-`VrikSetSlotWeaponType` was tried first and could not have worked: for anything but a weapon, a
-shield or a torch it records "empty".
-
-## What is not written yet
-
-**A pouch's assignment is saved per game save from 0.1.21.** Let go of a bottle
-inside it to assign the pouch, then save normally. A save created before this
-feature has no assignment to recover: assign it once and save with the new build.
-
-**The pouch sits wherever VRIK's Stomach slot sits and inherits its rotation.**
-Position and rotation must be calibrated on the actual body, then locked against
-accidental movement by a long grip. VRIK's native reposition gesture changes both
-without guessing bone-space coordinates. See [manual slot calibration](docs/manual-calibration.md).
-Lower placement and upright display are not verified merely by a source change.
-
-## What made it possible
-
-The VRIK holster mechanic lived in Papyrus and was not exposed. Build 80700 (VRIK 0.8.7) ships a
-public C++ interface, and in it three things that did not exist before:
-
-```cpp
-typedef bool (*HolsterAttemptCallback)(int slotNumber, bool secondaryHand, bool handOccupied);
-virtual bool SetSlotSuspended(int slotNumber, bool suspended) = 0;
-virtual bool GetSlotSuspended(int slotNumber) = 0;
-virtual void AddHolsterAttemptCallback(HolsterAttemptCallback callback) = 0;
+```text
+cmake -S . -B build-core -DBODYPOUCHES_BUILD_PLUGIN=OFF
+cmake --build build-core --config Release
+cmake -S . -B build
+cmake --build build --config Release --target BodyPouches
 ```
-
-The callback fires for **every** slot, and its return decides who serves the attempt: `true` is the
-normal VRIK action, `false` means the plugin took the attempt and VRIK does nothing. Suspension is
-the blunter instrument, for a slot given over to the mod entirely; a suspended slot stays visible
-and detectable, and the suspended state lives in memory only and never reaches a save.
-
-Because of that `bool`, the mod does not take slots away from VRIK: in one and the same slot a sword
-is still a sword and is drawn by VRIK, while a flask is drawn by us.
-
-## What it is made of
-
-    contract\      foreign contracts as they came: vrikinterface001.h (build 80700), higgsinterface001.h
-    src\core\      the core: slots, their contents and the rule of handing over. Not a line about VR, SKSE or the game
-    src\vr\        two adapters: VRIK (subscription and slot state) and HIGGS (hand-over, drinking)
-    src\game\      the game side: the pack, forms, where a slot is on the body, the picture
-    src\           the SKSE entry points, settings, the log and its texts (Loc.cpp, by key)
-    tests\         checks of the core, built and run without the game
-    tools\         staging and packing, and make-esp.py, which writes BodyPouches.esp
-
-The core builds and is checked without SKSE and without the game — the game is attached as the layer
-above. That buys a second way out as well: in flat Skyrim a slot may hand the item over differently,
-and the core has no need to know.
-
-## Building
-
-Run these commands from the repository root, which is also the mod's source directory.
-
-    cmake -S . -B build-core -DBODYPOUCHES_BUILD_PLUGIN=OFF   # core and checks, no network
-    cmake --build build-core --config Release
-    build-core\tests\Release\bodypouches_tests.exe
-
-    cmake -S . -B build                                       # the mod itself, fetches CommonLibSSE-NG
-    cmake --build build --config Release --target BodyPouches
-    tools\package.ps1 -Apply                                  # archive into downloads, installed through the MO2 bridge
-
-The settings file and the table of text are written by the plugin on first run into
-`Data\SKSE\Plugins\bodypouches\`, so the mod itself is one library.
-
-## State
-
-Version 0.1.11. One pouch, on the stomach slot (13), given over to the mod entirely: it draws on
-VRIK's own holster attempt, stows when a bottle is let go of inside it, and shows the potion it
-holds. Run 7 (0.1.7) proved the moment of drawing and every step of the hand-over; this version is
-the first to take out and put in by VRIK's rules rather than against them, and the first with a
-picture.
-
-The slot needs two things at once, and that is not a choice but a consequence of how VRIK works: a
-slot allowing no weapon type is not detected at all ("set all weapon types to 0 to disable a slot"
-is its author's own comment in `vrikslots.ini`), and the slots a build leaves free are switched off
-in exactly that way.
-
-**The mod's code does not change VRIK's settings.** It reads them, and when a slot is off it says
-so in the log and names where it is switched on: VRIK's MCM, the Weapon / Leg / Body / Arm Holsters
-pages, any one weapon type for that slot. Anyone who would rather the mod did it sets
-`mayEnableSlots: true` in `bodypouches.json`; the slot is then switched on from code, in memory, and
-every such change is written to the log. Off by default. What does have to change in VRIK's
-configuration - the pouch's place, for one - is changed openly, in the build's VRIK config mod.
-
-What the next run settles:
-
-| What | What says it |
-|---|---|
-| whether the potion appears on the body, and where | `picture.up`, then `picture.on_body`: VRIK's own word that the model is on the bone |
-| whether a free hand still raises an attempt without `VrikSetSlotWeaponType` | `holster.offered` with `handOccupied = false` as the hand pulls out of the pouch |
-| whether HIGGS holds the bottle while VRIK keeps the grip from the game | `draw.grab_confirmed` rather than `draw.grab_failed` |
-| where the pouch should hang | `body.squeeze`: the numbers that would put it at the hand |
-
-0.1.11 checks the current hand and pouch again before executing a queued draw,
-matches grab confirmation to the requested reference handle and deadline, and
-uses reference handles and a world generation for queued returns. A reference
-currently held by either hand is not picked up by a delayed return; regrabbing
-also cancels that reference's earlier queued return. Loading clears
-hand bookkeeping and pending grabs and refreshes the picture from current stock.
-These original changes required game regression testing; a grab confirmation log
-alone is not proof of uninterrupted handover. Assignment persistence is added in0.1.21.
-
-Runtime-created potions are identified by their full runtime form ID, including
-when they have no source plugin. Missing `pouches` in an older settings file now
-keeps the default stomach pouch; an explicit `"pouches": []` still disables pouches.
-
-Candidate0.1.11 adds an optional [read-only native state interface](docs/native-state.md)
-for effective settings, runtime assignment counts and actual VRIK suspension.
-It has been built and checked offline; installed0.1.10 and its game-test order
-remain unchanged until the owner resumes testing and a new build is installed.
-
-## Planned cooperation with VRIK HIGGS and PLANCK
-
-Body Pouches intends to migrate to the proposed shared architecture. This
-repository is the single source of the [English concept](docs/trinity-synergy/concept-en.md)
-and [Russian concept](docs/trinity-synergy/concept-ru.md). The proposal describes
-framework responsibilities and illustrative pseudo-ABI; the new services are
-not yet implemented or agreed with the framework authors.
-
-## Repository
-
-The active repository is [Vhodnoylogin/body-pouches](https://github.com/Vhodnoylogin/body-pouches),
-default branch `main`. It contains one mod, with sources and supporting files directly at the root.
-
-Extracted from [Skyrim-Mods](https://github.com/Vhodnoylogin/Skyrim-Mods), branch `body-pouches`,
-on 2026-10-02. All 25 retained commits were verified on 2026-10-03 by file content, authorship,
-messages and history links. The old branch was then deleted locally and on GitHub; its checkout
-was preserved at the same commit with a detached HEAD. On 2026-10-04 the redundant source directory
-was removed by a regular commit, preserving the existing history.
