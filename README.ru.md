@@ -6,7 +6,7 @@ English: [README.md](README.md).
 
 Автор: [Vhodnoylogin](https://github.com/Vhodnoylogin).
 Мод разрабатывался при участии Claude (Anthropic) и
-[Codex (OpenAI)](https://developers.openai.com/codex).
+[Codex (OpenAI)](https://github.com/codex).
 Codex участвовал в реализации, анализе кода, проверках и подготовке релиза.
 
 Мод превращает гнёзда VRIK, висящие на теле, в подсумки: в гнезде лежит не только оружие, но и

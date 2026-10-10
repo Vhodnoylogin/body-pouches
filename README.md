@@ -6,7 +6,7 @@ Russian: [README.ru.md](README.ru.md).
 
 Author: [Vhodnoylogin](https://github.com/Vhodnoylogin).
 Developed with assistance from Claude (Anthropic) and
-[Codex (OpenAI)](https://developers.openai.com/codex).
+[Codex (OpenAI)](https://github.com/codex).
 Codex assisted with implementation, code review, verification, and release preparation.
 
 The mod turns the VRIK holsters worn on the body into pouches: a slot holds not only a weapon but
