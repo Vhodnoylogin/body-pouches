@@ -15,7 +15,7 @@ A single interaction has identifiable participants and a confirmed result.
 
 | Provider | Owns | Provides to other mods |
 |---|---|---|
-| VRIK | Player body and final skeletal pose; body anchors, spatial hand interpretation, zones, slots and their presentation | Coherent pose and zone snapshots, zone transitions, eligible slot actions, content previews, named-hand slot requests and scoped reservations |
+| VRIK | Player body and final skeletal pose; body anchors, spatial hand interpretation, zones, persistent configurable slots and their presentation | Slot creation through API, equipment-bound slots and visuals, coherent pose and zone snapshots, zone transitions, eligible actions, content previews, named-hand requests and scoped reservations |
 | HIGGS | Grip/trigger input brokerage, haptic scheduling, physical hands/weapons, grabbing and physical possession | Input observations and reservations, physical grip state, explicit grab/release/transfer requests, supported grip/drive/constraint integration and action receipts |
 | PLANCK | NPC physical animation and ragdoll lifecycle; its physical-hit interpretation and commitment | Actor/body/bone metadata, validated attachment endpoints, candidate/committed hit data, scoped interaction policies and lifecycle events |
 | External mod | Its gameplay feature and content policy | Pouch selection, unconventional equipment/proxies, handling gestures, weight response, penetration/extraction or parry rules, expressed through provider contracts |
@@ -61,6 +61,51 @@ eligibility rules. Weapons, shields and torches remain supported; a provider can
 also use potions, food, tools or other items without inventing a weapon identity.
 Display models and content are separate, with explicit presentation readiness.
 
+Slot creation is a public service, not limited to the existing numbered holsters.
+A slot is a saved, configurable object with a stable identity, anchor, geometry,
+hand access, enabled state and visual configuration. VRIK owns its editing and
+persistence contract, including which settings belong to a save or a user profile.
+Provider defaults and user overrides remain distinct; registering a provider again
+does not overwrite the player's adjustments. A stable definition identifies the
+slot across loads; runtime IDs and reservations are recreated for the new world.
+
+An external mod can define an equippable item that adds one or more slots, such as
+a potion bag. The item mod supplies the equipment record, assets and attachment
+points. VRIK binds the slots to the equipped item's actual visual attachment, so
+the interaction zone follows the bag where it hangs, including body movement and
+scale. Putting the bag on activates its slots; taking it off or losing its loaded
+model stops new offers and cancels uncommitted work. A delivered item retains its
+recorded disposition. Unequipping notifies the content provider, which applies
+its declared policy through the authorized executor; hiding a slot never deletes
+or returns items implicitly.
+
+VRIK supports adding and changing a slot's own visual: a bag, holder or other
+decoration, separately from a preview of its next item. The equipment binding
+states whether the wearable already supplies that visual or VRIK renders it,
+so the same bag is not drawn twice. Model attachment points can define access or
+grip regions; the enclosing model bounds are not automatically an activation zone.
+Changing a visual updates its declared anchors and reports readiness or failure.
+
+An equipment slot's persistent key distinguishes the provider definition, the
+particular equipment instance and the slot within that item. Two identical bags
+must not share assignments merely because they have the same base form. VRIK
+stores placement and visual overrides; the content provider stores its own rules
+under that stable key. Re-equipping and loading restore those associations after
+the equipment is validated. Missing equipment or providers leave an unavailable
+association, not a slot silently rebound to a different item.
+The equipment provider supplies validated, save-scoped instance keys with declared
+rules for stack splitting/merging, cloning and ownership transfer. Profile defaults
+apply to definitions; instance associations belong to the save. Binding the same
+key again restores one slot set, not a duplicate. An unresolved identity makes
+the slot unavailable until it can be reconciled.
+
+A slot may represent a stored item or a provider's selection from an inventory.
+In the latter case, its preview and available count describe a shared inventory
+source; they do not create a second stock or occupy the slot with another bottle.
+Two hands drawing the last matching item reserve that same inventory instance or
+quantity before commitment. Selection, count changes and preview versions stay
+consistent through the authorized content executor.
+
 VRIK supplies the geometry and presentation; the content provider decides what
 belongs there. A transfer reserves its source, destination and possession and
 uses one inventory mutation path. It preserves item instance data and commits
@@ -103,11 +148,28 @@ Status UpdateZone(ClientToken, ZoneId, const ZoneDefinition*, RequestId* outRequ
 
 Status DestroyZone(ClientToken, ZoneId, RequestId* outRequest);
 
+Status RegisterSlotDefinition(ClientToken, const SlotDefinition*, SlotDefinitionId* outDefinition);
+
+Status CreateSlotInstance(ClientToken, const SlotInstanceRequest*, SlotId* outSlot,
+    RequestId* outRequest);
+
+Status BindEquipmentSlotSet(ClientToken, const EquipmentSlotBinding*, SlotSetId* outSet,
+    RequestId* outRequest);
+
+Status RequestSlotCustomization(ClientToken, SlotId, const SlotCustomization*, RequestId* outRequest);
+
+Status RequestSlotVisual(ClientToken, SlotId, const SlotVisual*, RequestId* outRequest);
+
+Status CopySlotConfiguration(ClientToken, SlotId, SlotConfiguration* outConfiguration);
+
 Status QueryZones(ClientToken, const ZoneProbe*, ZoneSnapshot* outZones, uint32_t capacity,
     uint32_t* outCount);
 
-Status RegisterSlot(ClientToken, ZoneId, const SlotContentPolicy*, ContentEligibilityCallback,
-    void* userContext, SlotId* outSlot);
+Status BindNativeSlot(ClientToken, uint32_t nativeSlot, const SlotContentPolicy*,
+    SlotId* outSlot, Lease* outBinding, RequestId* outRequest);
+
+Status BindSlotContent(ClientToken, SlotId, const SlotContentPolicy*, ContentEligibilityCallback,
+    void* userContext, Lease* outBinding, RequestId* outRequest);
 
 Status UnregisterSlot(ClientToken, SlotId, RequestId* outRequest);
 
@@ -126,7 +188,8 @@ Status UpdateSlotContentFromCommit(ClientToken, SlotId, const SlotContentCommit*
 Status RequestItemPreview(ClientToken, SlotId, const ItemPreview*, RequestId* outRequest);
 
 // Events: PoseAvailable, ZoneEntered, ZoneExited, ZoneInvalidated,
-//         ActionOffersChanged, SlotContentChanged, PresentationReady.
+//         SlotInstanceAvailable, SlotInstanceUnavailable, SlotConfigurationChanged,
+//         ActionOffersChanged, SlotContentChanged, PresentationReady, PresentationFailed.
 }
 ```
 
@@ -140,6 +203,21 @@ Removing a slot with an eligibility callback must drain its in-flight calls.
 Content publication validates the authorized executor and expected slot version;
 an unrelated or stale commit cannot update the slot.
 
+RegisterSlotDefinition declares persistent defaults and stable keys;
+CreateSlotInstance materializes a configured slot. BindEquipmentSlotSet associates
+slots with validated equipment instances and visual attachment points. Equipment
+availability events are distinct from deletion of persistent settings.
+RequestSlotCustomization and RequestSlotVisual preserve user/provider authority
+and version their changes. BindNativeSlot reuses an existing holster's geometry
+and user placement with an owner-scoped binding, without enabling a fictitious
+weapon category. SlotConfiguration includes the persistent key and effective
+settings. QueryZones identifies its tested probe and sample; PresentationReady
+also confirms the visual version and any model-defined access anchors.
+BindSlotContent attaches an authorized content provider to a created slot; it
+does not create a second slot at that location. The binding declares exclusive
+or shared action rights and drains eligibility callbacks before release. Native
+holsters keep their existing interface; the new binding services are additive.
+
 ## HIGGS input possession and physical requests
 
 HIGGS supplies the shared grip/trigger stream, input consumption and haptic
@@ -150,6 +228,18 @@ preserve the identity of the actual domain executor.
 VR controller ownership here means device input and haptics. It does not move
 player locomotion, climbing rules, harvesting or slot contents into HIGGS.
 Recognizers keep their policies and submit actions through the shared contract.
+
+An input or release event identifies the observation used for its spatial decision.
+VRIK can evaluate the named probe and body zone from that coherent sample rather
+than combine an earlier drop with whatever hand pose happens to be current.
+A post-update callback by itself is not this guarantee. Regrabbing, consuming,
+loading or losing tracking invalidates pending offers before their executors act.
+
+An inventory-to-hand transfer reports inventory commitment and physical grip
+commitment separately, including the resulting item reference, quantity and hand.
+If the item left inventory but HIGGS could not grip it, the result identifies its
+actual disposition. The assigned executor applies any declared compensation;
+neither a retry nor a visual update creates another copy of the item.
 
 Physical grip, constraint and transfer requests have receipts. Temporary effects
 identify an owner, the affected hand/item and a lifetime. RequestSuppression
@@ -175,6 +265,8 @@ Status RegisterActionExecutor(ClientToken, const ActionExecutorInfo*, ActionExec
 Status ReportExecutionResult(ClientToken, const ExecutionResult*);
 
 Status CopyHandState(ClientToken, PhysicalHand, HandState* outState);
+
+Status CopyReleaseObservation(ClientToken, uint64_t releaseId, ReleaseObservation* outRelease);
 
 Status CopyMotionSamples(ClientToken, PhysicalHand, PoseSource, uint32_t space,
                          MotionSample* outSamples, uint32_t capacity, uint32_t* outCount);
@@ -386,6 +478,8 @@ Status ReleaseLease(ClientToken, Lease, RequestId*);
 // Event records name source/forwarder, issuer/epoch, executor, phase and thread.
 // Pose/contact records name time, coordinate space, units and generations.
 // RequestId is scoped by provider and epoch; TransactionId correlates participants.
+// Slot definitions/configuration have persistent keys and explicit save/profile scopes.
+// Equipment instance keys are durable identities, not pointers or runtime handles.
 ```
 
 Queued operations return a request ID. Temporary effects also return a provisional
@@ -398,6 +492,13 @@ Copied records use caller buffers and report required capacity when insufficient
 Hit policies and eligibility callbacks are bounded and never mutate inventory.
 Main-frame and physics-tick identities remain separate. Loading changes epochs;
 runtime lease values are not persistent slot IDs.
+
+Slot definitions and user customization persist under stable keys. Runtime
+instances, equipment anchors, previews and bindings are rebuilt and validated
+after loading; readiness is reported before dependent actions resume. Content
+providers retain their own saved gameplay state under the same keys. Provider
+removal, slot unavailability and explicit deletion of saved customization have
+different meanings and must not silently erase each other's data.
 
 ## CommonLib responsibilities
 
@@ -419,6 +520,7 @@ They remain external consumers; their gameplay does not become framework logic.
 
 | Consumer | Requirement on the shared foundation |
 |---|---|
+| [Body Pouches VR](https://www.nexusmods.com/skyrimspecialedition/mods/194796) | Inventory-backed potion selection, persistent configurable slots and wearable bags, coherent release/zone observations, confirmed handover and independent slot previews |
 | [Shields and 2H Weapons Unlocked](https://www.nexusmods.com/skyrimspecialedition/mods/184001) | VRIK zones/presentation with an explicit target hand and original/proxy item identity; its equipment adapter keeps the proxy policy |
 | [Swap Drop and Hold Redux](https://www.nexusmods.com/skyrimspecialedition/mods/185816) | Input recognition reservations, explicit equip/release/hand transfer, exact grip relation, authoritative holster eligibility and final result |
 | [Physical Collision VR](https://www.nexusmods.com/skyrimspecialedition/mods/186335) | Coherent rendered/collision/grab/hit transforms, contact snapshots and supported physical-drive integration; optional NPC contact/parry collaboration |
@@ -429,6 +531,54 @@ They remain external consumers; their gameplay does not become framework logic.
 
 These are proposed requirements derived from those consumers, not promises that
 their current binaries already implement this integration.
+
+## Body Pouches with the shared services
+
+[Body Pouches 0.2.0](https://www.nexusmods.com/skyrimspecialedition/mods/194796)
+already uses VRIK's body slots and HIGGS grabbing/drinking. Its default is one
+exclusive potion pouch; shared and multiple-slot settings have narrower testing.
+The pouch saves a potion-selection rule and draws from the player's inventory.
+Its displayed bottle is a preview, not a separate stored item.
+[The release source](https://github.com/Vhodnoylogin/body-pouches/tree/0.2.0)
+shows where a richer shared contract could simplify the integration:
+
+| Current responsibility inside Body Pouches | What the shared services could provide |
+|---|---|
+| Require an enabled weapon category for detection; suspend normal holstering for exclusive pouches | A VRIK slot binding with independent geometry, potion eligibility and owner-scoped action rights |
+| Read raw controller edges for the shared-slot fallback and reproduce withdrawal recognition | HIGGS input sequences and priority, with VRIK spatial action offers even for empty non-weapon slots |
+| Reconstruct slot bones, transforms, hand mapping and camera offsets for shared detection and diagnostics | VRIK zone/probe snapshots in a declared space and phase; physical hand data from HIGGS |
+| Defer a drop to the completed VRIK/HIGGS update, guard it with local serials and cancel it on regrab/load | A correlated release observation, matching zone sample and invalidation contract |
+| Drop one inventory item, request a grab and correlate a general grabbed callback within a local timeout | One transfer request with separate inventory/grip results, item identity and declared failure disposition |
+| Change an art model through a spell effect, wait for removal and support one exclusive pouch preview | Independent VRIK visuals and previews per slot, with readiness, version and attachment information |
+| Coordinate its own world generations and readiness checks with saved assignments | Provider lifecycle events and stable slot keys, while Body Pouches keeps assignment serialization |
+
+Body Pouches would still decide which potion effects match, reject poisons, order
+matching potions and save the player's assignments. It would keep the rule that
+all pouches draw from one inventory. A supported inventory executor could reuse
+verified CommonLib removal/pickup operations; moving those calls behind a transfer
+service does not move potion policy into VRIK or HIGGS. PLANCK is not required for
+this mechanic and should remain optional unless an added feature interacts with NPCs.
+
+Keeping assignment persistence in Body Pouches still requires adapting its saved
+records: the release identifies assignments by numbered native slots. A versioned
+migration would map those assignments to native stable keys and store new bag
+assignments by equipment-slot keys, without attaching an old assignment to
+unrelated equipment.
+
+This could make several visible additions practical: independently displayed
+pouches on several slots; explicit user priority when a potion pouch shares a
+location with a weapon; and an equippable potion bag whose slots follow the bag's
+model. A provider-declared access region near the bag opening or bottle neck
+could make reach behavior easier to understand. The framework would expose the
+tested probe and geometry for both hands; the present difference between visible
+bottle geometry and activation points still needs calibration and runtime checks.
+Providing a new ABI alone does not automatically resolve that ergonomic issue.
+
+The simpler mod would register its slot definitions, content rules and executors,
+publish previews, and react to confirmed results. Request correlation and
+invalidation would still exist, but their shared implementation would replace
+private reconstructions in each consumer. These are proposed changes; they do
+not describe additional features already shipped in Body Pouches 0.2.0.
 
 ## Climbing and harvesting
 
