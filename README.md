@@ -4,6 +4,11 @@ A working name for the module. The name the mod is released under will be a diff
 
 Russian: [README.ru.md](README.ru.md).
 
+Author: [Vhodnoylogin](https://github.com/Vhodnoylogin).
+Developed with assistance from Claude (Anthropic) and
+[Codex (OpenAI)](https://developers.openai.com/codex).
+Codex assisted with implementation, code review, verification, and release preparation.
+
 The mod turns the VRIK holsters worn on the body into pouches: a slot holds not only a weapon but
 a flask, food or a throwing knife, and the hand takes it straight out of there — no menu, no wheel,
 no hotkey. Take a potion off the hip, bring it to the mouth, drink it, put the empty flask back.
