@@ -2,17 +2,51 @@
 
 Russian: [Русская версия](concept-ru.md).
 
-This proposal describes how the three frameworks could provide a coherent base for Skyrim VR mods. Each framework owns its existing domain and exposes the observations and requests that other mods need. It is a direction for discussion, not an agreed design or a promise of an available API.
+This proposal describes how the three frameworks could provide a coherent base for Skyrim VR mods. Each framework owns its existing domain and exposes the observations and requests that other mods need. It is a direction for discussion, not an agreed design or a promise of an available API. A separate slot service extends this foundation with definitions authored outside the game and interpreted by VRIK at runtime.
 
 The intended benefit is concrete: a mod author can ask for a body zone, a physical handover or an NPC attachment without recreating another framework's internals. A single interaction has identifiable participants and a confirmed result.
+
+## Contents
+
+- [Responsibilities](#responsibilities)
+- [HIGGS input possession and physical requests](#higgs-input-possession-and-physical-requests)
+  - [Input and action selection](#input-and-action-selection)
+  - [Hand state and coherent observations](#hand-state-and-coherent-observations)
+  - [Grabbing release and transfer](#grabbing-release-and-transfer)
+  - [Physical constraints](#physical-constraints)
+  - [Domain executors](#domain-executors)
+- [VRIK body hands zones and slots](#vrik-body-hands-zones-and-slots)
+  - [Body and hand pose](#body-and-hand-pose)
+  - [Zones](#zones)
+  - [Runtime slot binding](#runtime-slot-binding)
+  - [Slot visuals](#slot-visuals)
+  - [Content providers](#content-providers)
+- [PLANCK NPC physics and hits](#planck-npc-physics-and-hits)
+  - [Actor bodies and attachment points](#actor-bodies-and-attachment-points)
+  - [Physical hits](#physical-hits)
+- [Separate slot mod and offline authoring](#separate-slot-mod-and-offline-authoring)
+  - [Visual editor before launching the game](#visual-editor-before-launching-the-game)
+  - [Slot definitions instances and configuration](#slot-definitions-instances-and-configuration)
+  - [Slots supplied by equipment](#slots-supplied-by-equipment)
+  - [Registry and VRIK adapter](#registry-and-vrik-adapter)
+- [Input and action sequence](#input-and-action-sequence)
+- [Shared physical operation](#shared-physical-operation)
+- [Mods used to assess ABI expressiveness](#mods-used-to-assess-abi-expressiveness)
+- [Body Pouches with the shared services](#body-pouches-with-the-shared-services)
+- [Shields and 2H Weapons Unlocked with the shared services](#shields-and-2h-weapons-unlocked-with-the-shared-services)
+- [Climbing and harvesting](#climbing-and-harvesting)
+- [Compatibility and ABI lifecycle](#compatibility-and-abi-lifecycle)
+- [CommonLib as the second level of synergy](#commonlib-as-the-second-level-of-synergy)
+- [User priority and mod order](#user-priority-and-mod-order)
 
 ## Responsibilities
 
 | Provider | Owns | Provides to other mods |
 |---|---|---|
 | HIGGS | Grip/trigger input brokerage, haptic scheduling, physical hands/weapons, grabbing and physical possession | Input observations and reservations, physical grip state, explicit grab/release/transfer requests, supported grip/drive/constraint integration and action receipts |
-| VRIK | Player body and final skeletal pose; body anchors, spatial hand interpretation, zones, persistent configurable slots and their presentation | Slot creation through API, equipment-bound slots and visuals, coherent pose and zone snapshots, zone transitions, eligible actions, content previews, named-hand requests and scoped reservations |
+| VRIK | Player body and final skeletal pose; runtime anchor mapping, spatial hand interpretation, zone tests, slot interaction and presentation | Coherent pose/zone snapshots, runtime slot binding, zone transitions, eligible actions, content previews, named-hand requests and scoped reservations |
 | PLANCK | NPC physical animation and ragdoll lifecycle; its physical-hit interpretation and commitment | Actor/body/bone metadata, validated attachment endpoints, candidate/committed hit data, scoped interaction policies and lifecycle events |
+| Body Slots (working name) | Offline slot authoring and definition/instance registry; stable keys, local placement/geometry, generic content rules and saved customization | Versioned declarative packages, slot creation/configuration API, equipment slot sets and copied definitions for the VRIK runtime adapter |
 | External mod | Its gameplay feature and content policy | Pouch selection, unconventional equipment/proxies, handling gestures, weight response, penetration/extraction or parry rules, expressed through provider contracts |
 | CommonLib | Engine addresses and types, reusable technical operations and verified wrappers | A common implementation of engine access, geometry, scene and physics operations for the three frameworks and external mods |
 
@@ -198,58 +232,38 @@ Status QueryZones(ClientToken, const ZoneProbe*, ZoneSnapshot* outZones, uint32_
 }
 ```
 
-### Saved configurable slots
+### Runtime slot binding
 
-A slot adds content policy and presentation to a zone. API creation extends beyond numbered holsters. VRIK saves and edits stable identity, anchor, geometry, hand access, enabled state and visuals. Definition/profile defaults remain separate from save-specific instances and player adjustments; re-registration preserves those adjustments. Runtime IDs and reservations are recreated after loading.
-
-**Pseudo-ABI**
-
-```cpp
-namespace VRIK {
-
-Status RegisterSlotDefinition(ClientToken, const SlotDefinition*, SlotDefinitionId* outDefinition);
-
-Status CreateSlotInstance(ClientToken, const SlotInstanceRequest*, SlotId* outSlot, RequestId* outRequest);
-
-Status RequestSlotCustomization(ClientToken, SlotId, const SlotCustomization*, RequestId* outRequest);
-
-Status CopySlotConfiguration(ClientToken, SlotId, SlotConfiguration* outConfiguration);
-
-Status UnregisterSlot(ClientToken, SlotId, RequestId* outRequest);
-
-// Events: SlotInstanceAvailable, SlotInstanceUnavailable, SlotConfigurationChanged.
-
-}
-```
-
-### Slots supplied by equipment
-
-An equippable potion bag can add one or more slots. Its mod supplies equipment records, assets and attachment points; VRIK binds zones to the actual wearable model, following its movement and scale. Equipping activates the slots; unequipping or model loss stops new offers and cancels uncommitted work. Already delivered items retain their disposition; the content provider handles unequip policy through the authorized executor.
-
-The persistent key combines provider definition, particular equipment instance and slot within it: identical bags keep separate assignments. The equipment provider validates save-scoped durable instance keys and declares stack split/merge, cloning and ownership-transfer rules. Rebinding restores one slot set. Missing equipment, providers or unresolved identity leave the association unavailable, without rebinding it to another item. VRIK saves placement/visual overrides; content providers save their rules under the same key.
+The separate slot mod owns definitions and saved customization. VRIK resolves their named anchors against the actual calibrated body or equipment model, computes world placement and evaluates hand access. Its adapter reports availability, interaction and presentation; it does not become another writer of the saved definition. Creating temporary VRIK zones remains available for runtime interactions; persistent slot geometry comes from the slot registry.
 
 **Pseudo-ABI**
 
 ```cpp
 namespace VRIK {
 
-Status BindEquipmentSlotSet(ClientToken, const EquipmentSlotBinding*, SlotSetId* outSet, RequestId* outRequest);
+Status BindSlotRuntime(ClientToken, const SlotRuntimeBinding*, Lease* outBinding, RequestId* outRequest);
+
+Status CopySlotBinding(ClientToken, SlotId, SlotRuntimeSnapshot* outBinding);
+
+// Events: SlotInstanceAvailable, SlotInstanceUnavailable.
 
 }
 ```
+
+VRIK recognizes in-game drag gestures using HIGGS input and submits an expected-revision customization request to the slot mod. It can display a provisional drag, but a rejected edit restores the committed placement. Equipping a bag makes its registered slots available only after model binding; unequipping or model loss stops new offers and cancels uncommitted work. Already delivered items retain their disposition, and the content provider handles unequip policy through the authorized executor.
 
 ### Slot visuals
 
-VRIK supports editable bag/holder visuals separately from item previews. The binding identifies whether equipment or VRIK renders the bag, preventing duplication. Model-defined access/grip regions are explicit; model bounds do not automatically become activation geometry. Visual changes version their anchors and report readiness/failure; preview readiness identifies the displayed content version.
+Body Slots stores editable bag/holder visual configuration; VRIK renders it separately from item previews. The binding identifies whether equipment or VRIK renders the bag, preventing duplication. Model-defined access/grip regions are explicit; model bounds do not automatically become activation geometry. Visual changes version their anchors and report readiness/failure; preview readiness identifies the displayed content version.
 
 **Pseudo-ABI**
 
 ```cpp
 namespace VRIK {
 
-Status RequestSlotVisual(ClientToken, SlotId, const SlotVisual*, RequestId* outRequest);
-
 Status RequestItemPreview(ClientToken, SlotId, const ItemPreview*, RequestId* outRequest);
+
+Status CopySlotPresentation(ClientToken, SlotId, SlotPresentationSnapshot* outPresentation);
 
 // Events: PresentationReady, PresentationFailed.
 
@@ -258,16 +272,16 @@ Status RequestItemPreview(ClientToken, SlotId, const ItemPreview*, RequestId* ou
 
 ### Content providers
 
-Type, keyword, form-list filters and bounded eligibility callbacks support weapons, shields, torches, potions, food and tools. BindSlotContent attaches a provider to an existing slot with exclusive/shared action rights; BindNativeSlot reuses native geometry and user placement without a fictitious weapon category. Releasing callback-bearing bindings drains their calls; new services preserve the existing holster interface.
+Body Slots supplies generic content filters and policy bindings. BindSlotContent attaches the content executor and its action rights to a VRIK runtime slot; it references the registry policy rather than creating a second filter definition. BindNativeSlot is an optional compatibility bridge for native geometry and player placement without a fictitious weapon category. Releasing callback-bearing bindings drains their calls; new services preserve the existing holster interface.
 
 **Pseudo-ABI**
 
 ```cpp
 namespace VRIK {
 
-Status BindNativeSlot(ClientToken, uint32_t nativeSlot, const SlotContentPolicy*, SlotId* outSlot, Lease* outBinding, RequestId* outRequest);
+Status BindNativeSlot(ClientToken, uint32_t nativeSlot, const SlotContentBinding*, SlotId* outSlot, Lease* outBinding, RequestId* outRequest);
 
-Status BindSlotContent(ClientToken, SlotId, const SlotContentPolicy*, ContentEligibilityCallback, void* userContext, Lease* outBinding, RequestId* outRequest);
+Status BindSlotContent(ClientToken, SlotId, const SlotContentBinding*, Lease* outBinding, RequestId* outRequest);
 
 }
 ```
@@ -348,6 +362,92 @@ Status CopyHitSnapshot(ClientToken, uint64_t hitId, HitSnapshot* outSnapshot);
 }
 ```
 
+## Separate slot mod and offline authoring
+
+Slot creation becomes a separate service, with **Body Slots** as a working name. Its main purpose is to let a mod author create new slots outside the game. Keeping VRIK's native 14 holsters is an optional compatibility route. The three frameworks keep their domains; this service supplies the declarative slot data that VRIK uses at runtime.
+
+### Visual editor before launching the game
+
+The primary workflow is **offline visual editor → editable project and versioned slot package → separate slot runtime/API → VRIK runtime binding, hand detection, interactions and presentation**. The editor loads a reference body/skeleton or equipment model. The author selects a named anchor, places and rotates a slot, edits its independent access region and declares scale behavior, physical-hand access, slot kind, allowed contents and optional visuals. For a wearable potion bag, the author can place the access region at its opening before launching Skyrim.
+
+The editable project retains the authoring data; the export is a versioned declarative package that the runtime can validate and load. Neither Skyrim nor VRIK is required to author, reopen or export definitions. A mod may ship such a package without calling a live creation API. The format records stable provider/slot keys, schema and reference-rig versions, anchor names, local transforms, geometry/probe declarations, units, axes, scale conventions, policy bindings and asset references. Engine pointers and save-specific handles never enter the package; live eligibility callbacks cannot run in the editor.
+
+Offline placement provides a default, not proof of reachability on every character. The package declares reference-to-runtime mapping and explicit conversion/rebinding rules. VRIK applies them to actual proportions, calibration and equipment movement. A missing anchor makes the slot unavailable instead of silently selecting another bone. Player overrides remain separate from the author's package; runtime ergonomics still need game checks. The editor is a proposed requirement, not an implemented feature or a selected tool.
+
+### Slot definitions instances and configuration
+
+Body Slots owns creation and the definition/instance registry: stable keys, named anchors and local placement, independent access geometry, slot kind, generic allowed-content filters and customization persistence. Definitions/profile defaults, save-scoped instances and player overrides remain separate. Re-registration preserves overrides; runtime IDs and reservations are recreated after loading. Creating a runtime instance is distinct from authoring its reusable definition.
+
+**Pseudo-ABI**
+
+```cpp
+namespace BodySlots {
+
+Status RegisterSlotDefinition(ClientToken, const SlotDefinition*, SlotDefinitionId* outDefinition);
+
+Status CreateSlotInstance(ClientToken, const SlotInstanceRequest*, SlotId* outSlot, RequestId* outRequest);
+
+Status CopySlotConfiguration(ClientToken, SlotId, SlotConfiguration* outConfiguration);
+
+Status UnregisterSlot(ClientToken, SlotId, RequestId* outRequest);
+
+// Events: SlotConfigurationChanged.
+
+}
+```
+
+Type, keyword and form-list filters support weapons, shields, torches, potions, food and tools. Registered bounded eligibility rules refine this generic policy; they do not mutate inventory. Body Slots owns policy registration and its configuration version; VRIK uses a coherent policy snapshot and requests any live eligibility decision through the registry at its declared phase. Callback ownership stays with the registry registration; serialized definitions do not carry executable callbacks. Consumers keep potion selection, stock, original/proxy semantics and assignment persistence. Exclusive/shared bindings declare who may offer an action without making the registry an inventory executor.
+
+**Pseudo-ABI**
+
+```cpp
+namespace BodySlots {
+
+Status RequestSlotCustomization(ClientToken, SlotId, const SlotCustomization*, RequestId* outRequest);
+
+Status RequestSlotVisualDefinition(ClientToken, SlotId, const SlotVisual*, RequestId* outRequest);
+
+Status BindContentPolicy(ClientToken, SlotId, const SlotContentPolicy*, ContentEligibilityCallback, void* userContext, Lease* outBinding, RequestId* outRequest);
+
+Status EvaluateSlotEligibility(ClientToken, const SlotEligibilityQuery*, SlotEligibilityResult* outResult);
+
+}
+```
+
+### Slots supplied by equipment
+
+An equipment mod supplies records, assets and a declared slot set authored on its reference model. Body Slots creates and persists the instances; VRIK follows their anchors on the actual wearable model. The key combines the provider definition, particular equipment instance and slot within it, so identical bags keep separate assignments. The equipment provider validates durable save-scoped instance keys and declares stack split/merge, cloning and ownership-transfer rules. Rebinding restores one set; missing equipment, providers or unresolved identity leave it unavailable without attaching it to another item. Body Slots saves placement/visual overrides; content providers save their own rules under the same key.
+
+**Pseudo-ABI**
+
+```cpp
+namespace BodySlots {
+
+Status BindEquipmentSlotSet(ClientToken, const EquipmentSlotBinding*, SlotSetId* outSet, RequestId* outRequest);
+
+}
+```
+
+### Registry and VRIK adapter
+
+The public definition API and the VRIK runtime adapter are separate contracts. The registry can start without VRIK; capability negotiation attaches VRIK as the spatial/interaction/presentation runtime. It copies versioned definition changes outside the per-hand hot path and publishes anchor/presentation availability through its assigned adapter identity. Frame work uses an immutable configuration revision; queued actions revalidate it and the body/anchor generation before commitment.
+
+**Pseudo-ABI**
+
+```cpp
+namespace BodySlots {
+
+Status CopyDefinitionChanges(ClientToken, const DefinitionCursor*, SlotDefinitionSnapshot* outRecords, uint32_t capacity, uint32_t* outCount);
+
+Status ReportRuntimeBinding(ClientToken, const SlotRuntimeReport*);
+
+// Events: DefinitionAvailabilityChanged.
+
+}
+```
+
+Each state has one authoritative writer: Body Slots for definitions/configuration, the content executor for gameplay assignments, VRIK for runtime binding and its committed-content mirror/presentation, HIGGS for physical possession. Configuration, content and presentation versions and body/anchor generations are distinct. Drag, MCM and API edits use expected revisions; callbacks run at declared phases outside registry locks. Provider removal stops new calls and drains in-flight callbacks before releasing code/context. Bind/unbind and customization are queued at declared boundaries rather than recursively changing the registry during a frame callback.
+
 ## Input and action sequence
 
 1. HIGGS supplies grip/trigger samples and edges with physical hand, analog/touch distinction and an input sequence ID. VRIK supplies current zone/action offers.
@@ -389,7 +489,7 @@ These are proposed requirements derived from those consumers, not promises that 
 
 | Current responsibility inside Body Pouches | What the shared services could provide |
 |---|---|
-| Require an enabled weapon category for detection; suspend normal holstering for exclusive pouches | A VRIK slot binding with independent geometry, potion eligibility and owner-scoped action rights |
+| Require an enabled weapon category for detection; suspend normal holstering for exclusive pouches | Body Slots definitions with independent geometry and potion eligibility; VRIK runtime binding and owner-scoped action rights |
 | Read raw controller edges for the shared-slot fallback and reproduce withdrawal recognition | HIGGS input sequences and priority, with VRIK spatial action offers even for empty non-weapon slots |
 | Reconstruct slot bones, transforms, hand mapping and camera offsets for shared detection and diagnostics | VRIK zone/probe snapshots in a declared space and phase; physical hand data from HIGGS |
 | Defer a drop to the completed VRIK/HIGGS update, guard it with local serials and cancel it on regrab/load | A correlated release observation, matching zone sample and invalidation contract |
@@ -403,7 +503,7 @@ Keeping assignment persistence in Body Pouches still requires adapting its saved
 
 This could make several visible additions practical: independently displayed pouches on several slots; explicit user priority when a potion pouch shares a location with a weapon; and an equippable potion bag whose slots follow the bag's model. A provider-declared access region near the bag opening or bottle neck could make reach behavior easier to understand. The framework would expose the tested probe and geometry for both hands; the present difference between visible bottle geometry and activation points still needs calibration and runtime checks. Providing a new ABI alone does not automatically resolve that ergonomic issue.
 
-The simpler mod would register its slot definitions, content rules and executors, publish previews, and react to confirmed results. Request correlation and invalidation would still exist, but their shared implementation would replace private reconstructions in each consumer. These are proposed changes; they do not describe additional features already shipped in Body Pouches 0.2.0.
+The simpler mod could ship slot definitions authored offline, register its content rules with Body Slots and executors with the interaction services, publish VRIK previews, and react to confirmed results. Request correlation and invalidation would still exist, but their shared implementation would replace private reconstructions in each consumer. These are proposed changes; they do not describe additional features already shipped in Body Pouches 0.2.0.
 
 ## Shields and 2H Weapons Unlocked with the shared services
 
@@ -413,10 +513,10 @@ My experimental adaptation aims to retain the equipment feature while using VRIK
 
 | What the original mod or experimental adaptation has to do | What shared services could provide |
 |---|---|
-| Original: create private shoulder zones and disable VRIK's shoulder holsters to avoid competing actions | VRIK: native slot bindings, shared placement and presentation, with content-provider action rights instead of disabling the player's holsters |
+| Original: create private shoulder zones and disable VRIK's shoulder holsters to avoid competing actions | Body Slots: shared placement and content policy; VRIK: optional native bindings and presentation, with provider action rights instead of disabling the player's holsters |
 | Adaptation: rely on weapon-type and hand filtering before receiving an occupied slot's action offer; the empty left hand is filtered out | VRIK: independent zone observations and provider-defined action offers, while preserving the player's explicit access restrictions |
 | Adaptation: fit drawing into VRIK's internal hand choice; the existing call cannot name both slot and destination hand | VRIK: an explicit slot-to-physical-hand request routed to the mod's equipment executor, with a confirmed result |
-| Adaptation: use proxy type for equipment, display and holster eligibility at once; changing it for one purpose affects the others | VRIK: separate content and presentation rules, distinguishing original item, proxy and displayed model |
+| Adaptation: use proxy type for equipment, display and holster eligibility at once; changing it for one purpose affects the others | Body Slots: independent eligibility configuration; VRIK: separate content/presentation observations, distinguishing original item, proxy and displayed model |
 | Maintain original/proxy identity, instance properties, counts, restoration and drop handling while other systems observe inventory changes | A shared operation contract with instance identity, reservations and one authorized inventory executor; the mod retains property-transfer policy |
 | Reconcile the mod's records, VRIK's Papyrus content and the displayed model | VRIK: committed slot content and version, plus presentation readiness tied to that version |
 | Coordinate delayed tasks and later Papyrus checks that may observe an already changed proxy type | Executor contract: an immutable request, a legal execution phase and correlated accepted, committed and completed results |
@@ -424,7 +524,7 @@ My experimental adaptation aims to retain the equipment feature while using VRIK
 | Reconstruct hand occupancy and equipment readiness from game equipment, HIGGS grip state and VRIK flags | HIGGS: distinct equipment/physical-possession/two-hand observations and confirmed grip or transfer results; VRIK: presentation readiness. Transfers reserve affected hands together and preserve the other hand's item |
 | Restore proxy/slot associations after loading and investigate undocumented meanings or call ordering | Providers: stable keys, lifecycle events and documented observations; CommonLib: verified engine operations. The mod retains its own saved state |
 
-The equipment mod still owns unconventional equip rules, proxy selection and preservation of instance properties. VRIK owns body zones, slot placement, committed content and display; HIGGS owns physical possession and coordinates input and hand resources. A valid equipment record alone does not prove a visible model, physical body or working collision. Shared results make those stages observable; they do not guarantee rollback after arbitrary gameplay side effects. PLANCK participates in physical hits involving NPCs and need not become a required inventory or holster executor. These are proposed services, not a completed port or guarantees of today's ABI.
+The equipment mod still owns unconventional equip rules, proxy selection and preservation of instance properties. Body Slots owns saved slot definitions and placement; VRIK owns runtime body zones, placement mapping, the committed-content mirror and display; HIGGS owns physical possession and coordinates input and hand resources. A valid equipment record alone does not prove a visible model, physical body or working collision. Shared results make those stages observable; they do not guarantee rollback after arbitrary gameplay side effects. PLANCK participates in physical hits involving NPCs and need not become a required inventory or holster executor. These are proposed services, not a completed port or guarantees of today's ABI.
 
 ## Climbing and harvesting
 
@@ -441,6 +541,8 @@ VR Climbing then focuses on climbing, and Immersive Harvesting on harvest rules 
 ## Compatibility and ABI lifecycle
 
 Keep existing 001 interfaces and semantics unchanged. Negotiate additive services and capabilities separately. Missing optional providers return a defined result or use an explicitly documented legacy fallback. Old consumers that directly mutate private state cannot automatically gain the new ownership guarantees.
+
+Extracting slots requires an additive VRIK adapter: original 001 alone can configure existing holsters but cannot create arbitrary new slots. Preserve the old vtable, Papyrus names, saved arrays and event-acceptance semantics; an old boolean does not prove a committed transfer. Keep the legacy arrays at 14, because resizing can reset saved assignments. New slots use separate stable-keyed records. When the registry is active, compatible legacy settings edits translate to it, rather than competing as a second configuration writer. Fixed numbered anchors/art resources and weapon-dependent hover, access geometry and presentation need runtime adapters; native weapon assignments and the existing Papyrus equip executor remain in their compatibility path. These are reconstruction-informed boundaries to validate against the original behavior, not author-confirmed implementation details.
 
 Requests, reservations and subscriptions identify their owner. One consumer cannot release another's suppression or reservation. Unloading requires stopping new callbacks and draining in-flight calls. Snapshots use copied, size-tagged records with explicit units, spaces, hand mapping and world/body generations; new boundaries do not transfer STL objects or ownership of allocated memory.
 
@@ -500,17 +602,17 @@ Status CopyEventPayload(ClientToken, SnapshotId, void* callerBuffer, uint32_t bu
 // Pose/contact records name time, coordinate space, units and generations.
 ```
 
-Slot definitions and user customization persist under stable keys. Runtime instances, equipment anchors, previews and bindings are rebuilt and validated after loading; readiness is reported before dependent actions resume. Content providers retain their own saved gameplay state under the same keys. Provider removal, slot unavailability and explicit deletion of saved customization have different meanings and must not silently erase each other's data.
+Body Slots persists slot definitions and user customization under stable keys. Runtime instances, equipment anchors, previews and bindings are rebuilt and validated after loading; readiness is reported before dependent actions resume. Content providers retain their own saved gameplay state under the same keys. Provider removal, slot unavailability and explicit deletion of saved customization have different meanings and must not silently erase each other's data.
 
 ## CommonLib as the second level of synergy
 
-The synergy has two levels. The first coordinates HIGGS, VRIK and PLANCK through their APIs/ABIs: each mod provides its own observations and actions. The second establishes a common technical foundation in CommonLib, moving engine address handling and repeated code out of individual mods into the library.
+The synergy has two levels. The first coordinates HIGGS, VRIK, PLANCK and the slot service through their APIs/ABIs: each mod provides its own observations and actions. The second establishes a common technical foundation in CommonLib, moving engine address handling and repeated code out of individual mods into the library.
 
 This includes function/data address definitions and resolution, typed object access, references and locks, coordinate transforms, scene and Havok operations, ray queries and character controller access. Mods use common CommonLib methods instead of maintaining their own addresses and similar low-level implementations. A fix to an operation is maintained in one place and becomes available to consumers when they adopt the corresponding library version.
 
 Start with the capabilities of the current CommonLib build. When an operation is missing, extend the library with a verified method: establish its signature, data layout, address for the supported game version and call behavior. A common operation should serve both the three frameworks and external mods, with an interface that encapsulates engine access details.
 
-On this foundation, HIGGS manages input and physical possession, VRIK manages the body and slots, and PLANCK manages NPC physics. CommonLib provides their shared technical tools; decisions about pouch contents, climbing, harvesting and hits belong to the owners of those mechanics. The two levels complement each other: common engine code in the library and coordinated gameplay interaction through the mods' APIs/ABIs.
+On this foundation, HIGGS manages input and physical possession, VRIK manages the body and runtime slot interactions, Body Slots manages slot definitions and customization, and PLANCK manages NPC physics. CommonLib provides their shared technical tools; decisions about pouch contents, climbing, harvesting and hits belong to the owners of those mechanics. The two levels complement each other: common engine code in the library and coordinated gameplay interaction through the mods' APIs/ABIs.
 
 ## User priority and mod order
 
