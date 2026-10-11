@@ -30,6 +30,8 @@ HIGGS and PLANCK have exactly two public branches: `main` contains the original 
 
 The configured module checks pin BodySlots.dll SHA-256 `42041afc64fdab60f4f0ad605c84deca90995ee1fb8f2e5d0d3d309cd4880228` and built VRIK.dll SHA-256 `14e5ded07b1348f682e919d2b1a6846e42fc6f492a020246e9ae25ddec91893f`. Reproducible fixture sources are committed in their repositories; private review reports and compiler outputs remain in the project journal and external evidence directories. The HIGGS standalone service is built and exercised; the full HIGGS plugin is not qualified because the required original dependency layout is unavailable. No mod was installed and no game was launched during this checkpoint.
 
+An additional Morphbench offline check loaded an explicit installed HIMBO body with 14,597 vertices and an XP32 skeleton with 543 finite NODE frames. Both slot markers use the actual pelvis NODE transform. Browser editing preserved authored placement while showing a separate temporary override; downloaded authored JSON and all 928 package bytes match the current Body Slots compiler. Reference assets were unchanged. This checks authoring against real reference geometry; it does not determine MO2 winners or qualify animated poses, calibration or Skyrim behavior.
+
 HIGGS's force-enabled flag only bypasses its temporary post-hit weapon-collision disable window. It does not override sheathing or an unavailable physical body, and any active suppression wins. It is not a general contact query or a new collision actuator.
 
 ## Still required
