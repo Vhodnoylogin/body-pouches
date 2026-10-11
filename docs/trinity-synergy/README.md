@@ -5,6 +5,8 @@ language versions:
 
 - [English concept](concept-en.md)
 - [Русская концепция](concept-ru.md)
+- [Implementation status](implementation-status.md): delivered code, verification and remaining gaps.
+- [CommonLib assessment](commonlib-assessment.md): current technical reuse and extension candidates for the second stage.
 
 Body Pouches intends to migrate to this architecture. The proposal is hosted
 here because Body Pouches is maintained by its owner independently of the three
