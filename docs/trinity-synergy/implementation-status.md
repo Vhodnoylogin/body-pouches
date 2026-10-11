@@ -6,8 +6,8 @@ Updated: 11 October 2026. This is the implementation ledger next to the [English
 
 | Component | Repository | Working implementation |
 |---|---|---|
-| HIGGS | [Vhodnoylogin/higgs](https://github.com/Vhodnoylogin/higgs), genuine fork of adamhynek/higgs | `development` at `5248a7c`: earlier repairs, consolidated history and owned temporary restrictions |
-| PLANCK | [Vhodnoylogin/activeragdoll](https://github.com/Vhodnoylogin/activeragdoll), genuine fork of adamhynek/activeragdoll | `development` at `156b3cf`: consolidated history, transient actor-policy reset and nested hit-context repairs |
+| HIGGS | [Vhodnoylogin/higgs](https://github.com/Vhodnoylogin/higgs), genuine fork of adamhynek/higgs | `development` at `f3beb76` (tested code `5248a7c`): earlier repairs, consolidated history and owned temporary restrictions |
+| PLANCK | [Vhodnoylogin/activeragdoll](https://github.com/Vhodnoylogin/activeragdoll), genuine fork of adamhynek/activeragdoll | `development` at `986a3e7` (tested code `156b3cf`): consolidated history, transient actor-policy reset and nested hit-context repairs |
 | VRIK adapter | [vrik-reconstruction](https://github.com/Vhodnoylogin/vrik-reconstruction), private | `feature/extract-body-slots` at `96110cf`: separate authored and configured geometry observations |
 | Body Slots | [body-slots](https://github.com/Vhodnoylogin/body-slots), private | `feature/extract-body-slots` at `99417b4`: registry, packages and saved placement customizations |
 | Morphbench | [morphbench](https://github.com/Vhodnoylogin/morphbench) | `main` at `5692a04`: separate Slots authoring mode, CLI replay and Body Slots exports |
