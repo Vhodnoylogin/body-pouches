@@ -61,3 +61,19 @@ Passive native14 diagnostics add a private copied-state owner, bounded request h
 Owned native suspension adds provider-specific policy and standard fixed numeric ownership/expiry machinery; it introduces no engine address. Suppression composition, grip-opportunity latching and callback-time admission stay in VRIK. Body Pouches consumes the copied API through ordinary module export lookup; this is not a library migration. The development plugin was built with its existing pinned CommonLib dependency, without changing that dependency or claiming equivalence with the separately inspected 9.1.0 checkout.
 
 HIGGS controller-motion repair moves numerical history and validation into an internal pure transition model behind one copied-state owner. History policy, availability, world/load continuity and observation tickets remain HIGGS responsibilities. Existing SDK HMD conversion and point/matrix operations are the same adapter candidates previously identified; their runtime mapping/semantics still need qualification before CommonLib migration. No new address, required library extension or CommonLib implementation is introduced by this repair.
+
+
+## Holder-loading candidates checked on 25 October
+
+The private holder experiment is not a CommonLib migration. It deliberately keeps the existing VRIK SDK and remains disconnected from startup while the engine path is unqualified. The second stage can replace legacy technical wrappers with the existing library facilities below, after verifying actual VR behavior and ownership.
+
+| Technical operation | Existing inspected CommonLib facility | Remaining verification or possible extension |
+|---|---|---|
+| Resource/model demand loading | `BSModelDB::Demand` already exists, including postprocessing arguments; its checked-in VR fixture maps ID 74040 to 0x0D775E0 | Verify material/resource processing and whether the returned mutable graph needs a distinct clone per holder. This is existing reuse, not an established missing library method |
+| Scene-node creation and attachment | `NiNode::Create`, attach/detach wrappers, `NiPointer` and point/matrix types already exist; VR source and actual legacy-SDK assembly agree on the inspected virtual slots | Qualify scene-thread/lifetime rules and current/old transform timing before replacing the adapter. Model root, private wrapper and parent ownership remain explicit |
+| Per-holder mutable graph copies | `NiObject::Clone` and `CreateDeepCopy` already exist | Verify returned ownership and exact cloning behavior; loading one resource must not share one attached mutable root between holders |
+| Direct low-level NiStream construction | Layout and virtual load declarations exist; a complete direct constructor/factory implementation was not found in the inspected library source. The legacy SDK also declares C++ constructors/destructors without defining them | The existing higher-level Demand path may make an extension unnecessary. Only if it is insufficient should a separately verified factory/destruction helper be added; do not infer binding correctness from declarations or successful linking |
+
+The installed image's read-only NiStream vtable/RTTI and unwind metadata corroborate type/range information, not constructor field writes or destructor semantics. Its on-disk target bytes do not provide coherent instruction-level confirmation, and no execution or image transformation was used. Runtime resource/material/scene qualification therefore remains outstanding. No library method, address mapping or dependency was changed.
+
+PLANCK's reset-only deferred-cleanup epoch is ordinary provider-owned numeric policy with no new engine address. Its ticket lifetime follows PLANCK tracking reset; it does not replace an engine actor/graph lifetime abstraction. No CommonLib extension is required for that bounded repair.
