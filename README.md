@@ -8,6 +8,8 @@ installation instructions are on the Nexus page and retained here in the source.
 
 Russian: [README.ru.md](README.ru.md).
 
+This development branch includes an [unreleased native suspension integration](docs/native-suspension-adoption.md). It preserves the original VRIK fallback and has not yet been qualified in Skyrim; it does not change the published 0.2.0 archive.
+
 Author: [Vhodnoylogin](https://github.com/Vhodnoylogin).
 Developed with assistance from Claude (Anthropic) and
 [Codex (OpenAI)](https://github.com/codex).

@@ -140,6 +140,7 @@ namespace BodyPouches
 			mod._inHiggsUpdate = false;
 			return;
 		}
+		mod._vrik.MaintainSuspensions();
 		++mod._callbackFrame;
 		mod._frameGeneration = mod._worldGeneration;
 
@@ -714,13 +715,13 @@ namespace BodyPouches
 
 			Core::SlotFacts facts;
 			facts.slot = setting.slot;
-			facts.detectable = _vrik.SeeSlot(setting.slot).detectable;
 			facts.exclusive = pouch->PouchMode() == Core::Mode::Exclusive;
+			facts.detectable = _vrik.SeeSlot(setting.slot, facts.exclusive).detectable;
 			facts.maySwitchOn = _settings.mayEnableSlots;
 
 			const auto plan = Core::PlanFor(facts);
 			if (plan.switchOn) {
-				_vrik.SwitchOn(setting.slot);
+				_vrik.SwitchOn(setting.slot, facts.exclusive);
 			}
 			if (plan.complain) {
 				// VRIK's setting, arranged by whoever arranged it. We say what is wrong

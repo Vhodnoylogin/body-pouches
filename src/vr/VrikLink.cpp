@@ -1,11 +1,13 @@
 #include "vr/VrikLink.h"
 
 #include "Loc.h"
+#include "core/SlotPlan.h"
 #include "vr/Handshake.h"
 
 #include <array>
 #include <cmath>
 #include <format>
+#include <Windows.h>
 
 namespace BodyPouches::VR
 {
@@ -31,6 +33,16 @@ namespace BodyPouches::VR
 		}
 
 		Loc::Info(Keys::kVrikFound, _build);
+		const auto module = GetModuleHandleA("VRIK.dll");
+		const auto query = module ? reinterpret_cast<vrik_native_suspension::QueryInterface>(
+			GetProcAddress(module, "VRIK_NativeSuspension_QueryInterface")) : nullptr;
+		try {
+			const auto* scoped = query ? query(vrik_native_suspension::kVersion,
+				sizeof(vrik_native_suspension::Api)) : nullptr;
+			_nativeSuspension.Attach(scoped, query != nullptr);
+		} catch (...) {
+			_nativeSuspension.Attach(nullptr, query != nullptr);
+		}
 		return true;
 	}
 
@@ -48,7 +60,8 @@ namespace BodyPouches::VR
 		if (!Ready()) {
 			return false;
 		}
-		const bool done = _api->SetSlotSuspended(a_slot, a_suspended);
+		const bool done = _nativeSuspension.Advertised() ? _nativeSuspension.Set(a_slot, a_suspended)
+			: _api->SetSlotSuspended(a_slot, a_suspended);
 		if (!done && a_suspended) {
 			// A refusal used to return quietly, which left a run unable to tell a slot
 			// VRIK would not give up from a slot nobody ever asked it about.
@@ -57,6 +70,11 @@ namespace BodyPouches::VR
 			Loc::Info(Keys::kPouchSuspended, a_slot);
 		}
 		return done;
+	}
+
+	void VrikLink::MaintainSuspensions() noexcept
+	{
+		if (_nativeSuspension.Advertised()) { _nativeSuspension.Maintain(); }
 	}
 
 	bool VrikLink::IsSuspended(int a_slot)
@@ -112,12 +130,11 @@ namespace BodyPouches::VR
 
 	namespace
 	{
-		// The six kinds of thing a VRIK slot can be told to accept. A slot that accepts
-		// none of them is off.
+		// Native weapon permissions are distinct from suspended-pouch detection.
 		constexpr std::array kWeaponTypes{ "Small", "Medium", "Large", "Ranged", "Shield", "Torch" };
 	}
 
-	SlotView VrikLink::Read(int a_slot)
+	SlotView VrikLink::Read(int a_slot, bool a_exclusive)
 	{
 		SlotView view;
 		if (!Ready() || a_slot < 1 || a_slot > 14) {
@@ -126,17 +143,15 @@ namespace BodyPouches::VR
 
 		for (std::size_t i = 0; i < kWeaponTypes.size(); ++i) {
 			view.allows[i] = GetSetting(std::format("allow{}Slot{}", kWeaponTypes[i], a_slot).c_str());
-			if (view.allows[i] > 0.0) {
-				view.detectable = true;
-			}
 		}
 		view.visible = GetSetting(std::format("visibleSlot{}", a_slot).c_str());
+		view.detectable = Core::ConfiguredForPouch(view.allows, view.visible, a_exclusive);
 		return view;
 	}
 
-	bool VrikLink::IsDetectable(int a_slot)
+	bool VrikLink::IsDetectable(int a_slot, bool a_exclusive)
 	{
-		return Read(a_slot).detectable;
+		return Read(a_slot, a_exclusive).detectable;
 	}
 
 	int VrikLink::SlotInReach(bool a_secondaryHand)
@@ -149,25 +164,24 @@ namespace BodyPouches::VR
 		return Ready() && _api->CanBeHolstered(a_secondaryHand);
 	}
 
-	SlotView VrikLink::SeeSlot(int a_slot)
+	SlotView VrikLink::SeeSlot(int a_slot, bool a_exclusive)
 	{
-		const auto view = Read(a_slot);
+		const auto view = Read(a_slot, a_exclusive);
 		Loc::Info(Keys::kSlotSeen, a_slot, view.allows[0], view.allows[1], view.allows[2],
 			view.allows[3], view.allows[4], view.allows[5], view.visible, view.detectable);
 		return view;
 	}
 
-	bool VrikLink::SwitchOn(int a_slot)
+	bool VrikLink::SwitchOn(int a_slot, bool a_exclusive)
 	{
-		if (IsDetectable(a_slot)) {
+		if (!Ready() || a_slot < 1 || a_slot > 14) {
 			return false;
 		}
-
-		// Small is the least disruptive of the six: it is the kind a build is least
-		// likely to be short of places for, and the slot is about to be suspended
-		// anyway, so nothing will ever actually be holstered here.
-		SetSetting(std::format("allowSmallSlot{}", a_slot).c_str(), 1.0);
-		SetSetting(std::format("visibleSlot{}", a_slot).c_str(), 1.0);
+		const auto view = Read(a_slot, a_exclusive);
+		const auto changes = Core::EnablePlan(view.allows, view.visible, a_exclusive);
+		if (!changes.visibility && !changes.smallWeapons) { return false; }
+		if (changes.smallWeapons) { SetSetting(std::format("allowSmallSlot{}", a_slot).c_str(), 1.0); }
+		if (changes.visibility) { SetSetting(std::format("visibleSlot{}", a_slot).c_str(), 1.0); }
 		Loc::Warn(Keys::kSlotSwitchedOn, a_slot);
 		return true;
 	}

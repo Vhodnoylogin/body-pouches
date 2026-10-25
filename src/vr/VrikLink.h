@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vrikinterface001.h"
+#include "vr/NativeSuspension.h"
 
 #include <RE/Skyrim.h>
 
@@ -9,10 +10,8 @@
 
 namespace BodyPouches::VR
 {
-	// What VRIK's settings say about one slot, as the mod read them. Kept whole rather
-	// than boiled down to a yes/no so that the log can show the grounds along with the
-	// verdict: six zeroes because the slot really is off reads the same as six zeroes
-	// because we asked VRIK for a name it does not know, and those need telling apart.
+	// Raw configuration and a mode-specific prerequisite verdict. A positive verdict
+	// is not evidence of a current hand, active suspension or a committed action.
 	struct SlotView
 	{
 		// small, medium, large, ranged, shield, torch - in that order.
@@ -51,6 +50,8 @@ namespace BodyPouches::VR
 
 		bool SetSuspended(int a_slot, bool a_suspended);
 		[[nodiscard]] bool IsSuspended(int a_slot);
+		// Renew only this consumer's desired claims; load/reset uses fresh handles.
+		void MaintainSuspensions() noexcept;
 
 		// Whether the slot's art is on the slot's bone and was put in place this frame.
 		[[nodiscard]] bool IsDisplayed(int a_slot);
@@ -80,16 +81,13 @@ namespace BodyPouches::VR
 		[[nodiscard]] double GetSetting(const char* a_name);
 		void                 SetSetting(const char* a_name, double a_value);
 
-		// Does VRIK look at this slot at all?
-		//
-		// A slot that allows no weapon type is off - "set all weapon types to 0 to
-		// disable a slot", says its author in the file - and an off slot raises no
-		// event, so a pouch there is simply dead.
-		[[nodiscard]] bool IsDetectable(int a_slot);
+		// Configuration prerequisite for the requested pouch mode, not live reach.
+		// Exclusive pouches suspend native holstering and need no weapon category.
+		[[nodiscard]] bool IsDetectable(int a_slot, bool a_exclusive = false);
 
 		// The same reading, said out loud. One line per slot, with every value it was
 		// decided from.
-		SlotView SeeSlot(int a_slot);
+		SlotView SeeSlot(int a_slot, bool a_exclusive = false);
 
 		// Which slot VRIK thinks this hand has reached, and whether it would holster
 		// there. VRIK answers these whether or not it decides to raise a holster
@@ -104,13 +102,14 @@ namespace BodyPouches::VR
 		// mod that quietly changes it - even in memory, even reversibly - leaves that
 		// person looking at one thing in their menu and getting another in the game.
 		// Returns false when the slot was already on, so the caller can stay quiet.
-		bool SwitchOn(int a_slot);
+		bool SwitchOn(int a_slot, bool a_exclusive = false);
 
 	private:
 		// The reading itself, silent: SeeSlot says it, IsDetectable only asks.
-		[[nodiscard]] SlotView Read(int a_slot);
+		[[nodiscard]] SlotView Read(int a_slot, bool a_exclusive);
 
 		vrikPluginApi::IVrikInterface001* _api{ nullptr };
 		unsigned int                      _build{ 0 };
+		NativeSuspension                  _nativeSuspension;
 	};
 }

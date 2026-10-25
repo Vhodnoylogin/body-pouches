@@ -6,6 +6,8 @@
 
 English: [README.md](README.md).
 
+В этой рабочей ветке добавлена [ещё не выпущенная интеграция управления штатными кобурами](docs/native-suspension-adoption.md). Сохраняется работа с обычным VRIK; новые изменения ещё не проверены в Skyrim и не меняют опубликованный архив 0.2.0.
+
 Автор: [Vhodnoylogin](https://github.com/Vhodnoylogin).
 Мод разрабатывался при участии Claude (Anthropic) и
 [Codex (OpenAI)](https://github.com/codex).

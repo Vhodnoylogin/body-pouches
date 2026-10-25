@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 namespace BodyPouches::Core
 {
 	// What to do with the VRIK slot a pouch sits on, decided away from VRIK.
@@ -14,7 +16,7 @@ namespace BodyPouches::Core
 	struct SlotFacts
 	{
 		int  slot{};
-		bool detectable{};   // VRIK allows some weapon type here, so it watches the slot
+		bool detectable{};   // visible and configured for this pouch mode; not proof of live reach
 		bool exclusive{};    // the pouch was given this slot outright
 		bool maySwitchOn{};  // the player allowed the mod to switch a slot on itself
 	};
@@ -33,19 +35,43 @@ namespace BodyPouches::Core
 		SlotPlan plan;
 
 		if (!a_facts.detectable) {
-			// A slot that allows no weapon type is one VRIK never looks at, so a pouch
-			// there is dead. Switching it on is somebody else's setting to change, and
-			// we do it only when told we may; otherwise we say so and leave it alone.
+			// Visibility belongs to the player. Shared slots also retain a native
+			// weapon category; an exclusive suspended pouch needs no such category.
 			plan.switchOn = a_facts.maySwitchOn;
 			plan.complain = !a_facts.maySwitchOn;
 		}
 
-		// Suspension is for a slot given to a pouch outright - and only for one VRIK
-		// will actually watch. Asking to suspend a slot that stays off achieves nothing
-		// and shows up in the log as a refusal by VRIK, which is a lie about what
-		// happened and would send the next run looking in the wrong place.
+		// Only exclusive pouches suspend the native weapon behavior. These settings
+		// are prerequisites; VRIK still owns actual hand/zone/action decisions.
 		plan.suspend = a_facts.exclusive && (a_facts.detectable || plan.switchOn);
 
 		return plan;
+	}
+
+	struct SlotEnablePlan
+	{
+		bool visibility{};
+		bool smallWeapons{};
+	};
+
+	[[nodiscard]] constexpr bool AllowsNativeWeapons(const std::array<double, 6>& a_allows) noexcept
+	{
+		for (const auto value : a_allows) {
+			// The native compatibility predicate also accepts unordered values.
+			if (!(value < 0.5)) { return true; }
+		}
+		return false;
+	}
+
+	[[nodiscard]] constexpr bool ConfiguredForPouch(const std::array<double, 6>& a_allows,
+		double a_visible, bool a_exclusive) noexcept
+	{
+		return a_visible > 0.5 && (a_exclusive || AllowsNativeWeapons(a_allows));
+	}
+
+	[[nodiscard]] constexpr SlotEnablePlan EnablePlan(const std::array<double, 6>& a_allows,
+		double a_visible, bool a_exclusive) noexcept
+	{
+		return { !(a_visible > 0.5), !a_exclusive && !AllowsNativeWeapons(a_allows) };
 	}
 }

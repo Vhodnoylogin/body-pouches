@@ -50,14 +50,9 @@ namespace BodyPouches
 		// and 13 is the belt buckle, reachable by either hand and used for a weapon by
 		// almost nobody.
 		//
-		// Exclusive, not shared, and that pair of decisions goes together. VRIK ignores
-		// a slot that allows no weapon type at all, so an unused slot is a slot nothing
-		// can be done with - the hand is never even noticed there. The slot therefore
-		// has to be switched on in vrikslots.ini (that is what the overlay mod built by
-		// tools\slots-mod.ps1 does), and then suspended by us, so that VRIK sees the
-		// hand but neither draws from the slot nor puts anything into it. Shared would
-		// mean leaving it switched on for weapons as well, and then a hand reaching for
-		// a potion could come back with a dagger.
+		// Exclusive pouches suspend native weapon behavior. Their visible native zone
+		// remains usable without enabling a weapon category. Shared pouches retain
+		// native weapon configuration and never suspend the player's holster.
 		static Settings Defaults();
 
 		[[nodiscard]] static Core::Mode ModeFromText(const std::string& a_text) noexcept;

@@ -49,3 +49,26 @@ if(MSVC)
     target_compile_options(bodypouches_body_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
 endif()
 add_test(NAME body COMMAND bodypouches_body_tests)
+
+# Production VRIK adapter against an explicit settings/call boundary double.
+# This checks adapter behavior; the double is not a001 vtable qualification.
+add_executable(bodypouches_vrik_tests main.cpp test_vriklink.cpp
+    ../src/vr/VrikLink.cpp ../src/vr/NativeSuspension.cpp)
+target_include_directories(bodypouches_vrik_tests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/vrik-fixture" "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../contract")
+target_link_libraries(bodypouches_vrik_tests PRIVATE BodyPouchesCore)
+if(MSVC)
+    target_compile_options(bodypouches_vrik_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+endif()
+add_test(NAME vrik_adapter COMMAND bodypouches_vrik_tests)
+
+if(WIN32)
+    # Run explicitly with the isolated provider DLL, never a full VRIK.dll.
+    add_executable(bodypouches_suspension_consumer suspension_dll_consumer.cpp ../src/vr/NativeSuspension.cpp)
+    target_include_directories(bodypouches_suspension_consumer PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../src" "${CMAKE_CURRENT_SOURCE_DIR}/../contract")
+    if(MSVC)
+        target_compile_options(bodypouches_suspension_consumer PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+    endif()
+endif()

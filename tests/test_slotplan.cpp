@@ -1,6 +1,7 @@
 #include "Harness.h"
 
 #include "core/SlotPlan.h"
+#include <limits>
 
 using namespace BodyPouches::Core;
 
@@ -69,4 +70,48 @@ TEST(permission_to_switch_on_does_not_make_a_shared_pouch_exclusive)
 	CHECK(plan.switchOn);
 	CHECK(!plan.suspend);
 	CHECK(!plan.complain);
+}
+
+TEST(exclusive_pouch_needs_visibility_but_no_weapon_permissions)
+{
+	const std::array<double, 6> none{};
+	CHECK(ConfiguredForPouch(none, 1.0, true));
+	CHECK(!ConfiguredForPouch(none, 1.0, false));
+	CHECK(!ConfiguredForPouch(none, 0.0, true));
+	const auto visible = EnablePlan(none, 1.0, true);
+	CHECK(!visible.visibility);
+	CHECK(!visible.smallWeapons);
+	const auto hidden = EnablePlan(none, 0.0, true);
+	CHECK(hidden.visibility);
+	CHECK(!hidden.smallWeapons);
+}
+
+TEST(shared_pouch_preserves_every_existing_native_weapon_category)
+{
+	for (std::size_t i = 0; i < 6; ++i) {
+		std::array<double, 6> allows{};
+		allows[i] = .5;
+		CHECK(ConfiguredForPouch(allows, 1.0, false));
+		CHECK(!EnablePlan(allows, 1.0, false).smallWeapons);
+		CHECK(!EnablePlan(allows, 0.0, false).smallWeapons);
+		CHECK(EnablePlan(allows, 0.0, false).visibility);
+	}
+	const auto missing = EnablePlan({}, 0.0, false);
+	CHECK(missing.visibility);
+	CHECK(missing.smallWeapons);
+}
+
+TEST(pouch_configuration_uses_native_thresholds_without_claiming_live_readiness)
+{
+	std::array<double, 6> allows{};
+	allows[0] = .49;
+	CHECK(!ConfiguredForPouch(allows, 1.0, false));
+	allows[0] = .5;
+	CHECK(ConfiguredForPouch(allows, 1.0, false));
+	CHECK(!ConfiguredForPouch(allows, .5, false));
+	CHECK(!ConfiguredForPouch(allows, std::numeric_limits<double>::quiet_NaN(), true));
+	allows[0] = std::numeric_limits<double>::quiet_NaN();
+	CHECK(AllowsNativeWeapons(allows));
+	CHECK(!EnablePlan(allows, 1.0, false).smallWeapons);
+	CHECK(!PlanFor(Facts(false, true, false)).suspend);
 }
