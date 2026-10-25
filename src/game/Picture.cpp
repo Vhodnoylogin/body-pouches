@@ -1,4 +1,5 @@
 #include "game/Picture.h"
+#include <cmath>
 
 #include "Loc.h"
 
@@ -18,6 +19,51 @@ namespace BodyPouches::Game
 		constexpr std::int64_t kTakeDownMs = 3000;
 
 		const char* OrNothing(const std::string& a_text) { return a_text.empty() ? "-" : a_text.c_str(); }
+	}
+
+	std::optional<Picture::Geometry> Picture::ReadGeometry(std::string_view* a_reason) const
+	{
+		const auto fail = [a_reason](std::string_view reason) -> std::optional<Geometry> {
+			if (a_reason) { *a_reason = reason; }
+			return std::nullopt;
+		};
+		auto* lists = RE::ProcessLists::GetSingleton();
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		if (!lists || !player || !_art) { return fail("effect_world_unavailable"); }
+		std::optional<Geometry> geometry;
+		unsigned scanned = 0, matches = 0;
+		bool limited = false;
+		lists->ForEachMagicTempEffect([&](RE::BSTempEffect& tempEffect) {
+			if (++scanned > 256) { limited = true; return RE::BSContainer::ForEachResult::kStop; }
+			auto* model = tempEffect.As<RE::ModelReferenceEffect>();
+			if (!model) { return RE::BSContainer::ForEachResult::kContinue; }
+			auto& effect = *model;
+			if (effect.finished || effect.artObject != _art || effect.target.get().get() != player) {
+				return RE::BSContainer::ForEachResult::kContinue;
+			}
+			++matches;
+			if (const auto* node = effect.Get3D(); node && node->parent &&
+				effect.flags.any(RE::ModelReferenceEffect::Flags::kAttached)) {
+				geometry = Geometry{ reinterpret_cast<std::uintptr_t>(node),
+					node->parent && node->parent->name.c_str() ? node->parent->name.c_str() : "none",
+					node->local, node->world, node->previousWorld, node->worldBound };
+			}
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
+		if (limited) { return fail("effect_scan_limit"); }
+		if (matches != 1) { return fail(matches ? "ambiguous_player_art" : "player_art_missing"); }
+		if (!geometry) { return fail("art_3d_missing_or_unattached"); }
+		const auto finite = [](const RE::NiPoint3& p) {
+			return std::isfinite(p.x) && std::isfinite(p.y) && std::isfinite(p.z);
+		};
+		if (!finite(geometry->local.translate) || !finite(geometry->world.translate) ||
+			!finite(geometry->previousWorld.translate) || !finite(geometry->bound.center) ||
+			!std::isfinite(geometry->local.scale) || geometry->local.scale <= 0 ||
+			!std::isfinite(geometry->bound.radius) || geometry->bound.radius <= 0) {
+			return fail("art_geometry_invalid");
+		}
+		if (a_reason) { *a_reason = "observed"; }
+		return geometry;
 	}
 
 	bool Picture::Load(int a_slot)
@@ -108,6 +154,12 @@ namespace BodyPouches::Game
 
 	void Picture::Reset(std::int64_t a_now)
 	{
+		_wanted.clear();
+		_wantedWhat.clear();
+		_shown.clear();
+		_waiting = false;
+		_waitingSince = 0;
+		_displayed = false;
 		if (!Ready()) {
 			return;
 		}
@@ -128,6 +180,9 @@ namespace BodyPouches::Game
 
 	void Picture::Put()
 	{
+		if (_wanted.empty()) {
+			return;
+		}
 		auto* player = RE::PlayerCharacter::GetSingleton();
 		if (player == nullptr) {
 			return;

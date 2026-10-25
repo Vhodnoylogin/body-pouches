@@ -3,7 +3,9 @@
 #include <RE/Skyrim.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <string_view>
 
 namespace BodyPouches::Game
 {
@@ -11,7 +13,7 @@ namespace BodyPouches::Game
 	//
 	// VRIK draws a thing in a slot only as an art object played on the player. Its DLL
 	// catches the moment that art's model is set up, hangs the model on the slot's bone
-	// and puts it in the middle of the slot every frame (vrik-holster-api.md, "Показ
+	// and puts its ROOT at the slot origin every frame (vrik-holster-api.md, "Показ
 	// предмета в слоте"). So our plugin, BodyPouches.esp, carries such an art, an effect
 	// that plays it and a constant ability made of that effect (tools/make-esp.py).
 	// Showing a potion is giving the art that potion's model and the player the ability;
@@ -30,6 +32,16 @@ namespace BodyPouches::Game
 		[[nodiscard]] bool              Ready() const noexcept { return _art != nullptr && _ability != nullptr; }
 		[[nodiscard]] RE::BGSArtObject* Art() const noexcept { return _art; }
 		[[nodiscard]] int               Slot() const noexcept { return _slot; }
+		struct Geometry
+		{
+			std::uintptr_t root{};
+			std::string parentName;
+			RE::NiTransform local, world, previousWorld;
+			RE::NiBound bound;
+		};
+		// Copies only an unambiguous active player effect for this exact art.
+		// Observational: no scene mutation, guessed mesh name or retained raw node.
+		[[nodiscard]] std::optional<Geometry> ReadGeometry(std::string_view* a_reason = nullptr) const;
 
 		// What should hang there: a model path and the potion's name, or two empty
 		// strings for nothing. Only a change does anything.

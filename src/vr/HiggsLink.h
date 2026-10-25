@@ -47,6 +47,9 @@ namespace BodyPouches::VR
 		// moving parts, a pace that was always either too slow or too costly, and one
 		// version that hung the game outright. HIGGS gives the frame away for free.
 		void OnFrame(HiggsPluginAPI::IHiggsInterface001::NoArgCallback a_callback);
+		// Marks the start of the same HIGGS update before any drop callback. Together
+		// with OnFrame this bounds deferred shared geometry to one current update.
+		void OnBeforeFrame(HiggsPluginAPI::IHiggsInterface001::NoArgCallback a_callback);
 
 	private:
 		HiggsPluginAPI::IHiggsInterface001* _api{ nullptr };

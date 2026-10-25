@@ -96,11 +96,26 @@ namespace BodyPouches::Keys
 	inline constexpr auto kSlotWhere = "body.slot_where";
 	inline constexpr auto kBoneAxes = "body.bone_axes";
 	inline constexpr auto kFacing = "body.facing";
-	inline constexpr auto kSqueezeMeasured = "body.squeeze";
+	inline constexpr auto kSqueezeMeasured = "body.squeeze_post_vrik";
+	inline constexpr auto kArtGeometry = "picture.geometry";
+	inline constexpr auto kArtGeometryMissing = "picture.geometry_unavailable";
 
 	// Things that can go wrong at the boundary with the game
 	inline constexpr auto kItemNotFound = "item.not_found";
 	inline constexpr auto kHandNotFound = "hand.not_found";
 	inline constexpr auto kHandNode = "hand.node";
 	inline constexpr auto kDropFailed = "drop.failed";
+	inline constexpr auto kSharedDraw = "shared.withdrawal";
+	inline constexpr auto kSharedDrop = "shared.drop";
+	inline constexpr auto kDropReachProbe = "drop.reach_probe";
+	inline constexpr auto kDropGeometry = "drop.geometry_phase_aware";
+	inline constexpr auto kDropGeometryMissing = "drop.geometry_unavailable";
+	inline constexpr auto kHandCoordinates = "hand.coordinate_sources";
+	inline constexpr auto kReleaseObjectCoordinates = "drop.object_coordinates";
+	inline constexpr auto kDropSharedProbe = "drop.shared_probe";
+	inline constexpr auto kDropGuard = "drop.guard";
+	inline constexpr auto kDropRelease = "drop.release_event";
+	inline constexpr auto kDropResolved = "drop.release_resolved";
+	inline constexpr auto kSharedPress = "shared.press_event";
+	inline constexpr auto kSharedPressResolved = "shared.press_resolved";
 }

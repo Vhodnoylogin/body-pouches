@@ -40,6 +40,16 @@ namespace BodyPouches::Core
 		_hands[1] = {};
 	}
 
+	std::vector<PouchState> PouchSet::Snapshot() const
+	{
+		std::vector<PouchState> result;
+		result.reserve(_pouches.size());
+		for (const auto& [slot, pouch] : _pouches) {
+			result.push_back({ slot, pouch.PouchMode(), pouch.IsAssigned() });
+		}
+		return result;
+	}
+
 	const Pouch* PouchSet::Find(int a_slot) const noexcept
 	{
 		const auto it = _pouches.find(a_slot);

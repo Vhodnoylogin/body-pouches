@@ -23,6 +23,11 @@ if (-not (Test-Path -LiteralPath $dll)) {
 }
 
 $dist = Join-Path $root 'dist'
+$expectedDist = [IO.Path]::GetFullPath((Join-Path $root 'dist'))
+if ([IO.Path]::GetFullPath($dist) -ne $expectedDist -or
+    -not $expectedDist.StartsWith(([IO.Path]::GetFullPath($root) + [IO.Path]::DirectorySeparatorChar))) {
+    throw 'staging target is outside the repository'
+}
 Remove-Item -LiteralPath $dist -Recurse -Force -ErrorAction SilentlyContinue
 $mod = Join-Path $dist $d.modName
 
@@ -37,9 +42,29 @@ $plugin = Expand-Path $d.plugin
 if ($LASTEXITCODE -ne 0) { throw "the plugin could not be written: $plugin" }
 Copy-Item -LiteralPath $plugin -Destination $mod -Force
 
-foreach ($doc in $d.docs) {
+$packageNotices = @($d.docs)
+$cache = Join-Path (Split-Path -Parent (Split-Path -Parent $dll)) 'CMakeCache.txt'
+if (-not (Test-Path -LiteralPath $cache -PathType Leaf)) {
+    throw "missing build configuration: $cache"
+}
+$bridgeSetting = @(Select-String -LiteralPath $cache -Pattern '^BODYPOUCHES_WITH_DEVBENCH:BOOL=(ON|OFF)$')
+if ($bridgeSetting.Count -ne 1) { throw 'reconfigure the build before packaging: DevBench option is missing' }
+if ($bridgeSetting[0].Line.EndsWith('=ON')) {
+    $packageNotices += '{root}/contract/DevBenchAPI.LICENSE.txt'
+}
+foreach ($doc in $packageNotices) {
     $path = Expand-Path $doc
-    if (Test-Path -LiteralPath $path) { Copy-Item -LiteralPath $path -Destination $mod -Force }
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "missing package document: $path" }
+    # The runtime archive carries required notices only. User instructions live
+    # on the Nexus page; source documentation remains in the repository.
+    $fullPath = [IO.Path]::GetFullPath($path)
+    $docsPrefix = [IO.Path]::GetFullPath((Join-Path $root 'docs')) + [IO.Path]::DirectorySeparatorChar
+    $relative = if ($fullPath.StartsWith($docsPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        Join-Path 'docs' $fullPath.Substring($docsPrefix.Length)
+    } else { Split-Path -Leaf $fullPath }
+    $destination = Join-Path $mod $relative
+    New-Item -ItemType Directory -Force (Split-Path -Parent $destination) | Out-Null
+    Copy-Item -LiteralPath $fullPath -Destination $destination -Force
 }
 
 Write-Host "dist: $mod"

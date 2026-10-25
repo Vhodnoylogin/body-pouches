@@ -2,13 +2,21 @@
 
 #include "Config.h"
 #include "core/PouchSet.h"
+#include "core/Assignments.h"
+#include "core/LoadGate.h"
+#include "core/PendingGrab.h"
+#include "core/SharedInteraction.h"
+#include "core/CurrentUpdateRelease.h"
+#include "core/ButtonEdges.h"
 #include "game/Picture.h"
 #include "game/PlayerPack.h"
 #include "vr/HiggsLink.h"
 #include "vr/VrikLink.h"
+#include "diagnostics/State.h"
 
 #include <cstdint>
 #include <mutex>
+#include <unordered_map>
 
 namespace BodyPouches
 {
@@ -36,18 +44,23 @@ namespace BodyPouches
 		// records found.
 		void OnDataLoaded();
 
-		// Start listening to the controllers. No button draws anything any more - VRIK
-		// raises that moment itself - but every squeeze of the grip by an empty hand is
-		// still worth a line: it says where the hand was in each pouch's own numbers,
-		// which is how a pouch is moved to where the player's hand actually goes.
+		// Listen for the actual grip/trigger edge. Native VRIK owns normal holster
+		// gestures; shared empty slots additionally arm a bounded withdrawal only
+		// on an empty hand's press inside the actual slot. Proximity alone never draws.
 		void WatchInput();
 
-		// A save was loaded. Suspension in VRIK lasts until the game is closed, so this
-		// only matters for the picture - but it is also the one load message that has
-		// ever arrived, and the slots are arranged here as well as at the first frame.
+		// Successful load stages per-save assignment restoration and refreshes the
+		// picture. Pre-load/Revert discard prior save state even without a co-save.
 		void OnGameLoaded();
+		void OnGameLoading();
+		void OnGameRevert();
+		void OnGameLoadFailed();
+		[[nodiscard]] Core::Assignments SavedAssignments();
+		void SetLoadedAssignments(Core::Assignments a_saved);
 
 		[[nodiscard]] bool Working() const noexcept { return _vrik.Ready() && _higgs.Ready(); }
+		// Called only from a bounded SKSE main-thread inspection task.
+		[[nodiscard]] Diagnostics::State ReadState();
 
 	private:
 		Mod() = default;
@@ -77,19 +90,42 @@ namespace BodyPouches
 		static void OnGrabbed(bool a_isLeft, ::TESObjectREFR* a_refr);
 
 		// --- the work itself, always on the game's own thread ---
-		bool Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item);
+		bool Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item, std::uint64_t a_causalId);
+		void Trace(Diagnostics::Event a_event, int a_physicalHand = -1, int a_slot = 0,
+			std::uint32_t a_handle = 0, std::uint64_t a_causalId = 0,
+			std::uint64_t a_dropSerial = 0, std::uint64_t a_enqueuedGeneration = 0,
+			int a_quantity = 0, std::int64_t a_now = -1,
+			const Core::PendingGrab* a_pendingBefore = nullptr);
 		// A hand let go of something inside a pouch: take it in, or set the pouch up with it.
-		void StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object);
+		void StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial);
 
-		// Which pouch this hand is at this very moment, or 0. Asked of VRIK and not
-		// remembered: a bottle let go of after the hand has left the pouch is a bottle
-		// dropped, not one put away.
-		[[nodiscard]] int PouchAt(bool a_isLeft);
+		// Called only after VRIK in the release's own update. Native reach owns
+		// arbitration; the shared spatial path applies only when native reach is zero.
+		[[nodiscard]] int PouchAt(bool a_isLeft, int a_nativeSlot);
+		static void OnBeforeFrame();
+		void ResolvePendingReleases();
+		void CancelPendingRelease(bool a_isLeft);
+		void SettleOutsideDrop(bool a_isLeft);
+		void QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial);
+		[[nodiscard]] bool SharedWorldReady(std::string_view* a_reason = nullptr);
+		[[nodiscard]] std::optional<double> SharedDistance(int a_slot, bool a_isLeft, std::string_view* a_reason = nullptr);
+		[[nodiscard]] double SharedRadius();
+		[[nodiscard]] int SharedCandidate(bool a_isLeft);
+		[[nodiscard]] bool SharedDrawAllowed(bool a_isLeft);
+		void SharedButton(bool a_isLeft, bool a_down);
+		[[nodiscard]] std::uint8_t PollSharedButtons();
+		void ResolveSharedPresses();
+		void UpdateSharedWithdrawals();
+		bool HandleHolsterAttempt(int a_slot, bool a_secondaryHand, bool a_handOccupied);
 
 		// VRIK says "secondary hand", HIGGS says "left". This is the way back.
 		[[nodiscard]] static bool IsSecondaryHand(bool a_isLeft);
 
 		void BuildPouches(const Settings& a_settings);
+		void InvalidateWorld();
+		bool ApplyLoadedAssignments();
+		Core::Assignments _loadedAssignments;
+		bool _restorePending{ false };
 
 		// Once a frame, on the game's own thread, given to us by HIGGS. Everything that
 		// has to be asked over and over rather than waited for happens here: which slot
@@ -120,6 +156,8 @@ namespace BodyPouches
 		// Where this hand is in each pouch's own numbers: the posX, posY and posZ that
 		// would put the pouch right there, and how far that is from where it is now.
 		void Measure(bool a_isLeft);
+		void NoteDropGeometry(bool a_isLeft, RE::TESObjectREFR* a_object,
+			const char* a_phase, std::uint64_t a_serial);
 
 		// VRIK says "the secondary hand"; HIGGS and the game say "the left hand". The
 		// two only agree for a right-handed player, so the translation is made once,
@@ -129,6 +167,7 @@ namespace BodyPouches
 		// Where a hand is in the world, and the name of the node that said so; nullptr
 		// when the hand has no node at all.
 		[[nodiscard]] static const char* HandAt(bool a_isLeft, RE::NiPoint3& a_out);
+		[[nodiscard]] bool ReachHandPosition(bool a_isLeft, RE::NiPoint3& a_out, const char** a_source = nullptr);
 
 		// Where to put a bottle so that a hand can close around it. Says which node.
 		[[nodiscard]] static bool HandPosition(bool a_isLeft, RE::NiPoint3& a_out);
@@ -140,10 +179,34 @@ namespace BodyPouches
 		int          _drawnFrom[2]{ 0, 0 };
 		// When to look back and see whether the hand really closed on the bottle. HIGGS
 		// takes no answer and gives none, so the only honest report is one made afterwards.
-		std::int64_t _checkGrabAt[2]{ 0, 0 };
+		Core::PendingGrab _pendingGrab[2];
+		Diagnostics::Trace _trace;
+		std::uint64_t _traceDrawSerial{}, _pendingDrawIds[2]{};
+		Core::SharedWithdrawal _sharedWithdrawal[2];  // physical left/right
+		Core::CurrentUpdateRelease _sharedPresses[2]; // real edge, resolved once post-VRIK
+		Core::ButtonEdges _sharedButtons[2]; // physical left/right, original OpenVR edges
+		std::int64_t _sharedPressAt[2]{};
+		bool _drawQueued[2]{};  // primary/secondary, deduplicate native/fallback offers
+		RE::ObjectRefHandle _grabReference[2];
+		std::uint64_t _worldGeneration{ 0 };
+		Core::LoadGate _loadState;
+		std::uint64_t _dropSerial{ 0 };
+		std::unordered_map<std::uint32_t, std::uint64_t> _queuedDrops;
+		struct PendingRelease
+		{
+			Core::CurrentUpdateRelease event;
+			RE::ObjectRefHandle handle;
+			std::uint64_t serial{};
+		};
+		PendingRelease _pendingReleases[2]; // physical left/right; no stored reach
+		std::uint64_t _higgsUpdate{}; // public before/post callback pair, not engine frame
+		bool _inHiggsUpdate{};
 		// When the pouch is next asked what it should show. Zero means at once.
 		std::int64_t _displayAt{ 0 };
 		bool         _frameSeen{ false };
+		bool         _dataLoaded{ false };
+		std::uint64_t _callbackFrame{ 0 };
+		std::uint64_t _frameGeneration{ 0 };
 		Input        _input;
 		bool         _slotsArranged{ false };
 		bool         _watchingInput{ false };

@@ -22,11 +22,15 @@ namespace BodyPouches::Game
 		// The bone VRIK hangs this slot on, for slots 1..14; nullptr for anything else.
 		[[nodiscard]] static const char* BoneOf(int a_slot) noexcept;
 
-		// That bone's world transform right now, if the player's body is there at all.
+		// The live +0xB0 transform VRIK uses for slots, if the body is available.
 		[[nodiscard]] static std::optional<RE::NiTransform> Bone(int a_slot);
 
 		// Any other bone of the same body, by name.
 		[[nodiscard]] static std::optional<RE::NiTransform> BoneNamed(const char* a_name);
+
+		// Match VRIK/HIGGS's dedicated physical-hand node. Recursive fallback is
+		// restricted to that wrist in the first-person skeleton, never wand/finger.
+		[[nodiscard]] static RE::NiAVObject* Hand(bool a_isLeft, const char** a_source = nullptr);
 
 		// A point in the world, as the posX, posY and posZ that would put the slot there.
 		[[nodiscard]] static RE::NiPoint3 ToSlot(const RE::NiTransform& a_bone, const RE::NiPoint3& a_world);

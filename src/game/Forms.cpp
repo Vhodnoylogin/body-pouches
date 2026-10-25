@@ -11,9 +11,14 @@ namespace BodyPouches::Game
 			return key;
 		}
 
-		key.localId = a_form->GetLocalFormID();
-		if (const auto* file = a_form->GetFile(0); file != nullptr) {
+		// GetLocalFormID dereferences the source file in CommonLibSSE-NG.
+		// Crafted forms may have none; a runtime clone can also retain an origin
+		// file without actually being the origin's on-disk record.
+		if (const auto* file = a_form->GetFile(0); file != nullptr && !a_form->IsDynamicForm()) {
+			key.localId = a_form->GetLocalFormID();
 			key.plugin = file->GetFilename();
+		} else {
+			key.localId = a_form->GetFormID();
 		}
 		return key;
 	}

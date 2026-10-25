@@ -1,0 +1,13 @@
+{
+  "license": "MIT, integration glue only",
+  "upstream": {
+    "repository": "https://github.com/alandtse/devbench",
+    "commit": "32823e465c18a676afc9048ac948aa22a616abd0",
+    "files": {
+      "DevBenchAPI.h": "dfe5f23d305b439853a5ae0392b39e0baae294eba5718b28d5a0fc65003bc440",
+      "DevBenchAPI.cpp": "05824b50e48310cc44f9d81585482aa0e413b030fb6086477a77f427d6ab183e",
+      "DevBenchAPI.LICENSE.txt": "678208fd4c5a5b64995f4b83f2fbb9cef9389c668503791d90d461784790df8a"
+    }
+  },
+  "vendored": "Unchanged public integration header, companion implementation and license; no DevBench host source."
+}

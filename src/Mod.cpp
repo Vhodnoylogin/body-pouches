@@ -5,6 +5,7 @@
 #include "core/SlotPlan.h"
 #include "game/Body.h"
 #include "game/Forms.h"
+#include "vr/Controller.h"
 
 #include <SKSE/SKSE.h>
 
@@ -13,6 +14,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <format>
 #include <span>
 #include <string>
 
@@ -30,11 +32,6 @@ namespace BodyPouches
 			return duration_cast<milliseconds>(steady_clock::now() - start).count();
 		}
 
-		// Where a bottle is put so that the hand can close on it. The first node that
-		// exists wins; the VR wand nodes are tried first because in VR they are where
-		// the controller actually is, and the skeleton hands follow them with a lag.
-		constexpr std::array kLeftNodes{ "LeftWandNode", "NPC L Hand [LHnd]", "NPC L Finger02 [LF02]" };
-		constexpr std::array kRightNodes{ "RightWandNode", "NPC R Hand [RHnd]", "NPC R Finger02 [RF02]" };
 
 		// How often the pouch is asked what it should show. It costs a walk of the
 		// inventory; a bottle drawn or put away asks at once, so this only has to catch
@@ -45,8 +42,8 @@ namespace BodyPouches
 		// bottle. Long enough for a frame or two, short enough to be about that bottle.
 		constexpr std::int64_t kGrabCheckMs = 200;
 
-		// The grip, as the VR controllers number their buttons. Not a setting: nothing is
-		// done on it any more but a measurement.
+		// The grip, as the VR controllers number their buttons. Shared draws also
+		// observe its real edge; exclusive draws remain VRIK's callback.
 		constexpr int kGripButton = 2;
 
 		constexpr auto kHeadBone = "NPC Head [Head]";
@@ -85,6 +82,7 @@ namespace BodyPouches
 		Loc::Info(Keys::kHiggsSubscribed);
 
 		// The frame, and with it the end of this mod having a thread of its own.
+		_higgs.OnBeforeFrame(&Mod::OnBeforeFrame);
 		_higgs.OnFrame(&Mod::OnFrame);
 	}
 
@@ -92,6 +90,7 @@ namespace BodyPouches
 	{
 		_settings = LoadSettings();
 		Loc::SetLevel(_settings.logLevel);
+		_trace.Enable(spdlog::get_level() == spdlog::level::debug || spdlog::get_level() == spdlog::level::trace);
 		Loc::Load(Paths::LangDir(), _settings.language);
 		BuildPouches(_settings);
 		WatchInput();
@@ -115,22 +114,113 @@ namespace BodyPouches
 				Loc::Info(Keys::kPictureGiven, setting.slot);
 			}
 		}
+		_dataLoaded = true;
+	}
+
+	void Mod::OnBeforeFrame()
+	{
+		auto& mod = GetSingleton();
+		// A missing post callback cannot carry an old release into another update.
+		mod.CancelPendingRelease(true);
+		mod.CancelPendingRelease(false);
+		++mod._higgsUpdate;
+		mod._inHiggsUpdate = true;
 	}
 
 	void Mod::OnFrame()
 	{
 		auto& mod = GetSingleton();
-		if (!mod.Working()) {
+		if (!mod.Working() || mod._loadState.Blocked()) {
+			mod.CancelPendingRelease(true);
+			mod.CancelPendingRelease(false);
+			mod._sharedPresses[0].Clear();
+			mod._sharedPresses[1].Clear();
+			mod._sharedButtons[0].Clear();
+			mod._sharedButtons[1].Clear();
+			mod._inHiggsUpdate = false;
 			return;
 		}
+		++mod._callbackFrame;
+		mod._frameGeneration = mod._worldGeneration;
 
 		if (!mod._frameSeen) {
 			mod._frameSeen = true;
 			mod.FirstFrame();
 		}
+		if (!mod.ApplyLoadedAssignments()) {
+			mod._inHiggsUpdate = false;
+			mod.CancelPendingRelease(true);
+			mod.CancelPendingRelease(false);
+			return;
+		}
 
+		mod.ResolvePendingReleases();
+		const auto measureHands = mod.PollSharedButtons();
+		mod.ResolveSharedPresses();
+		mod._inHiggsUpdate = false;
 		mod.NoteReach();
+		mod.UpdateSharedWithdrawals();
 		mod.RefreshDisplay();
+		// Diagnostics follow gameplay decisions so a scan/log flush cannot expire
+		// the shared press before its timeout check in this callback.
+		if (measureHands & 1) { mod.Measure(true); }
+		if (measureHands & 2) { mod.Measure(false); }
+	}
+
+	Diagnostics::State Mod::ReadState()
+	{
+		Diagnostics::State result;
+		std::scoped_lock guard(_lock);
+		result.loadGeneration = _worldGeneration;
+		result.callbackFrame = _callbackFrame;
+		result.trace = _trace.Snapshot();
+		if (!_dataLoaded || !Working()) {
+			return result;
+		}
+		if (_loadState.Blocked() || _restorePending || !_frameSeen || _frameGeneration != _worldGeneration) {
+			result.reason = "loading_or_no_callback_in_current_generation";
+			return result;
+		}
+		const auto* player = RE::PlayerCharacter::GetSingleton();
+		const auto* cell = player != nullptr ? player->GetParentCell() : nullptr;
+		auto* ui = RE::UI::GetSingleton();
+		if (player == nullptr || player->Get3D() == nullptr || cell == nullptr || !cell->IsAttached() ||
+			ui == nullptr || ui->GameIsPaused() || ui->IsMenuOpen("Main Menu") || ui->IsMenuOpen("Loading Menu")) {
+			result.reason = "gameplay_world_unavailable";
+			return result;
+		}
+		const auto* editorId = cell->GetFormEditorID();
+		if (editorId == nullptr || std::string_view(editorId) == "VRPlayroom01" ||
+			ui->IsMenuOpen("Fader Menu") || ui->IsMenuOpen("RaceSex Menu")) {
+			result.reason = "startup_world_or_transition";
+			return result;
+		}
+		if (_settings.language.size() > 128 || Loc::Language().size() > 128) {
+			result.reason = "state_string_exceeds_128_bytes";
+			return result;
+		}
+		result.settings.mayEnableSlots = _settings.mayEnableSlots;
+		// Report applied localization/logger state, including their fallback behavior.
+		result.settings.language = Loc::Language();
+		const auto level = spdlog::level::to_string_view(spdlog::get_level());
+		result.settings.logLevel = std::string(level.data(), level.size());
+		result.pouches = _pouches.Snapshot();
+		result.assignments = Core::CaptureAssignments(_pouches);
+		result.bodySlots = Diagnostics::ReadBodySlots(_vrik.Ready(),
+			[this](int a_slot) { return _vrik.IsSuspended(a_slot); });
+		if (const auto* setting = RE::GetINISetting("bLeftHandedMode:VRInput"); setting != nullptr) {
+			result.inputLeftHanded = setting->GetBool();
+		}
+		result.available = true;
+		result.reason.clear();
+		for (const bool isLeft : { true, false }) {
+			const bool secondary = IsSecondaryHand(isLeft);
+			const int shared = SharedCandidate(isLeft);
+			result.handReach.push_back({ isLeft, secondary, _vrik.SlotInReach(secondary),
+				_vrik.CanBeHolstered(secondary), shared, SharedDistance(shared, isLeft),
+				SharedRadius(), _sharedWithdrawal[isLeft ? 0 : 1].Slot() });
+		}
+		return result;
 	}
 
 	void Mod::FirstFrame()
@@ -159,8 +249,12 @@ namespace BodyPouches
 			// A bottle handed to this hand and never taken. The other ending - the hand did
 			// close on it - arrives as an event of its own and clears this, so what is left
 			// here when the time is up is a failure and nothing else.
-			if (_checkGrabAt[hand] != 0 && now >= _checkGrabAt[hand]) {
-				_checkGrabAt[hand] = 0;
+			if (_pendingGrab[hand].Expired(now)) {
+				Trace(Diagnostics::Event::PendingExpired, IsLeftHand(secondary) ? 0 : 1,
+					_drawnFrom[hand], 0, _pendingDrawIds[hand], 0, 0, 0, now);
+				_pendingGrab[hand].Clear();
+				_pendingDrawIds[hand] = 0;
+				_grabReference[hand].reset();
 				Loc::Warn(Keys::kGrabFailed, HandName(IsLeftHand(secondary)), _drawnFrom[hand]);
 			}
 
@@ -208,14 +302,265 @@ namespace BodyPouches
 		_picture.Tick(now, _vrik.IsDisplayed(slot));
 	}
 
-	int Mod::PouchAt(bool a_isLeft)
+	int Mod::PouchAt(bool a_isLeft, int a_nativeSlot)
 	{
-		const int slot = _vrik.SlotInReach(IsSecondaryHand(a_isLeft));
+		const int slot = a_nativeSlot;
+		constexpr auto phase = "post_vrik_same_update";
 		if (slot == 0) {
-			return 0;
+			const int shared = SharedCandidate(a_isLeft);
+			Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft), slot, shared, phase);
+			for (const auto& pouch : _pouches.Snapshot()) {
+				if (pouch.mode != Core::Mode::Shared) { continue; }
+				std::string_view reason;
+				const auto distance = SharedDistance(pouch.slot, a_isLeft, &reason);
+				Loc::Info(Keys::kDropSharedProbe, HandName(a_isLeft), pouch.slot,
+					distance.value_or(-1), distance.has_value(), SharedRadius(), reason, phase);
+			}
+			if (shared != 0) {
+				const auto distance = SharedDistance(shared, a_isLeft);
+				if (distance) { Loc::Info(Keys::kSharedDrop, shared, HandName(a_isLeft), *distance, SharedRadius()); }
+			}
+			return shared;
 		}
 		std::scoped_lock guard(_lock);
-		return _pouches.Find(slot) != nullptr ? slot : 0;
+		const int chosen = _pouches.Find(slot) != nullptr ? slot : 0;
+		Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft), slot, chosen, phase);
+		return chosen;
+	}
+
+	void Mod::CancelPendingRelease(bool a_isLeft)
+	{
+		auto& release = _pendingReleases[a_isLeft ? 0 : 1];
+		if (release.event.Active()) {
+			const auto pending = _queuedDrops.find(release.handle.native_handle());
+			if (pending != _queuedDrops.end() && pending->second == release.serial) {
+				_queuedDrops.erase(pending);
+			}
+		}
+		release = {};
+	}
+
+	void Mod::SettleOutsideDrop(bool a_isLeft)
+	{
+		std::scoped_lock guard(_lock);
+		if (const auto slot = _pouches.SlotOfHand(a_isLeft); slot.has_value()) {
+			Loc::Info(Keys::kPouchLost, *slot);
+			_pouches.NoteSettled(a_isLeft);
+		}
+	}
+
+	void Mod::ResolvePendingReleases()
+	{
+		for (const bool isLeft : { true, false }) {
+			auto& stored = _pendingReleases[isLeft ? 0 : 1];
+			if (!stored.event.Active()) { continue; }
+			const auto release = stored;
+			const bool current = _inHiggsUpdate && stored.event.Take(_worldGeneration, _higgsUpdate);
+			stored = {};
+			const auto pending = _queuedDrops.find(release.handle.native_handle());
+			if (pending == _queuedDrops.end() || pending->second != release.serial) { continue; }
+			if (!current) {
+				_queuedDrops.erase(pending);
+				continue;
+			}
+			// Resolve every release from this update's VRIK hover, including exclusive
+			// pouches. HIGGS's dropped callback precedes VRIK's update and its hover
+			// can still describe the previous hand pose. It must not decide a pickup.
+			// A different native holster keeps priority over the shared spatial path.
+			const int native = _vrik.SlotInReach(IsSecondaryHand(isLeft));
+			const int slot = PouchAt(isLeft, native);
+			const auto object = release.handle.get();
+			NoteDropGeometry(isLeft, object.get(), "post_vrik_same_update", release.serial);
+			Loc::Info(Keys::kDropResolved, HandName(isLeft), release.handle.native_handle(),
+				_higgsUpdate, _worldGeneration, slot);
+			if (slot != 0) {
+				QueueStowDropped(slot, isLeft, release.handle, release.serial);
+			} else {
+				_queuedDrops.erase(pending);
+				SettleOutsideDrop(isLeft);
+			}
+		}
+	}
+
+	void Mod::QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial)
+	{
+		if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
+			Trace(Diagnostics::Event::StowQueued, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, _worldGeneration);
+			tasks->AddTask([a_slot, a_isLeft, a_handle, a_serial, generation = _worldGeneration]() {
+				auto& current = GetSingleton();
+				current.Trace(Diagnostics::Event::StowTask, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
+				if (!current._loadState.Blocked() && generation == current._worldGeneration) {
+					const auto pending = current._queuedDrops.find(a_handle.native_handle());
+					if (pending == current._queuedDrops.end() || pending->second != a_serial) {
+						current.Trace(Diagnostics::Event::StowSerialCancelled, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
+						return;
+					}
+					current._queuedDrops.erase(pending);
+					const auto object = a_handle.get();
+					current.StowDropped(a_slot, a_isLeft, object.get(), a_serial);
+				} else {
+					current.Trace(Diagnostics::Event::StowWorldCancelled, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
+				}
+			});
+		} else {
+			_queuedDrops.erase(a_handle.native_handle());
+		}
+	}
+
+	bool Mod::SharedWorldReady(std::string_view* a_reason)
+	{
+		const auto fail = [a_reason](std::string_view reason) {
+			if (a_reason) { *a_reason = reason; }
+			return false;
+		};
+		if (a_reason) { *a_reason = "ready"; }
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		auto* ui = RE::UI::GetSingleton();
+		const auto* cell = player != nullptr ? player->GetParentCell() : nullptr;
+		if (_loadState.Blocked() || _restorePending || !_frameSeen || _frameGeneration != _worldGeneration) { return fail("loading_or_callback_generation"); }
+		if (player == nullptr) { return fail("player_missing"); }
+		if (player->Get3D(true) == nullptr || player->Get3D(false) == nullptr) { return fail("player_3d_missing"); }
+		if (player->AsActorState()->IsSwimming()) { return fail("swimming"); }
+		if (player->IsOnMount()) { return fail("mounted"); }
+		if (player->AsActorState()->GetSitSleepState() != RE::SIT_SLEEP_STATE::kNormal) { return fail("sitting_or_sleeping"); }
+		if (cell == nullptr || !cell->IsAttached()) { return fail("cell_unattached"); }
+		if (ui == nullptr || ui->GameIsPaused()) { return fail("ui_missing_or_paused"); }
+		if (ui->IsMenuOpen("Main Menu") || ui->IsMenuOpen("Loading Menu") || ui->IsMenuOpen("Fader Menu") ||
+			ui->IsMenuOpen("RaceSex Menu")) { return fail("transition_menu"); }
+		const auto* id = cell->GetFormEditorID();
+		if (id == nullptr || std::string_view(id) == "VRPlayroom01") { return fail("startup_cell"); }
+		if (!(_vrik.GetSetting("enableHolsters") > .5)) { return fail("holsters_disabled"); }
+		if (!(_vrik.GetSetting("displayHolsters") > .5)) { return fail("holsters_display_disabled"); }
+		return true;
+	}
+
+	double Mod::SharedRadius()
+	{
+		const double radius = _vrik.GetSetting("slotActivationDistance") * _vrik.GetSetting("bodySize");
+		return std::isfinite(radius) && radius > 0 && radius < 1000 ? radius : 0;
+	}
+
+	std::optional<double> Mod::SharedDistance(int a_slot, bool a_isLeft, std::string_view* a_reason)
+	{
+		const auto fail = [a_reason](std::string_view reason) -> std::optional<double> {
+			if (a_reason) { *a_reason = reason; }
+			return std::nullopt;
+		};
+		if (!SharedWorldReady(a_reason)) { return std::nullopt; }
+		const auto* pouch = _pouches.Find(a_slot);
+		if (pouch == nullptr || pouch->PouchMode() != Core::Mode::Shared) { return fail("not_shared_pouch"); }
+		if (!_vrik.IsDetectable(a_slot)) { return fail("slot_not_detectable"); }
+		if (_vrik.GetSetting(std::format("visibleSlot{}", a_slot).c_str()) <= .5) { return fail("slot_not_visible"); }
+		const double allowedHand = _vrik.GetSetting(std::format("handSlot{}", a_slot).c_str());
+		if (!std::isfinite(allowedHand) || (allowedHand != 0 && allowedHand != 1 && allowedHand != 2) ||
+			(a_isLeft ? allowedHand == 2 : allowedHand == 1)) { return fail("hand_policy"); }
+		const auto bone = Game::Body::Bone(a_slot);
+		RE::NiPoint3 hand;
+		if (!bone || !std::isfinite(bone->scale) || bone->scale <= 0) { return fail("slot_bone_unavailable"); }
+		if (!ReachHandPosition(a_isLeft, hand)) { return fail("hand_pose_unavailable"); }
+		const auto centre = Game::Body::ToWorld(*bone, _vrik.SlotPosition(a_slot));
+		const double distance = hand.GetDistance(centre);
+		if (!std::isfinite(distance) || distance < 0) { return fail("distance_nonfinite"); }
+		if (a_reason) { *a_reason = "measured"; }
+		return distance;
+	}
+
+	int Mod::SharedCandidate(bool a_isLeft)
+	{
+		const double radius = SharedRadius();
+		if (radius <= 0) { return 0; }
+		int selected = 0;
+		double nearest = radius;
+		// Snapshot is sorted by slot, so equal distances deterministically use the
+		// lower slot. No previous-frame reach is accepted by a drop callback.
+		for (const auto& pouch : _pouches.Snapshot()) {
+			const auto distance = SharedDistance(pouch.slot, a_isLeft);
+			if (distance && *distance <= radius && (selected == 0 || *distance < nearest)) {
+				selected = pouch.slot;
+				nearest = *distance;
+			}
+		}
+		return selected;
+	}
+
+	bool Mod::SharedDrawAllowed(bool a_isLeft)
+	{
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		return SharedWorldReady() && player != nullptr && player->GetEquippedObject(a_isLeft) == nullptr &&
+			!_higgs.IsHolding(a_isLeft) && _higgs.CanGrab(a_isLeft) &&
+			!_drawQueued[IsSecondaryHand(a_isLeft) ? 1 : 0] &&
+			!_pendingGrab[IsSecondaryHand(a_isLeft) ? 1 : 0].Active() &&
+			_vrik.SlotInReach(IsSecondaryHand(a_isLeft)) == 0;
+	}
+
+	std::uint8_t Mod::PollSharedButtons()
+	{
+		std::uint8_t measureHands = 0;
+		const bool ready = SharedWorldReady();
+		for (const bool left : { true, false }) {
+			const int hand = left ? 0 : 1;
+			const auto button = ready ? VR::ReadControllerButton(left,
+				_vrik.GetSetting("useTriggersInstead") > .5) : VR::ControllerButton{};
+			const auto edge = _sharedButtons[hand].Sample(button.available, button.context, button.down);
+			if (edge == Core::ButtonEdges::Edge::Reset || edge == Core::ButtonEdges::Edge::Up) { SharedButton(left, false); }
+			else if (edge == Core::ButtonEdges::Edge::Down) {
+				SharedButton(left, true);
+				// Sample diagnostic geometry once on the real edge, in this completed
+				// VRIK/HIGGS update. Never read body transforms from a queued input task.
+				if (_watchingInput && !_higgs.IsHolding(left)) { measureHands |= left ? 1 : 2; }
+			}
+		}
+		return measureHands;
+	}
+
+	void Mod::SharedButton(bool a_isLeft, bool a_down)
+	{
+		const int hand = a_isLeft ? 0 : 1;
+		_sharedWithdrawal[hand].Clear();
+		_sharedPresses[hand].Clear();
+		if (!a_down || !SharedWorldReady()) { return; }
+		const auto pouches = _pouches.Snapshot();
+		if (std::none_of(pouches.begin(), pouches.end(),
+			[](const auto& pouch) { return pouch.mode == Core::Mode::Shared; })) { return; }
+		// Input events may precede HIGGS's before-update callback. Resolve this real
+		// edge in that next update, or the current update if already inside it.
+		const auto target = _higgsUpdate + (_inHiggsUpdate ? 0 : 1);
+		_sharedPresses[hand].Arm(_worldGeneration, target);
+		_sharedPressAt[hand] = Now();
+		Loc::Info(Keys::kSharedPress, HandName(a_isLeft), target, _worldGeneration);
+	}
+
+	void Mod::ResolveSharedPresses()
+	{
+		for (const bool isLeft : { true, false }) {
+			const int hand = isLeft ? 0 : 1;
+			if (!_sharedPresses[hand].Active()) { continue; }
+			const auto now = Now();
+			const bool current = _sharedPresses[hand].Take(_worldGeneration, _higgsUpdate);
+			if (!_inHiggsUpdate || !current || now < _sharedPressAt[hand] ||
+				now - _sharedPressAt[hand] > 100 || !SharedDrawAllowed(isLeft)) { continue; }
+			const int slot = SharedCandidate(isLeft);
+			const auto distance = SharedDistance(slot, isLeft);
+			if (distance) { _sharedWithdrawal[hand].Press(slot, *distance, SharedRadius(), now); }
+			Loc::Info(Keys::kSharedPressResolved, HandName(isLeft), _higgsUpdate,
+				_worldGeneration, _sharedWithdrawal[hand].Slot());
+		}
+	}
+
+	void Mod::UpdateSharedWithdrawals()
+	{
+		for (int index = 0; index < 2; ++index) {
+			auto& gesture = _sharedWithdrawal[index];
+			if (!gesture.Slot()) { continue; }
+			const bool isLeft = index == 0;
+			const auto distance = SharedDistance(gesture.Slot(), isLeft);
+			const int slot = gesture.Update(SharedDrawAllowed(isLeft) && distance.has_value(),
+				distance.value_or(-1), SharedRadius(), Now());
+			if (slot != 0) {
+				Loc::Info(Keys::kSharedDraw, slot, HandName(isLeft));
+				HandleHolsterAttempt(slot, IsSecondaryHand(isLeft), false);
+			}
+		}
 	}
 
 	bool Mod::IsSecondaryHand(bool a_isLeft)
@@ -228,17 +573,115 @@ namespace BodyPouches
 		return leftHanded ? !a_isLeft : a_isLeft;
 	}
 
+	void Mod::OnGameLoading()
+	{
+		InvalidateWorld();
+		std::scoped_lock guard(_lock);
+		_loadedAssignments.clear();
+		_restorePending = false;
+		Core::RestoreAssignments(_pouches, {});
+	}
+
+	Core::Assignments Mod::SavedAssignments()
+	{
+		std::scoped_lock guard(_lock);
+		return _restorePending ? _loadedAssignments : Core::CaptureAssignments(_pouches);
+	}
+
+	void Mod::OnGameRevert()
+	{
+		// Pre-load blocks callbacks until successful post-load. A new game can revert
+		// without kNewGame; in that case defer empty restoration to its first ready frame.
+		auto state = _loadState;
+		OnGameLoading();
+		state.Revert();
+		_loadState = state;
+		_restorePending = true;
+	}
+
+	void Mod::OnGameLoadFailed()
+	{
+		OnGameLoading();
+		_loadState.Fail();
+	}
+
+	void Mod::SetLoadedAssignments(Core::Assignments a_saved)
+	{
+		std::scoped_lock guard(_lock);
+		_loadedAssignments = std::move(a_saved);
+		_restorePending = true;
+	}
+
+	void Mod::InvalidateWorld()
+	{
+		_loadState.Begin();
+		++_worldGeneration;
+		Trace(Diagnostics::Event::LoadBegin);
+		_inHiggsUpdate = false;
+		CancelPendingRelease(true);
+		CancelPendingRelease(false);
+		_queuedDrops.clear();
+		std::scoped_lock guard(_lock);
+		for (int hand = 0; hand < 2; ++hand) {
+			_pendingGrab[hand].Clear();
+			_pendingDrawIds[hand] = 0;
+			_sharedWithdrawal[hand].Clear();
+			_sharedPresses[hand].Clear();
+			_sharedButtons[hand].Clear();
+			_drawQueued[hand] = false;
+			_grabReference[hand].reset();
+			_reach[hand] = 0;
+			_drawnFrom[hand] = 0;
+		}
+		_pouches.NoteSettled(false);
+		_pouches.NoteSettled(true);
+		_displayAt = 0;
+	}
+
 	void Mod::OnGameLoaded()
 	{
-		// Said out loud on purpose. A run of this mod once ended with a log that stopped
-		// after the settings were read, and nothing in it could tell "the message never
-		// arrived" from "it arrived and every step of it quietly did nothing".
+		// Also invalidate here for a new game or a missed pre-load notification.
+		InvalidateWorld();
+		_loadState.Complete();
+		_restorePending = true;
 		Loc::Info(Keys::kGameLoaded, _settings.pouches.size());
 		ApplySlots();
-		// Again here and not only at the first frame: that frame may come in the start
-		// cave, where the player has no body yet to measure the slot against.
 		DescribeSlots();
 		_picture.Reset(Now());
+	}
+
+	bool Mod::ApplyLoadedAssignments()
+	{
+		if (!_restorePending) { return true; }
+		// Runtime forms need a suitable loaded world, not just a successful ID remap.
+		const auto* player = RE::PlayerCharacter::GetSingleton();
+		const auto* cell = player ? player->GetParentCell() : nullptr;
+		auto* ui = RE::UI::GetSingleton();
+		if (!_dataLoaded || _loadState.Blocked() || !player || !player->Get3D(true) || !player->Get3D(false) || !cell || !cell->IsAttached() ||
+			!ui || ui->GameIsPaused() || ui->IsMenuOpen("Main Menu") || ui->IsMenuOpen("Loading Menu") ||
+			ui->IsMenuOpen("Fader Menu") || ui->IsMenuOpen("RaceSex Menu")) { return false; }
+		const auto* id = cell->GetFormEditorID();
+		if (!id || std::string_view(id) == "VRPlayroom01") { return false; }
+		{
+			std::scoped_lock guard(_lock);
+			const auto saved = Core::ResolveAssignments(_loadedAssignments,
+				[](const Core::FormKey& key, bool effect) -> std::optional<Core::FormKey> {
+					auto* form = Game::Lookup(key);
+					if (!form || (effect ? form->As<RE::EffectSetting>() == nullptr : form->As<RE::AlchemyItem>() == nullptr)) {
+						return std::nullopt;
+					}
+					return Game::KeyOf(form);
+				});
+			Core::RestoreAssignments(_pouches, saved);
+			spdlog::info("persistence.applied: {} saved filters, {} restored to current slots", _loadedAssignments.size(), Core::CaptureAssignments(_pouches).size());
+			_loadedAssignments.clear();
+			_restorePending = false;
+		}
+		Trace(Diagnostics::Event::LoadEnd);
+		// Rebuild display from this save's inventory after assignment restoration.
+		_displayAt = 0;
+		_picture.Reset(Now());
+		return true;
 	}
 
 	void Mod::BuildPouches(const Settings& a_settings)
@@ -337,8 +780,8 @@ namespace BodyPouches
 	void Mod::Measure(bool a_isLeft)
 	{
 		RE::NiPoint3 hand;
-		const char*  node = HandAt(a_isLeft, hand);
-		if (node == nullptr) {
+		const char* node = nullptr;
+		if (!ReachHandPosition(a_isLeft, hand, &node)) {
 			return;
 		}
 
@@ -355,7 +798,25 @@ namespace BodyPouches
 			const auto here = Game::Body::ToSlot(*bone, hand);
 			const auto centre = Game::Body::ToWorld(*bone, _vrik.SlotPosition(setting.slot));
 			Loc::Info(Keys::kSqueezeMeasured, HandName(a_isLeft), setting.slot, here.x, here.y, here.z,
-				hand.GetDistance(centre), hand.z - feet, centre.z - feet, node);
+				hand.GetDistance(centre), hand.z - feet, centre.z - feet, node,
+				_higgsUpdate, _worldGeneration, _vrik.SlotInReach(IsSecondaryHand(a_isLeft)));
+			if (setting.slot == _picture.Slot()) {
+				if (!_vrik.IsDisplayed(setting.slot)) {
+					Loc::Info(Keys::kArtGeometryMissing, setting.slot, _higgsUpdate, "art_not_displayed");
+					continue;
+				}
+				std::string_view reason;
+				const auto geometry = _picture.ReadGeometry(&reason);
+				if (geometry) {
+					const auto root = Game::Body::ToSlot(*bone, geometry->previousWorld.translate) - _vrik.SlotPosition(setting.slot);
+					const auto bound = Game::Body::ToSlot(*bone, geometry->bound.center) - _vrik.SlotPosition(setting.slot);
+					Loc::Info(Keys::kArtGeometry, setting.slot, _higgsUpdate, _worldGeneration, geometry->root,
+						geometry->parentName, root.x, root.y, root.z, bound.x, bound.y, bound.z,
+						geometry->bound.radius, geometry->world.translate.x, geometry->world.translate.y,
+						geometry->world.translate.z, geometry->previousWorld.translate.x, geometry->previousWorld.translate.y,
+						geometry->previousWorld.translate.z, geometry->local.scale);
+				} else { Loc::Info(Keys::kArtGeometryMissing, setting.slot, _higgsUpdate, reason); }
+			}
 		}
 	}
 
@@ -372,19 +833,65 @@ namespace BodyPouches
 
 	const char* Mod::HandAt(bool a_isLeft, RE::NiPoint3& a_out)
 	{
-		auto* player = RE::PlayerCharacter::GetSingleton();
-		auto* root = player != nullptr ? player->Get3D() : nullptr;
-		if (root == nullptr) {
-			return nullptr;
-		}
+		const char* source = nullptr;
+		auto* node = Game::Body::Hand(a_isLeft, &source);
+		if (!node) { return nullptr; }
+		a_out = node->world.translate;
+		return std::isfinite(a_out.x) && std::isfinite(a_out.y) && std::isfinite(a_out.z) ? source : nullptr;
+	}
 
-		for (const char* name : (a_isLeft ? std::span<const char* const>(kLeftNodes) : std::span<const char* const>(kRightNodes))) {
-			if (auto* node = root->GetObjectByName(name); node != nullptr) {
-				a_out = node->world.translate;
-				return name;
-			}
+	bool Mod::ReachHandPosition(bool a_isLeft, RE::NiPoint3& a_out, const char** a_source)
+	{
+		const auto* source = HandAt(a_isLeft, a_out);
+		const auto offset = _vrik.CurrentHandOffset();
+		if (!source || !offset) { return false; }
+		a_out = a_out + *offset;
+		if (a_source) { *a_source = source; }
+		return std::isfinite(a_out.x) && std::isfinite(a_out.y) && std::isfinite(a_out.z);
+	}
+
+	void Mod::NoteDropGeometry(bool a_isLeft, RE::TESObjectREFR* a_object,
+		const char* a_phase, std::uint64_t a_serial)
+	{
+		std::string_view reason;
+		RE::NiPoint3 hand;
+		const auto* node = HandAt(a_isLeft, hand);
+		if (!SharedWorldReady(&reason) || node == nullptr || a_object == nullptr) {
+			Loc::Info(Keys::kDropGeometryMissing, HandName(a_isLeft), a_phase, a_serial,
+				node == nullptr ? "first_person_hand_missing" : (a_object == nullptr ? "reference_missing" : reason));
+			return;
 		}
-		return nullptr;
+		const auto ref = a_object->GetPosition();
+		// Bounded release diagnostics; object position never grants pickup.
+		const auto offset = _vrik.CurrentHandOffset();
+		auto* selected = Game::Body::Hand(a_isLeft);
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		auto* first = player ? player->Get3D(true) : nullptr;
+		auto* named = first ? first->GetObjectByName(a_isLeft ? "NPC L Hand [LHnd]" : "NPC R Hand [RHnd]") : nullptr;
+		// HIGGS temporarily offsets cached hands while invoking its drop callback.
+		// Only the post-VRIK phase has the unmodified node needed for this sum.
+		if (offset && std::string_view(a_phase) == "post_vrik_same_update") {
+			const auto adjusted = hand + *offset;
+			Loc::Info(Keys::kHandCoordinates, HandName(a_isLeft), a_phase, a_serial, node,
+				reinterpret_cast<std::uintptr_t>(selected), reinterpret_cast<std::uintptr_t>(named), selected == named,
+				hand.x, hand.y, hand.z, offset->x, offset->y, offset->z, adjusted.x, adjusted.y, adjusted.z);
+		}
+		if (const auto* object3D = a_object->Get3D()) {
+			const auto pos = object3D->world.translate;
+			Loc::Info(Keys::kReleaseObjectCoordinates, a_phase, a_serial, pos.x, pos.y, pos.z, ref.x, ref.y, ref.z);
+		}
+		for (const auto& setting : _settings.pouches) {
+			const auto bone = Game::Body::Bone(setting.slot);
+			if (!bone) {
+				Loc::Info(Keys::kDropGeometryMissing, HandName(a_isLeft), a_phase, a_serial, "slot_bone_missing");
+				continue;
+			}
+			const auto centre = Game::Body::ToWorld(*bone, _vrik.SlotPosition(setting.slot));
+			Loc::Info(Keys::kDropGeometry, HandName(a_isLeft), a_phase, a_serial,
+				_higgsUpdate, _worldGeneration, setting.slot, node,
+				hand.x, hand.y, hand.z, centre.x, centre.y, centre.z,
+				hand.GetDistance(centre), SharedRadius(), ref.x, ref.y, ref.z);
+		}
 	}
 
 	bool Mod::HandPosition(bool a_isLeft, RE::NiPoint3& a_out)
@@ -398,8 +905,58 @@ namespace BodyPouches
 		return true;
 	}
 
-	bool Mod::Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item)
+	void Mod::Trace(Diagnostics::Event a_event, int a_physicalHand, int a_slot,
+		std::uint32_t a_handle, std::uint64_t a_causalId, std::uint64_t a_dropSerial,
+		std::uint64_t a_enqueuedGeneration, int a_quantity, std::int64_t a_now,
+		const Core::PendingGrab* a_pendingBefore)
 	{
+		if (!_trace.Enabled()) { return; }
+		Diagnostics::TraceEvent event;
+		event.event = a_event;
+		event.monotonicMs = a_now >= 0 ? a_now : Now();
+		event.worldGeneration = _worldGeneration;
+		event.higgsUpdate = _higgsUpdate;
+		event.callbackFrame = _callbackFrame;
+		event.inHiggsUpdate = _inHiggsUpdate;
+		event.physicalHand = a_physicalHand;
+		if (a_physicalHand >= 0) {
+			const int hand = IsSecondaryHand(a_physicalHand == 0) ? 1 : 0;
+			const auto& pending = a_pendingBefore != nullptr ? *a_pendingBefore : _pendingGrab[hand];
+			event.secondaryHand = hand;
+			event.pendingHandle = pending.Handle();
+			event.deadlineMs = pending.Deadline();
+			event.pendingActive = pending.Active();
+		}
+		event.slot = a_slot;
+		event.handle = a_handle;
+		event.causalId = a_causalId;
+		event.dropSerial = a_dropSerial;
+		event.enqueuedWorldGeneration = a_enqueuedGeneration;
+		event.quantity = a_quantity;
+		_trace.Record(event);
+	}
+
+	bool Mod::Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item, std::uint64_t a_causalId)
+	{
+		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
+		if (_loadState.Blocked() || _restorePending || _pendingGrab[hand].Active() || _higgs.IsHolding(a_isLeft) ||
+			!_higgs.CanGrab(a_isLeft)) {
+			Trace(Diagnostics::Event::DrawGuardRejected, a_isLeft ? 0 : 1, a_slot, 0, a_causalId);
+			return false;
+		}
+		// The queue may run after another action changed the hand, stock or filter.
+		{
+			std::scoped_lock guard(_lock);
+			Core::Reach reach;
+			reach.slot = a_slot;
+			reach.leftHand = a_isLeft;
+			reach.handCanHold = true;
+			const auto current = _pouches.Decide(reach, _pack);
+			if (current.act != Core::Act::Draw || !(current.item == a_item)) {
+				Trace(Diagnostics::Event::DrawPolicyRejected, a_isLeft ? 0 : 1, a_slot, 0, a_causalId);
+				return false;
+			}
+		}
 		Loc::Info(Keys::kDrawStart, a_slot, HandName(a_isLeft));
 
 		auto* object = Game::PlayerPack::Held(a_item);
@@ -414,14 +971,19 @@ namespace BodyPouches
 		}
 
 		auto*        player = RE::PlayerCharacter::GetSingleton();
+		if (player == nullptr) {
+			return false;
+		}
 		RE::NiPoint3 rotation{};
 
 		// One call does both halves of what we need: the potion leaves the inventory and
 		// a reference to it appears in the world, which is the only thing HIGGS can put
 		// in a hand. Dropping it is not a metaphor - from here on it is an ordinary
 		// bottle lying in the world that happens to be held.
+		Trace(Diagnostics::Event::RemoveRequested, a_isLeft ? 0 : 1, a_slot, 0, a_causalId, 0, 0, 1);
 		const auto handle = player->RemoveItem(
 			object, 1, RE::ITEM_REMOVE_REASON::kDropping, nullptr, nullptr, &where, &rotation);
+		Trace(Diagnostics::Event::RemoveResult, a_isLeft ? 0 : 1, a_slot, handle.native_handle(), a_causalId);
 
 		const auto dropped = handle.get();
 		if (!dropped) {
@@ -429,25 +991,34 @@ namespace BodyPouches
 			return false;
 		}
 
-		_higgs.Grab(dropped.get(), a_isLeft);
-		Loc::Info(Keys::kGrabAsked, HandName(a_isLeft));
 		{
 			std::scoped_lock guard(_lock);
 			_pouches.NoteDrawn(a_isLeft, a_slot, a_item);
 		}
 
-		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
 		_drawnFrom[hand] = a_slot;
-		_checkGrabAt[hand] = Now() + kGrabCheckMs;
+		_grabReference[hand] = handle;
+		const auto armedAt = Now();
+		_pendingGrab[hand].Arm(handle.native_handle(), armedAt + kGrabCheckMs);
+		_pendingDrawIds[hand] = a_causalId;
+		Trace(Diagnostics::Event::PendingArmed, a_isLeft ? 0 : 1, a_slot, handle.native_handle(), a_causalId, 0, 0, 0, armedAt);
+		// Arm before calling HIGGS so a synchronous callback is correlated too.
+		_higgs.Grab(dropped.get(), a_isLeft);
+		Loc::Info(Keys::kGrabAsked, HandName(a_isLeft));
 		_displayAt = 0;  // the last bottle of its kind may just have left the pack
 
 		Loc::Info(Keys::kPouchDrawn, a_slot, HandName(a_isLeft));
 		return true;
 	}
 
-	void Mod::StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object)
+	void Mod::StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial)
 	{
-		if (a_object == nullptr) {
+		if (_loadState.Blocked() || _restorePending || a_object == nullptr || a_object->IsDeleted() || a_object->IsDisabled() ||
+			_higgs.Held(false) == a_object || _higgs.Held(true) == a_object) {
+			return;
+		}
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		if (player == nullptr) {
 			return;
 		}
 
@@ -494,11 +1065,6 @@ namespace BodyPouches
 			return;
 		}
 
-		auto* player = RE::PlayerCharacter::GetSingleton();
-		if (player == nullptr) {
-			return;
-		}
-
 		// THE ENGINE ALREADY KNOWS HOW TO PICK A THING UP, AND THIS USED NOT TO USE IT.
 		// What stood here was AddObjectToContainer for one, then Disable and SetDelete on
 		// the reference - which looks like the same thing and is not. A reference in the
@@ -506,7 +1072,9 @@ namespace BodyPouches
 		// as one and the other four were deleted: the mod took the player's potions away.
 		// PickUpObject counts, keeps whatever else the reference carried, and makes the
 		// sound the game makes when anything else is picked up.
+		Trace(Diagnostics::Event::PickupRequested, a_isLeft ? 0 : 1, a_slot, a_object->GetHandle().native_handle(), 0, a_serial, 0, count);
 		player->PickUpObject(a_object, count, false, true);
+		Trace(Diagnostics::Event::PickupReturned, a_isLeft ? 0 : 1, a_slot, 0, 0, a_serial, 0, count);
 
 		{
 			std::scoped_lock guard(_lock);
@@ -554,7 +1122,7 @@ namespace BodyPouches
 
 		for (auto* event = *a_event; event != nullptr; event = event->next) {
 			auto* button = event->AsButtonEvent();
-			if (button == nullptr || !button->IsDown()) {
+			if (button == nullptr) {
 				continue;
 			}
 
@@ -573,6 +1141,8 @@ namespace BodyPouches
 			// Every press carries its real id into the log: out loud at any slot of VRIK's,
 			// quietly everywhere else, because everywhere else is every press in the game.
 			const int id = static_cast<int>(button->GetIDCode());
+			// Shared gestures use original runtime edges, not VRIK-filtered/replayed events.
+			if (!button->IsDown()) { continue; }
 			const int reached = mod._reach[IsSecondaryHand(isLeft) ? 1 : 0];
 			if (reached != 0) {
 				Loc::Info(Keys::kButtonAtSlot, HandName(isLeft), id, reached);
@@ -580,14 +1150,8 @@ namespace BodyPouches
 				Loc::Debug(Keys::kButtonElsewhere, HandName(isLeft), id);
 			}
 
-			// The grip of an empty hand is measured wherever the hand is: the place the
-			// player reaches for is exactly the place the pouch is not yet. Out of the
-			// input handler and onto the game queue, like everything that reads the body.
-			if (id == kGripButton && !mod._higgs.IsHolding(isLeft)) {
-				if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
-					tasks->AddTask([isLeft]() { GetSingleton().Measure(isLeft); });
-				}
-			}
+			// Geometry is measured from original runtime edges in OnFrame, not here:
+			// input events/tasks can observe transient VRIK bone transforms.
 		}
 
 		return RE::BSEventNotifyControl::kContinue;
@@ -600,9 +1164,26 @@ namespace BodyPouches
 		// purpose - a line that only appears when somebody remembered to raise the log
 		// level is a line that is missing from the run that needed it.
 		Loc::Info(Keys::kHolsterOffered, a_slot, a_secondaryHand, a_handOccupied);
-
 		auto& mod = GetSingleton();
-		if (!mod.Working()) {
+		// Native VRIK selection owns arbitration, including an unrelated weapon slot.
+		const bool isLeft = IsLeftHand(a_secondaryHand);
+		mod._sharedWithdrawal[isLeft ? 0 : 1].Clear();
+		mod._sharedPresses[isLeft ? 0 : 1].Clear();
+		// A real potion release in this update is being resolved after VRIK. Its
+		// now-empty hand must not draw a replacement while that return is pending.
+		// An unrelated native holster still cancels the pending return and acts normally.
+		if (mod._inHiggsUpdate && mod._pendingReleases[isLeft ? 0 : 1].event.Active() &&
+			mod._pouches.Find(a_slot) != nullptr) {
+			return false;
+		}
+		mod.CancelPendingRelease(isLeft);
+		return mod.HandleHolsterAttempt(a_slot, a_secondaryHand, a_handOccupied);
+	}
+
+	bool Mod::HandleHolsterAttempt(int a_slot, bool a_secondaryHand, bool a_handOccupied)
+	{
+		auto& mod = *this;
+		if (!mod.Working() || mod._loadState.Blocked() || mod._restorePending) {
 			Loc::Debug(Keys::kIdleHere);
 			return true;  // not our business: let VRIK do what it always did
 		}
@@ -631,9 +1212,22 @@ namespace BodyPouches
 		// inventory and placing a reference is not work to start inside somebody else's
 		// callback.
 		if (decision.act == Core::Act::Draw) {
+			const int hand = a_secondaryHand ? 1 : 0;
+			if (mod._drawQueued[hand] || mod._pendingGrab[hand].Active()) { return false; }
 			if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
-				tasks->AddTask([slot = decision.slot, isLeft, item = decision.item]() {
-					GetSingleton().Draw(slot, isLeft, item);
+				mod._drawQueued[hand] = true;
+				const auto causalId = ++mod._traceDrawSerial;
+				mod.Trace(Diagnostics::Event::DrawQueued, isLeft ? 0 : 1, decision.slot, 0, causalId, 0, mod._worldGeneration);
+				tasks->AddTask([slot = decision.slot, isLeft, item = decision.item,
+					generation = mod._worldGeneration, causalId]() {
+					auto& current = GetSingleton();
+					current.Trace(Diagnostics::Event::DrawTask, isLeft ? 0 : 1, slot, 0, causalId, 0, generation);
+					if (!current._loadState.Blocked() && generation == current._worldGeneration) {
+						current._drawQueued[IsSecondaryHand(isLeft) ? 1 : 0] = false;
+						current.Draw(slot, isLeft, item, causalId);
+					} else {
+						current.Trace(Diagnostics::Event::DrawWorldCancelled, isLeft ? 0 : 1, slot, 0, causalId, 0, generation);
+					}
 				});
 				Loc::Info(Keys::kTaskQueued, decision.slot);
 			} else {
@@ -653,6 +1247,9 @@ namespace BodyPouches
 		Loc::Info(Keys::kHiggsEvent, "consumed", HandName(a_isLeft));
 
 		auto& mod = GetSingleton();
+		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
+		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
+		mod.CancelPendingRelease(a_isLeft);
 		std::scoped_lock guard(mod._lock);
 		if (const auto slot = mod._pouches.SlotOfHand(a_isLeft); slot.has_value()) {
 			Loc::Info(Keys::kPouchConsumed, *slot);
@@ -665,6 +1262,9 @@ namespace BodyPouches
 		Loc::Info(Keys::kHiggsEvent, "stashed", HandName(a_isLeft));
 
 		auto& mod = GetSingleton();
+		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
+		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
+		mod.CancelPendingRelease(a_isLeft);
 		std::scoped_lock guard(mod._lock);
 		if (const auto slot = mod._pouches.SlotOfHand(a_isLeft); slot.has_value()) {
 			Loc::Info(Keys::kPouchReturned, *slot);
@@ -673,19 +1273,43 @@ namespace BodyPouches
 		}
 	}
 
-	void Mod::OnGrabbed(bool a_isLeft, ::TESObjectREFR*)
+	void Mod::OnGrabbed(bool a_isLeft, ::TESObjectREFR* a_refr)
 	{
 		auto&     mod = GetSingleton();
+		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
+		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
+		mod.CancelPendingRelease(a_isLeft);
 		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
 
 		// This fires for everything the player picks up, so it is only worth a word when
 		// a bottle of ours is waiting to be told whether it was taken.
-		if (mod._checkGrabAt[hand] == 0) {
+		auto* object = reinterpret_cast<RE::TESObjectREFR*>(a_refr);
+		const auto callbackHandle = object != nullptr ? object->GetHandle().native_handle() : 0;
+		const auto causalId = mod._pendingDrawIds[hand];
+		if (object != nullptr) {
+			// Regrabbing cancels its earlier release, even if the player drops it
+			// elsewhere again before the queued pickup has had a turn.
+			const auto pending = mod._queuedDrops.find(callbackHandle);
+			if (pending != mod._queuedDrops.end()) {
+				mod.Trace(Diagnostics::Event::RegrabCancelledStow, a_isLeft ? 0 : 1, 0, callbackHandle, 0, pending->second);
+			}
+			mod._queuedDrops.erase(callbackHandle);
+		}
+		const auto pendingBefore = mod._pendingGrab[hand];
+		const auto callbackAt = Now();
+		// No recording or world reads between this timestamp and the pure Confirm.
+		const bool accepted = !mod._loadState.Blocked() && object != nullptr &&
+			mod._pendingGrab[hand].Confirm(callbackHandle, callbackAt);
+		mod.Trace(Diagnostics::Event::GrabCallback, a_isLeft ? 0 : 1, mod._drawnFrom[hand], callbackHandle, causalId, 0, 0, 0, callbackAt, &pendingBefore);
+		if (!accepted) {
+			mod.Trace(Diagnostics::Event::GrabRejected, a_isLeft ? 0 : 1, mod._drawnFrom[hand], callbackHandle, causalId, 0, 0, 0, callbackAt);
 			Loc::Debug(Keys::kHiggsEvent, "grabbed", HandName(a_isLeft));
 			return;
 		}
 
-		mod._checkGrabAt[hand] = 0;
+		mod.Trace(Diagnostics::Event::GrabAccepted, a_isLeft ? 0 : 1, mod._drawnFrom[hand], callbackHandle, causalId, 0, 0, 0, callbackAt);
+		mod._pendingDrawIds[hand] = 0;
+		mod._grabReference[hand].reset();
 		Loc::Info(Keys::kGrabConfirmed, HandName(a_isLeft), mod._drawnFrom[hand]);
 	}
 
@@ -694,36 +1318,33 @@ namespace BodyPouches
 		Loc::Info(Keys::kHiggsEvent, "dropped", HandName(a_isLeft));
 
 		auto& mod = GetSingleton();
-		if (!mod.Working()) {
+		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
+		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
+		if (!mod.Working() || mod._loadState.Blocked() || mod._restorePending) {
+			Loc::Info(Keys::kDropGuard, mod.Working(), mod._loadState.Blocked(), a_refr != nullptr);
 			return;
 		}
 
-		// Letting go of something inside a pouch is how it goes in. VRIK is asked where
-		// the hand is at this very moment, and nothing is remembered: the second and a
-		// fifth of memory this used to have turned bottles carried away from the pouch
-		// into bottles put back.
-		if (const int slot = mod.PouchAt(a_isLeft); slot != 0 && a_refr != nullptr) {
-			Loc::Info(Keys::kDropAtPouch, HandName(a_isLeft), slot);
-
-			// By id and not by pointer: the reference is handed to a task that runs
-			// later, and what HIGGS let go of may be gone by then.
-			const auto id = reinterpret_cast<RE::TESObjectREFR*>(a_refr)->GetFormID();
-			if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
-				tasks->AddTask([slot, a_isLeft, id]() {
-					GetSingleton().StowDropped(slot, a_isLeft,
-						RE::TESForm::LookupByID<RE::TESObjectREFR>(id));
-				});
-			}
+		mod.CancelPendingRelease(a_isLeft);
+		auto* object = reinterpret_cast<RE::TESObjectREFR*>(a_refr);
+		auto* base = object != nullptr ? object->GetBaseObject() : nullptr;
+		// Store only the actual release/reference. Choose neither slot nor position
+		// until VRIK has updated in this very HIGGS update. Missing post, load or
+		// either-hand regrab cancels through the same generation/serial guards.
+		if (!mod._pouches.Snapshot().empty() && mod._inHiggsUpdate &&
+			base != nullptr && base->As<RE::AlchemyItem>() != nullptr) {
+			Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft),
+				mod._vrik.SlotInReach(IsSecondaryHand(a_isLeft)), 0, "pre_vrik_observation_only");
+			auto& release = mod._pendingReleases[a_isLeft ? 0 : 1];
+			release.handle = reinterpret_cast<RE::TESObjectREFR*>(a_refr)->GetHandle();
+			release.serial = ++mod._dropSerial;
+			mod.NoteDropGeometry(a_isLeft, object, "pre_vrik_observation_only", release.serial);
+			release.event.Arm(mod._worldGeneration, mod._higgsUpdate);
+			mod._queuedDrops[release.handle.native_handle()] = release.serial;
+			Loc::Info(Keys::kDropRelease, HandName(a_isLeft), release.handle.native_handle(),
+				mod._higgsUpdate, mod._worldGeneration);
 			return;
 		}
-
-		std::scoped_lock guard(mod._lock);
-		if (const auto slot = mod._pouches.SlotOfHand(a_isLeft); slot.has_value()) {
-			// It stays where it fell. That is the whole of it: the bottle is an
-			// ordinary thing in the world now, and picking it up is the player's
-			// business.
-			Loc::Info(Keys::kPouchLost, *slot);
-			mod._pouches.NoteSettled(a_isLeft);
-		}
+		mod.SettleOutsideDrop(a_isLeft);
 	}
 }

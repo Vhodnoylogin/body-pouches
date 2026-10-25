@@ -11,6 +11,12 @@ add_executable(bodypouches_tests
     "${CMAKE_CURRENT_SOURCE_DIR}/test_filter.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/test_pouchset.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/test_slotplan.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test_pendinggrab.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test_sharedinteraction.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test_currentupdaterelease.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test_buttonedges.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test_trace.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test_assignments.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
 )
 
@@ -23,3 +29,23 @@ endif()
 
 enable_testing()
 add_test(NAME core COMMAND bodypouches_tests)
+
+# Compile the production form adapter against a small engine boundary fixture.
+# It deliberately needs neither the game nor the CommonLib binary.
+add_executable(bodypouches_form_tests main.cpp test_forms.cpp ../src/game/Forms.cpp)
+target_include_directories(bodypouches_form_tests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/form-fixture" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(bodypouches_form_tests PRIVATE BodyPouchesCore)
+if(MSVC)
+    target_compile_options(bodypouches_form_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+endif()
+add_test(NAME forms COMMAND bodypouches_form_tests)
+
+add_executable(bodypouches_body_tests main.cpp test_body.cpp ../src/game/Body.cpp)
+target_include_directories(bodypouches_body_tests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/body-fixture" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(bodypouches_body_tests PRIVATE BodyPouchesCore)
+if(MSVC)
+    target_compile_options(bodypouches_body_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+endif()
+add_test(NAME body COMMAND bodypouches_body_tests)

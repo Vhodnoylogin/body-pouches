@@ -5,6 +5,7 @@
 #include <RE/Skyrim.h>
 
 #include <array>
+#include <optional>
 
 namespace BodyPouches::VR
 {
@@ -22,9 +23,9 @@ namespace BodyPouches::VR
 
 	// Our side of VRIK.
 	//
-	// VRIK owns the places on the body: where a slot is, whether a hand is near it, what
-	// is drawn there, and how all of that survives a recalibration. This mod owns none
-	// of that and wants none of it. What it needs is three things, and all three arrived
+	// VRIK owns slot placement, weapon hover and display. Its filtered hover omits
+	// empty shared slots for nonweapon hands; Mod supplies that narrow spatial path
+	// from loaded VRIK settings without changing the slots. Three public hooks arrived
 	// in build 80700:
 	//
 	//   AddHolsterAttemptCallback  - tell me when a hand reaches for a slot, and let my
@@ -67,6 +68,8 @@ namespace BodyPouches::VR
 		// Where VRIK has the slot: posXN, posYN and posZN, an offset in the axes of the
 		// slot's bone (game/Body.h). As VRIK read them when the game started.
 		[[nodiscard]] RE::NiPoint3 SlotPosition(int a_slot);
+		// Current correction used by VRIK's same-update reach; Final is next-frame.
+		[[nodiscard]] std::optional<RE::NiPoint3> CurrentHandOffset();
 
 		// VRIK's own settings, the ones that live in vrikslots.ini and vrik.ini.
 		//

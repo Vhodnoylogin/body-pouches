@@ -13,7 +13,7 @@ cmake_minimum_required(VERSION 3.24)
 #
 # The split is not decoration: the whole of the reasoning sits in the half that can
 # be run in a second, and the half that needs a headset holds no reasoning at all.
-project(BodyPouches VERSION 0.1.8 LANGUAGES CXX)
+project(BodyPouches VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,6 +22,7 @@ set(CMAKE_SKIP_INSTALL_RULES ON)
 
 option(BODYPOUCHES_BUILD_PLUGIN "Build the SKSE plugin (needs CommonLibSSE-NG)" ON)
 option(BODYPOUCHES_BUILD_TESTS  "Build the checks of the core" ON)
+option(BODYPOUCHES_WITH_DEVBENCH "Include the development-only DevBench inspection bridge" OFF)
 
 # ------------------------------------------------------------------------ core
 # No dependencies by design. A new file under src/core is picked up by the next
@@ -113,11 +114,18 @@ file(GLOB_RECURSE BODYPOUCHES_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_
 file(GLOB_RECURSE BODYPOUCHES_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 list(REMOVE_ITEM BODYPOUCHES_SOURCES ${BODYPOUCHES_CORE_SOURCES})
 list(REMOVE_ITEM BODYPOUCHES_HEADERS ${BODYPOUCHES_CORE_HEADERS})
+if(NOT BODYPOUCHES_WITH_DEVBENCH)
+    list(REMOVE_ITEM BODYPOUCHES_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/diagnostics/Inspect.cpp")
+endif()
 
 add_library(BodyPouches SHARED
     ${BODYPOUCHES_SOURCES}
     ${BODYPOUCHES_HEADERS}
 )
+if(BODYPOUCHES_WITH_DEVBENCH)
+    target_sources(BodyPouches PRIVATE contract/DevBenchAPI.cpp)
+    target_compile_definitions(BodyPouches PRIVATE BODYPOUCHES_WITH_DEVBENCH=1)
+endif()
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${BODYPOUCHES_SOURCES} ${BODYPOUCHES_HEADERS})
 
@@ -148,3 +156,18 @@ target_link_libraries(BodyPouches PRIVATE
     CommonLibSSE::CommonLibSSE
     nlohmann_json::nlohmann_json
 )
+
+if(BODYPOUCHES_BUILD_TESTS)
+    # Exercise the actual settings loader in a temporary directory, without Skyrim.
+    add_executable(bodypouches_config_tests tests/main.cpp tests/test_config.cpp src/Config.cpp src/Loc.cpp)
+    target_include_directories(bodypouches_config_tests PRIVATE src tests)
+    target_compile_definitions(bodypouches_config_tests PRIVATE PLUGIN_NAME="BodyPouches")
+    target_link_libraries(bodypouches_config_tests PRIVATE nlohmann_json::nlohmann_json spdlog::spdlog)
+    add_executable(bodypouches_state_tests tests/main.cpp tests/test_state.cpp)
+    target_include_directories(bodypouches_state_tests PRIVATE src tests)
+    target_link_libraries(bodypouches_state_tests PRIVATE BodyPouchesCore nlohmann_json::nlohmann_json)
+    if(MSVC)
+        target_compile_options(bodypouches_config_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+        target_compile_options(bodypouches_state_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+    endif()
+endif()
