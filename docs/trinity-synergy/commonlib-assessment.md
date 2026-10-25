@@ -1,6 +1,6 @@
 # CommonLib assessment for synergy implementation
 
-Updated: 11 October 2026. Scope: the second level of the [synergy concept](concept-en.md), moving engine addresses and repeated technical operations behind verified CommonLib interfaces. This is a maintained analysis, not a library implementation task.
+Updated: 25 October 2026. Scope: the second level of the [synergy concept](concept-en.md), moving engine addresses and repeated technical operations behind verified CommonLib interfaces. This is a maintained analysis, not a library implementation task. The technical binding audit below remains pinned to its 11 October source; the new native-placement extraction classification is recorded at the end.
 
 Inspected fork: [Vhodnoylogin/CommonLibSSE-NG](https://github.com/Vhodnoylogin/CommonLibSSE-NG), `ng` at `a898f469851c464d05137bb74b069dd234897643` (9.1.0). Local and remote `ng` matched when inspected. Presence of a declaration establishes an available building block; it does not establish equivalent timing, lifetime or cross-runtime behavior for a proposed use.
 
@@ -45,3 +45,5 @@ Slot definitions, instance identities and saved overrides belong to Body Slots. 
 The offline project/package validator and fixed copied ABI contracts have no engine addresses to move into CommonLib. Adopting library helpers inside a game adapter must not make an offline tool require Skyrim or engine initialization.
 
 The new HIGGS restrictions service uses standard fixed-capacity storage, a mutex and a monotonic clock without engine dependencies. Its ownership, legacy-bit composition and world-generation invalidation belong to HIGGS. Only the surrounding engine adapter's world lookup, lock use and collision operations are CommonLib candidates. Body Slots serialization similarly uses the public SKSE interface and explicit portable records; provider/key override ownership remains in Body Slots. Morphbench's authoring mathematics has no runtime engine addresses to relocate.
+
+The native14 placement compatibility bank added on 25 October contains raw copied poses, owner/revision checks and pure transition builders behind one state owner. It adds no engine addresses or CommonLib extension requirement. VRIK's conversion facade still uses its original SDK types, and preserves the legacy raw-versus-clamped-INI distinction. Later CommonLib adoption may use already modeled point/matrix types inside that adapter; it must not normalize the compatibility values or change persistence. Morphbench session recovery similarly belongs to the editor and introduces no engine binding candidate. No CommonLib code was changed by this work.

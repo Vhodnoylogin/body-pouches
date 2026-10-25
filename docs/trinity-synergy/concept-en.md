@@ -2,7 +2,7 @@
 
 Russian: [Русская версия](concept-ru.md).
 
-This proposal describes how the three frameworks could provide a coherent base for Skyrim VR mods. Each framework owns its existing domain and exposes the observations and requests that other mods need. It is a direction for discussion, not an agreed design or a promise of an available API. A separate slot service extends this foundation with definitions authored outside the game and interpreted by VRIK at runtime.
+This proposal describes how the three frameworks could provide a coherent base for Skyrim VR mods. Each framework owns its existing domain and exposes the observations and requests that other mods need. It is a direction for discussion, not an agreed design or a promise of the complete API. Some foundation services are implemented; the [implementation ledger](implementation-status.md) distinguishes delivered contracts from the illustrative interfaces below. A separate slot service extends this foundation with definitions authored outside the game and interpreted by VRIK at runtime.
 
 The intended benefit is concrete: a mod author can ask for a body zone, a physical handover or an NPC attachment without recreating another framework's internals. A single interaction has identifiable participants and a confirmed result.
 
