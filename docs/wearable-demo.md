@@ -1,6 +1,6 @@
 # Private wearable potion-bag demonstration
 
-This branch is a demonstration for discussion with VRIK's maintainer. It is based on Body Pouches 0.2.0 and the existing [synergy concept](trinity-synergy/concept-en.md). The published mod and its archive remain unchanged. Do not upload this package as a public Body Pouches update.
+This branch is a demonstration for discussion with VRIK's maintainer. It is based on Body Pouches 0.2.0 and the existing [synergy concept](https://github.com/Vhodnoylogin/body-pouches/blob/main/docs/trinity-synergy/concept-en.md). The published mod and its archive remain unchanged. Do not upload this package as a public Body Pouches update.
 
 ## What it demonstrates
 
@@ -32,3 +32,5 @@ Use an isolated test save and mutually exclude the normal Body Pouches installat
 Offline checks compile the full demo DLL, exercise its actual Body Slots consumer against the actual service DLL and explicit failure boundaries, inspect ESP records/master links, and check stale queued work through production method fixtures. They do **not** establish that the armor equips, the Art is visible, the controls are comfortable or potion transactions succeed in Skyrim.
 
 The optional existing `body_pouches_state` observation adds `wearableDemo`: actual worn status, negotiated-interface availability, activation/eligibility, exact revision strings and a separate bounded Art-node observation. A logical active instance or an Art node is not rendered-pixel proof. The display, both hands, unequip/re-equip cancellation, inventory totals and save/load require an actual qualified game run before calling this a working demonstration.
+
+The [game acceptance plan](https://github.com/Vhodnoylogin/body-pouches/blob/demo/wearable-bags/docs/wearable-demo-validation.md) describes those remaining checks. The package is prepared for that run; it does not authorize an installation or bypass a testing hold.
