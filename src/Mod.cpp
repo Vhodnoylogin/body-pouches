@@ -86,9 +86,80 @@ namespace BodyPouches
 		_higgs.OnFrame(&Mod::OnFrame);
 	}
 
+	RE::BSEventNotifyControl Mod::DemoEquipment::ProcessEvent(const RE::TESEquipEvent* a_event,
+		RE::BSTEventSource<RE::TESEquipEvent>*)
+	{
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		auto& mod = GetSingleton();
+		if (a_event && mod._demoBag && a_event->actor.get() == RE::PlayerCharacter::GetSingleton() &&
+			a_event->baseObject == mod._demoBag->GetFormID()) {
+			// Events only invalidate. All provider calls and inventory reads stay in
+			// the main-thread reconciliation point; a complete off/on cycle counts.
+			mod._demoEquipmentDirty.store(true);
+		}
+#else
+		(void)a_event;
+#endif
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	void Mod::RefreshDemoEquipment()
+	{
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		const auto previous = _demoSlots.CurrentToken();
+		if (_demoEquipmentDirty.exchange(false)) { _demoSlots.InvalidateEquipment(); }
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		const bool observed = _dataLoaded && !_loadState.Blocked() && !_restorePending && _demoBag &&
+			player && player->Get3D(false) && player->GetParentCell() && player->GetParentCell()->IsAttached();
+		const bool worn = observed && player->GetWornArmor(_demoBag->GetFormID(), true) == _demoBag;
+		_demoSlots.Reconcile(observed, worn);
+		const auto current = _demoSlots.Copy();
+		_demoActive = current.available && current.observed && current.worn && current.requestedActive;
+		if (!_demoActive || previous != current.token) {
+			CancelPendingRelease(true);
+			CancelPendingRelease(false);
+			_drawQueued[0] = _drawQueued[1] = false;
+			_sharedPresses[0].Clear();
+			_sharedPresses[1].Clear();
+			_sharedWithdrawal[0].Clear();
+			_sharedWithdrawal[1].Clear();
+			_displayAt = 0;
+			// Do not cancel a pending HIGGS grab or remove/refund a potion already
+			// taken from inventory. Only new admissions and pending returns stop.
+		}
+#endif
+	}
+
+	bool Mod::DemoAllows(int a_slot, bool a_isLeft, const VR::BodySlotsDemo::Token* a_token)
+	{
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		if (a_slot != 13) { return false; }
+		RefreshDemoEquipment();
+		return _demoActive && _demoSlots.Allows(a_isLeft, a_token);
+#else
+		(void)a_slot;
+		(void)a_isLeft;
+		(void)a_token;
+		return true;
+#endif
+	}
+
 	void Mod::OnDataLoaded()
 	{
 		_settings = LoadSettings();
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		// This private build dedicates native13 to one singleton bag. It is an
+		// explicit compatibility demonstration, not arbitrary new-slot support.
+		_settings.pouches = { { 13, "exclusive" } };
+		_settings.mayEnableSlots = true;
+		if (auto* data = RE::TESDataHandler::GetSingleton()) {
+			_demoBag = data->LookupForm<RE::TESObjectARMO>(0x803, "BodyPouches.esp");
+		}
+		_demoSlots.Connect();
+		if (auto* events = RE::ScriptEventSourceHolder::GetSingleton()) {
+			events->AddEventSink<RE::TESEquipEvent>(&_demoEquipment);
+		}
+#endif
 		Loc::SetLevel(_settings.logLevel);
 		_trace.Enable(spdlog::get_level() == spdlog::level::debug || spdlog::get_level() == spdlog::level::trace);
 		Loc::Load(Paths::LangDir(), _settings.language);
@@ -120,6 +191,7 @@ namespace BodyPouches
 	void Mod::OnBeforeFrame()
 	{
 		auto& mod = GetSingleton();
+		mod.RefreshDemoEquipment();
 		// A missing post callback cannot carry an old release into another update.
 		mod.CancelPendingRelease(true);
 		mod.CancelPendingRelease(false);
@@ -156,11 +228,17 @@ namespace BodyPouches
 		}
 
 		mod.ResolvePendingReleases();
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		const std::uint8_t measureHands = 0;
+#else
 		const auto measureHands = mod.PollSharedButtons();
 		mod.ResolveSharedPresses();
+#endif
 		mod._inHiggsUpdate = false;
 		mod.NoteReach();
+#ifndef BODYPOUCHES_WEARABLE_DEMO
 		mod.UpdateSharedWithdrawals();
+#endif
 		mod.RefreshDisplay();
 		// Diagnostics follow gameplay decisions so a scan/log flush cannot expire
 		// the shared press before its timeout check in this callback.
@@ -182,7 +260,7 @@ namespace BodyPouches
 			result.reason = "loading_or_no_callback_in_current_generation";
 			return result;
 		}
-		const auto* player = RE::PlayerCharacter::GetSingleton();
+		auto* player = RE::PlayerCharacter::GetSingleton();
 		const auto* cell = player != nullptr ? player->GetParentCell() : nullptr;
 		auto* ui = RE::UI::GetSingleton();
 		if (player == nullptr || player->Get3D() == nullptr || cell == nullptr || !cell->IsAttached() ||
@@ -214,12 +292,39 @@ namespace BodyPouches
 		}
 		result.available = true;
 		result.reason.clear();
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		const auto demo = _demoSlots.Copy();
+		result.wearable.enabled = true;
+		result.wearable.bagFormId = _demoBag ? _demoBag->GetFormID() : 0;
+		if (_demoBag) { result.wearable.worn = player->GetWornArmor(_demoBag->GetFormID(), true) == _demoBag; }
+		result.wearable.interfaceValidated = demo.connected;
+		result.wearable.providerAvailable = demo.available;
+		result.wearable.requestedActive = demo.requestedActive;
+		result.wearable.effectiveEnabled = demo.effectiveEnabled;
+		result.wearable.status = static_cast<std::uint32_t>(demo.status);
+		result.wearable.reason = VR::BodySlotsDemo::ReasonName(demo.reason);
+		result.wearable.equipmentEpoch = demo.equipmentEpoch;
+		result.wearable.saveGeneration = demo.view.saveGeneration;
+		result.wearable.viewRevision = demo.view.viewRevision;
+		result.wearable.instanceHandle = demo.token.instanceHandle;
+		result.wearable.instanceRevision = demo.token.instanceRevision;
+		std::string_view artReason;
+		const auto art = _picture.ReadGeometry(&artReason);
+		result.wearable.artGeometryAvailable = art.has_value();
+		result.wearable.artReason = artReason;
+		if (art) { result.wearable.artParent = art->parentName; }
+#endif
 		for (const bool isLeft : { true, false }) {
 			const bool secondary = IsSecondaryHand(isLeft);
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+			result.handReach.push_back({ isLeft, secondary, _vrik.SlotInReach(secondary),
+				_vrik.CanBeHolstered(secondary), 0, std::nullopt, 0, 0 });
+#else
 			const int shared = SharedCandidate(isLeft);
 			result.handReach.push_back({ isLeft, secondary, _vrik.SlotInReach(secondary),
 				_vrik.CanBeHolstered(secondary), shared, SharedDistance(shared, isLeft),
 				SharedRadius(), _sharedWithdrawal[isLeft ? 0 : 1].Slot() });
+#endif
 		}
 		return result;
 	}
@@ -278,6 +383,13 @@ namespace BodyPouches
 		const auto now = Now();
 		const int  slot = _picture.Slot();
 
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		RefreshDemoEquipment();
+		const bool show = _demoActive && (_demoSlots.Allows(true) || _demoSlots.Allows(false));
+		_picture.Want(show ? "Plants\\CoinBagLarge.nif" : "", show ? "Wearable potion bag (demo)" : "");
+		_picture.Tick(now, _vrik.IsDisplayed(slot));
+#else
+
 		if (now >= _displayAt) {
 			_displayAt = now + kDisplayEvery;
 
@@ -301,10 +413,14 @@ namespace BodyPouches
 		}
 
 		_picture.Tick(now, _vrik.IsDisplayed(slot));
+#endif
 	}
 
 	int Mod::PouchAt(bool a_isLeft, int a_nativeSlot)
 	{
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		return a_nativeSlot == 13 && DemoAllows(13, a_isLeft) ? 13 : 0;
+#else
 		const int slot = a_nativeSlot;
 		constexpr auto phase = "post_vrik_same_update";
 		if (slot == 0) {
@@ -327,6 +443,7 @@ namespace BodyPouches
 		const int chosen = _pouches.Find(slot) != nullptr ? slot : 0;
 		Loc::Info(Keys::kDropReachProbe, HandName(a_isLeft), slot, chosen, phase);
 		return chosen;
+#endif
 	}
 
 	void Mod::CancelPendingRelease(bool a_isLeft)
@@ -369,25 +486,28 @@ namespace BodyPouches
 			// can still describe the previous hand pose. It must not decide a pickup.
 			// A different native holster keeps priority over the shared spatial path.
 			const int native = _vrik.SlotInReach(IsSecondaryHand(isLeft));
-			const int slot = PouchAt(isLeft, native);
+			int slot = PouchAt(isLeft, native);
+			if (slot && !DemoAllows(slot, isLeft, &release.bagToken)) { slot = 0; }
 			const auto object = release.handle.get();
 			NoteDropGeometry(isLeft, object.get(), "post_vrik_same_update", release.serial);
 			Loc::Info(Keys::kDropResolved, HandName(isLeft), release.handle.native_handle(),
 				_higgsUpdate, _worldGeneration, slot);
 			if (slot != 0) {
-				QueueStowDropped(slot, isLeft, release.handle, release.serial);
+				QueueStowDropped(slot, isLeft, release.handle, release.serial, release.bagToken);
 			} else {
-				_queuedDrops.erase(pending);
+				const auto remaining = _queuedDrops.find(release.handle.native_handle());
+				if (remaining != _queuedDrops.end() && remaining->second == release.serial) { _queuedDrops.erase(remaining); }
 				SettleOutsideDrop(isLeft);
 			}
 		}
 	}
 
-	void Mod::QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial)
+	void Mod::QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial,
+		VR::BodySlotsDemo::Token bagToken)
 	{
 		if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
 			Trace(Diagnostics::Event::StowQueued, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, _worldGeneration);
-			tasks->AddTask([a_slot, a_isLeft, a_handle, a_serial, generation = _worldGeneration]() {
+			tasks->AddTask([a_slot, a_isLeft, a_handle, a_serial, bagToken, generation = _worldGeneration]() {
 				auto& current = GetSingleton();
 				current.Trace(Diagnostics::Event::StowTask, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
 				if (!current._loadState.Blocked() && generation == current._worldGeneration) {
@@ -398,7 +518,7 @@ namespace BodyPouches
 					}
 					current._queuedDrops.erase(pending);
 					const auto object = a_handle.get();
-					current.StowDropped(a_slot, a_isLeft, object.get(), a_serial);
+					current.StowDropped(a_slot, a_isLeft, object.get(), a_serial, bagToken);
 				} else {
 					current.Trace(Diagnostics::Event::StowWorldCancelled, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
 				}
@@ -615,6 +735,9 @@ namespace BodyPouches
 
 	void Mod::InvalidateWorld()
 	{
+		_demoSlots.Reset();
+		_demoEquipmentDirty.store(true);
+		_demoActive = false;
 		_loadState.Begin();
 		++_worldGeneration;
 		Trace(Diagnostics::Event::LoadBegin);
@@ -937,8 +1060,10 @@ namespace BodyPouches
 		_trace.Record(event);
 	}
 
-	bool Mod::Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item, std::uint64_t a_causalId)
+	bool Mod::Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item, std::uint64_t a_causalId,
+		const VR::BodySlotsDemo::Token& a_bagToken)
 	{
+		if (!DemoAllows(a_slot, a_isLeft, &a_bagToken)) { return false; }
 		const int hand = IsSecondaryHand(a_isLeft) ? 1 : 0;
 		if (_loadState.Blocked() || _restorePending || _pendingGrab[hand].Active() || _higgs.IsHolding(a_isLeft) ||
 			!_higgs.CanGrab(a_isLeft)) {
@@ -981,6 +1106,7 @@ namespace BodyPouches
 		// a reference to it appears in the world, which is the only thing HIGGS can put
 		// in a hand. Dropping it is not a metaphor - from here on it is an ordinary
 		// bottle lying in the world that happens to be held.
+		if (!DemoAllows(a_slot, a_isLeft, &a_bagToken)) { return false; }
 		Trace(Diagnostics::Event::RemoveRequested, a_isLeft ? 0 : 1, a_slot, 0, a_causalId, 0, 0, 1);
 		const auto handle = player->RemoveItem(
 			object, 1, RE::ITEM_REMOVE_REASON::kDropping, nullptr, nullptr, &where, &rotation);
@@ -1012,8 +1138,10 @@ namespace BodyPouches
 		return true;
 	}
 
-	void Mod::StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial)
+	void Mod::StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial,
+		const VR::BodySlotsDemo::Token& a_bagToken)
 	{
+		if (!DemoAllows(a_slot, a_isLeft, &a_bagToken)) { return; }
 		if (_loadState.Blocked() || _restorePending || a_object == nullptr || a_object->IsDeleted() || a_object->IsDisabled() ||
 			_higgs.Held(false) == a_object || _higgs.Held(true) == a_object) {
 			return;
@@ -1047,6 +1175,9 @@ namespace BodyPouches
 		auto item = Game::Describe(potion);
 		item.count = count;
 
+		// Equipment/provider reads may invalidate the original event. Commit no
+		// assignment until that same token is freshly admitted, outside the lock.
+		if (!DemoAllows(a_slot, a_isLeft, &a_bagToken)) { return; }
 		bool taken = false;
 		{
 			std::scoped_lock guard(_lock);
@@ -1073,6 +1204,7 @@ namespace BodyPouches
 		// as one and the other four were deleted: the mod took the player's potions away.
 		// PickUpObject counts, keeps whatever else the reference carried, and makes the
 		// sound the game makes when anything else is picked up.
+		if (!DemoAllows(a_slot, a_isLeft, &a_bagToken)) { return; }
 		Trace(Diagnostics::Event::PickupRequested, a_isLeft ? 0 : 1, a_slot, a_object->GetHandle().native_handle(), 0, a_serial, 0, count);
 		player->PickUpObject(a_object, count, false, true);
 		Trace(Diagnostics::Event::PickupReturned, a_isLeft ? 0 : 1, a_slot, 0, 0, a_serial, 0, count);
@@ -1184,6 +1316,10 @@ namespace BodyPouches
 	bool Mod::HandleHolsterAttempt(int a_slot, bool a_secondaryHand, bool a_handOccupied)
 	{
 		auto& mod = *this;
+		const auto bagToken = mod._demoSlots.CurrentToken();
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		if (a_slot == 13 && !DemoAllows(a_slot, IsLeftHand(a_secondaryHand), &bagToken)) { return false; }
+#endif
 		if (!mod.Working() || mod._loadState.Blocked() || mod._restorePending) {
 			Loc::Debug(Keys::kIdleHere);
 			return true;  // not our business: let VRIK do what it always did
@@ -1213,6 +1349,7 @@ namespace BodyPouches
 		// inventory and placing a reference is not work to start inside somebody else's
 		// callback.
 		if (decision.act == Core::Act::Draw) {
+			if (!mod.DemoAllows(decision.slot, isLeft, &bagToken)) { return false; }
 			const int hand = a_secondaryHand ? 1 : 0;
 			if (mod._drawQueued[hand] || mod._pendingGrab[hand].Active()) { return false; }
 			if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
@@ -1220,12 +1357,13 @@ namespace BodyPouches
 				const auto causalId = ++mod._traceDrawSerial;
 				mod.Trace(Diagnostics::Event::DrawQueued, isLeft ? 0 : 1, decision.slot, 0, causalId, 0, mod._worldGeneration);
 				tasks->AddTask([slot = decision.slot, isLeft, item = decision.item,
-					generation = mod._worldGeneration, causalId]() {
+					generation = mod._worldGeneration, causalId, bagToken]() {
 					auto& current = GetSingleton();
 					current.Trace(Diagnostics::Event::DrawTask, isLeft ? 0 : 1, slot, 0, causalId, 0, generation);
-					if (!current._loadState.Blocked() && generation == current._worldGeneration) {
+					if (!current._loadState.Blocked() && generation == current._worldGeneration &&
+						current.DemoAllows(slot, isLeft, &bagToken)) {
 						current._drawQueued[IsSecondaryHand(isLeft) ? 1 : 0] = false;
-						current.Draw(slot, isLeft, item, causalId);
+						current.Draw(slot, isLeft, item, causalId, bagToken);
 					} else {
 						current.Trace(Diagnostics::Event::DrawWorldCancelled, isLeft ? 0 : 1, slot, 0, causalId, 0, generation);
 					}
@@ -1319,6 +1457,7 @@ namespace BodyPouches
 		Loc::Info(Keys::kHiggsEvent, "dropped", HandName(a_isLeft));
 
 		auto& mod = GetSingleton();
+		const auto bagToken = mod._demoSlots.CurrentToken(); // Original event context, never adopted at the later queue.
 		mod._sharedWithdrawal[a_isLeft ? 0 : 1].Clear();
 		mod._sharedPresses[a_isLeft ? 0 : 1].Clear();
 		if (!mod.Working() || mod._loadState.Blocked() || mod._restorePending) {
@@ -1339,6 +1478,7 @@ namespace BodyPouches
 			auto& release = mod._pendingReleases[a_isLeft ? 0 : 1];
 			release.handle = reinterpret_cast<RE::TESObjectREFR*>(a_refr)->GetHandle();
 			release.serial = ++mod._dropSerial;
+			release.bagToken = bagToken;
 			mod.NoteDropGeometry(a_isLeft, object, "pre_vrik_observation_only", release.serial);
 			release.event.Arm(mod._worldGeneration, mod._higgsUpdate);
 			mod._queuedDrops[release.handle.native_handle()] = release.serial;

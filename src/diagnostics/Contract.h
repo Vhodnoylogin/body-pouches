@@ -15,6 +15,22 @@ namespace BodyPouches::Diagnostics
 		if (!a_state.available) {
 			return result;  // No guessed defaults, empty assignments or stale settings.
 		}
+		if (a_state.wearable.enabled) {
+			const auto& demo = a_state.wearable;
+			result["wearableDemo"] = {
+				{ "bridge", "singleton equipment -> Body Slots instance -> released VRIK native13" },
+				{ "bagFormId", demo.bagFormId }, { "worn", demo.worn ? json(*demo.worn) : json(nullptr) },
+				{ "interfaceValidated", demo.interfaceValidated }, { "providerAvailable", demo.providerAvailable },
+				{ "requestedActive", demo.requestedActive }, { "effectiveEnabled", demo.effectiveEnabled },
+				{ "status", demo.status }, { "reason", demo.reason },
+				{ "equipmentEpoch", std::to_string(demo.equipmentEpoch) },
+				{ "saveGeneration", std::to_string(demo.saveGeneration) }, { "viewRevision", std::to_string(demo.viewRevision) },
+				{ "instanceHandle", std::to_string(demo.instanceHandle) }, { "instanceRevision", std::to_string(demo.instanceRevision) },
+				{ "art", { { "geometryAvailable", demo.artGeometryAvailable }, { "reason", demo.artReason },
+					{ "parent", demo.artGeometryAvailable ? json(demo.artParent) : json(nullptr) },
+					{ "basis", "bounded actual player Art node observation; not rendered pixels" } } }
+			};
+		}
 		json pouches = json::array();
 		std::size_t assignments = 0;
 		for (const auto& pouch : a_state.pouches) {
