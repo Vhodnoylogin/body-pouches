@@ -23,7 +23,7 @@ Body Slots [Nexus draft 196769](https://www.nexusmods.com/skyrimspecialedition/m
 
 The [Shizof brief](vrik-integration-proposal-en.md), [Russian counterpart](vrik-integration-proposal-ru.md) and [responsibility/workflow illustration](images/vrik-integration-boundary.svg) are review drafts based on the unchanged full concept. The [private draft MR](https://github.com/Vhodnoylogin/vrik-reconstruction/pull/1) isolates a first optional read-only adapter, not a full integration estimate or authoritative maintainer source. The latest positive correspondence concerned Body Pouches; no new synergy response or author agreement is claimed.
 
-The private wearable Body Pouches demonstration is **IN DEVELOPMENT**, not delivered: one deliberately unique ARMO would control a Body Slots instance and a native13 compatibility bridge. Worn-state detection, lifecycle behavior and the resulting interaction still need implementation and game qualification. Released Body Pouches 0.2.0 remains the existing native-slot pouch proof and is unchanged by this work.
+The private wearable Body Pouches demonstration now has [committed source and instructions](https://github.com/Vhodnoylogin/body-pouches/tree/demo/wearable-bags) and a locally staged private review package. One deliberately unique ARMO controls a real Body Slots instance through actual worn-form observation; released VRIK supplies native13 interaction and Art. Both demo and default plugin modes compile. The production consumer passes64 actual-service-DLL and131 explicit failure checks;81 independent production-method checks and four negative controls cover queued-action cancellation and preserved delivered potions; seven ESP/template checks preserve the original three records and verify the actual Skyrim master references. These are **offline results, not game acceptance**. Worn equipment, visible Art, both-hand inventory behavior and save/load remain in the [game acceptance plan](https://github.com/Vhodnoylogin/body-pouches/blob/demo/wearable-bags/docs/wearable-demo-validation.md). Released Body Pouches 0.2.0 and its archive are unchanged.
 
 ## Implemented and checked
 
@@ -62,7 +62,7 @@ HIGGS's force-enabled flag only bypasses its temporary post-hit weapon-collision
 
 ## Still required
 
-These remain concept requirements, with further HIGGS/PLANCK goals explicitly deferred by the owner pending author feedback. The current private one-unique-ARMO/native13 demonstration is in development and is not a delivered implementation of these requirements.
+These remain concept requirements, with further HIGGS/PLANCK goals explicitly deferred by the owner pending author feedback. The current private one-unique-ARMO/native13 demonstration has an offline checked implementation; it is not game qualified or a delivered implementation of the generic requirements below.
 
 - Actual equipment identity/restoration by a consumer, equipment-model binding, content/visual descriptors and preview lifecycle. Logical instances and separate saved per-instance placement are delivered; activation and live handles remain transient.
 - Native14 runtime saved-array and full Papyrus/game regression coverage beyond the delivered placement/policy configuration facades. The original global INI semantics must remain distinct from generic save-scoped customization.
