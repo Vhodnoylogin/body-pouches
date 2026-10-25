@@ -8,6 +8,11 @@ installation instructions are on the Nexus page and retained here in the source.
 
 Russian: [README.ru.md](README.ru.md).
 
+Author: [Vhodnoylogin](https://github.com/Vhodnoylogin).
+Developed with assistance from Claude (Anthropic) and
+[Codex (OpenAI)](https://github.com/codex).
+Codex assisted with implementation, code review, verification, and release preparation.
+
 ## Features
 
 - One exclusive pouch on the stomach slot (13) by default.
@@ -68,3 +73,7 @@ cmake --build build --config Release --target BodyPouches
 Release builds omit the DevBench inspection bridge. For development testing,
 configure with `-DBODYPOUCHES_WITH_DEVBENCH=ON`; that build includes the API glue
 and requires its license notice when distributed. The default is `OFF`.
+
+## Proposed framework cooperation
+
+The maintained [English concept](docs/trinity-synergy/concept-en.md), [Russian concept](docs/trinity-synergy/concept-ru.md) and [implementation ledger](docs/trinity-synergy/implementation-status.md) describe cooperation between HIGGS, VRIK, PLANCK and the separate Body Slots service. Body Pouches intends to adopt these services; their implementation and verification limits are recorded separately from the released mod.

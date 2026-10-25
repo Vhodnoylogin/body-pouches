@@ -6,6 +6,11 @@
 
 English: [README.md](README.md).
 
+Автор: [Vhodnoylogin](https://github.com/Vhodnoylogin).
+Мод разрабатывался при участии Claude (Anthropic) и
+[Codex (OpenAI)](https://github.com/codex).
+Codex участвовал в реализации, анализе кода, проверках и подготовке релиза.
+
 ## Возможности
 
 - По умолчанию одна сумка exclusive в слоте «живот» (13).
@@ -62,3 +67,7 @@ cmake --build build-core --config Release
 cmake -S . -B build
 cmake --build build --config Release --target BodyPouches
 ```
+
+## Предлагаемое взаимодействие модов
+
+[Русская концепция](docs/trinity-synergy/concept-ru.md), [английская концепция](docs/trinity-synergy/concept-en.md) и [журнал реализации](docs/trinity-synergy/implementation-status.md) описывают взаимодействие HIGGS, VRIK, PLANCK и отдельного мода Body Slots. Body Pouches планирует использовать эти службы; ход реализации и границы проверок описаны отдельно от возможностей выпущенного мода.
