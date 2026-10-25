@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900" role="img" aria-labelledby="title desc">
   <title id="title">Optional VRIK bridge: proposed ownership and staged demonstration</title>
-  <desc id="desc">Body Slots owns definitions, instances and saved customization; VRIK retains body anchors, spatial interpretation and presentation. First optional read-only geometry, separately agreed interaction and rendering later. Released Body Pouches 0.2.0 is the proof; the wearable demonstration is in development.</desc>
+  <desc id="desc">Body Slots owns definitions, instances and saved customization; VRIK retains body anchors, spatial interpretation and presentation. First optional read-only geometry, separately agreed interaction and rendering later. Released Body Pouches 0.2.0 is the existing proof; the private wearable demonstration is built with offline checks, but its game behavior is not validated.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#355c80"/></marker>
     <marker id="plannedArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#926627"/></marker>
@@ -80,11 +80,11 @@
   <text x="451" y="795" class="s">Offline checks ≠ game qualification</text>
 
   <rect x="816" y="634" width="420" height="176" rx="12" fill="#fff5df" stroke="#bd914e" stroke-width="2" stroke-dasharray="8 5"/>
-  <text x="837" y="670" class="label">IN DEVELOPMENT / В РАЗРАБОТКЕ</text>
+  <text x="837" y="670" class="label">BUILT / СБОРКА ГОТОВА</text>
   <text x="837" y="706" class="t">Wearable-bag demonstration</text>
-  <text x="837" y="738" class="s">Instances • model binding • presentation</text>
-  <text x="837" y="765" class="s">Экземпляры • привязка • отображение сумки</text>
-  <text x="837" y="795" class="s">Target workflow, not working proof yet</text>
+  <text x="837" y="738" class="s">One equip item • native13 compatibility bridge</text>
+  <text x="837" y="765" class="s">Одна сумка • существующий слот13</text>
+  <text x="837" y="795" class="s">Game validation pending / Игровой тест впереди</text>
 
   <text x="44" y="857" class="s">Solid: proposed data/observation boundary. Dashed: later agreed work. Full concept remains in Body Pouches.</text>
   <text x="44" y="882" class="s">Сплошная линия — граница данных/наблюдений; пунктир — последующие согласованные работы.</text>

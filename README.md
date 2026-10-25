@@ -77,3 +77,5 @@ and requires its license notice when distributed. The default is `OFF`.
 ## Proposed framework cooperation
 
 The maintained [English concept](docs/trinity-synergy/concept-en.md), [Russian concept](docs/trinity-synergy/concept-ru.md) and [implementation ledger](docs/trinity-synergy/implementation-status.md) describe cooperation between HIGGS, VRIK, PLANCK and the separate Body Slots service. Body Pouches intends to adopt these services; their implementation and verification limits are recorded separately from the released mod.
+
+For the concrete wearable-bag goal, illustrated result, current readiness and first proposed VRIK change, start with the [proposal for Shizof](docs/trinity-synergy/vrik-integration-proposal-en.md) ([Russian](docs/trinity-synergy/vrik-integration-proposal-ru.md)).

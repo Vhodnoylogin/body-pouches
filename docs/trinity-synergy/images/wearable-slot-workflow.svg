@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1280" height="650" viewBox="0 0 1280 650" role="img" aria-labelledby="title desc">
+  <title id="title">Target: a wearable item brings its own usable body slot</title>
+  <desc id="desc">Three illustrative player states: without a worn bag its slot is unavailable; equipping the bag makes its slot available at the bag; removing it makes the slot unavailable again. This is the proposed gameplay workflow, not a game screenshot or a claim that the new demonstration is game validated.</desc>
+  <defs>
+    <style>
+      text { font-family: "Segoe UI", "DejaVu Sans", sans-serif; fill: #1b3044; }
+      .title { font-size: 29px; font-weight: 700; }
+      .heading { font-size: 23px; font-weight: 700; }
+      .body { font-size: 20px; }
+      .small { font-size: 18px; fill: #43566a; }
+      .person { fill: #e4eaf0; stroke: #677b90; stroke-width: 3; }
+    </style>
+    <g id="person">
+      <circle cx="0" cy="0" r="26" class="person"/>
+      <path d="M -54 48 Q 0 30 54 48 L 67 126 L 39 132 L 35 187 L -35 187 L -39 132 L -67 126 Z" class="person"/>
+      <path d="M -22 189 L -26 234 M 22 189 L 26 234" fill="none" stroke="#677b90" stroke-width="13" stroke-linecap="round"/>
+    </g>
+    <g id="bag">
+      <path d="M -21 -19 Q 0 -35 21 -19 L 29 23 Q 0 39 -29 23 Z" fill="#b78046" stroke="#654325" stroke-width="3"/>
+      <path d="M -24 -12 Q 0 0 24 -12 M 0 -13 L 0 6" fill="none" stroke="#654325" stroke-width="3"/>
+    </g>
+  </defs>
+  <rect width="1280" height="650" rx="18" fill="#f6f8fb"/>
+  <text x="40" y="49" class="title">Target: equip the bag, enable its slot</text>
+  <text x="40" y="80" class="small">Concept illustration — not a game screenshot</text>
+
+  <rect x="40" y="112" width="360" height="370" rx="14" fill="#fff" stroke="#bdc9d5" stroke-width="2"/>
+  <text x="64" y="151" class="heading">1. Bag not worn</text>
+  <use xlink:href="#person" transform="translate(215 195)"/>
+  <text x="64" y="459" class="body">Its slot is unavailable</text>
+
+  <path d="M 410 302 H 434 L 425 293 M 434 302 L 425 311" fill="none" stroke="#517da4" stroke-width="4"/>
+
+  <rect x="460" y="112" width="360" height="370" rx="14" fill="#eaf5ed" stroke="#6c9b76" stroke-width="2"/>
+  <text x="484" y="151" class="heading">2. Equip the bag</text>
+  <use xlink:href="#person" transform="translate(620 195)"/>
+  <circle cx="662" cy="337" r="48" fill="#bce2c5" fill-opacity="0.6" stroke="#26713b" stroke-width="3" stroke-dasharray="6 5"/>
+  <use xlink:href="#bag" transform="translate(662 337)"/>
+  <text x="484" y="459" class="body">Reach here to take a potion</text>
+
+  <path d="M 830 302 H 854 L 845 293 M 854 302 L 845 311" fill="none" stroke="#517da4" stroke-width="4"/>
+
+  <rect x="880" y="112" width="360" height="370" rx="14" fill="#fff" stroke="#bdc9d5" stroke-width="2"/>
+  <text x="904" y="151" class="heading">3. Remove the bag</text>
+  <use xlink:href="#person" transform="translate(1055 195)"/>
+  <text x="904" y="459" class="body">Its slot is unavailable again</text>
+
+  <rect x="40" y="512" width="1200" height="104" rx="12" fill="#fff5df" stroke="#bd914e" stroke-width="2"/>
+  <text x="62" y="544" class="heading">Current private demo: built; game validation pending</text>
+  <text x="62" y="574" class="small">One bag controls a real Body Slots instance through VRIK's existing holster13.</text>
+  <text x="62" y="600" class="small">Arbitrary new-slot placement and equipment-model binding are later integration work.</text>
+</svg>
