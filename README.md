@@ -1,5 +1,7 @@
 # Body Pouches — 0.2.0
 
+This branch also contains a [private wearable-bag demonstration](docs/wearable-demo.md), enabled only by `BODYPOUCHES_WEARABLE_DEMO`. Its game behavior is not yet qualified; it is separate from the published release described below.
+
 Potions within reach in Skyrim VR. Turn a VRIK body slot into a potion pouch:
 draw a bottle with either hand, drink it through HIGGS, or return it to the slot.
 No inventory menu, wheel or separate hotkey is needed for the pouch interaction.

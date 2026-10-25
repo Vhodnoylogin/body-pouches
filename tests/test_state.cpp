@@ -4,6 +4,26 @@
 
 using namespace BodyPouches;
 
+TEST(wearable_demo_observations_keep_unknown_equipment_and_exact_tokens)
+{
+	Diagnostics::State state;
+	state.available = true;
+	state.wearable.enabled = true;
+	state.wearable.equipmentEpoch = UINT64_MAX;
+	state.wearable.artReason = "player_art_missing";
+	const auto missing = Diagnostics::StateValues(state);
+	CHECK(missing.at("wearableDemo").at("worn").is_null());
+	CHECK(missing.at("wearableDemo").at("art").at("parent").is_null());
+	CHECK_EQ(missing.at("wearableDemo").at("equipmentEpoch"), "18446744073709551615");
+	state.wearable.worn = true;
+	state.wearable.requestedActive = false;
+	const auto worn = Diagnostics::StateValues(state);
+	CHECK_EQ(worn.at("wearableDemo").at("worn"), true);
+	CHECK_EQ(worn.at("wearableDemo").at("requestedActive"), false);
+	state.available = false;
+	CHECK(!Diagnostics::StateValues(state).contains("wearableDemo"));
+}
+
 TEST(assignment_diagnostics_expose_actual_filter_identity_not_only_count)
 {
 	Diagnostics::State state;

@@ -1,0 +1,311 @@
+#include <algorithm>
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+#include "vr/BodySlotsDemo.h"
+#include "core/PouchSet.h"
+#include "core/LoadGate.h"
+#include "core/PendingGrab.h"
+#include "core/CurrentUpdateRelease.h"
+
+namespace RE {
+using FormID = std::uint32_t;
+struct TESObjectREFR;
+struct Ref { TESObjectREFR* pointer{}; TESObjectREFR* get() const { return pointer; } explicit operator bool() const { return pointer != nullptr; } };
+inline std::map<std::uint32_t, TESObjectREFR*> references;
+struct ObjectRefHandle {
+    std::uint32_t value{};
+    std::uint32_t native_handle() const { return value; }
+    Ref get() const { const auto found=references.find(value); return {found==references.end()?nullptr:found->second}; }
+    void reset() { value=0; }
+};
+struct TESForm {
+    virtual ~TESForm() = default;
+    FormID id{};
+    const char* GetName() const { return "test potion"; }
+    FormID GetFormID() const { return id; }
+    int GetFormType() const { return 1; }
+    template<class T> T* As() { return dynamic_cast<T*>(this); }
+};
+struct TESBoundObject : TESForm {};
+struct TESObjectARMO : TESBoundObject {};
+struct AlchemyItem : TESBoundObject { BodyPouches::Core::Item item; };
+struct TESObjectREFR {
+    FormID id{};
+    std::uint32_t handle{};
+    TESBoundObject* base{};
+    bool deleted{},disabled{};
+    struct Extra { int count=1; int GetCount() const { return count; } } extraList;
+    std::function<void()> onBase;
+    TESBoundObject* GetBaseObject() { auto callback=std::exchange(onBase,{}); if(callback)callback(); return base; }
+    FormID GetFormID() const { return id; }
+    ObjectRefHandle GetHandle() const { return {handle}; }
+    bool IsDeleted() const { return deleted; }
+    bool IsDisabled() const { return disabled; }
+};
+struct NiPoint3 { float x{},y{},z{}; };
+struct Cell { bool attached=true; bool IsAttached() const { return attached; } };
+enum class ITEM_REMOVE_REASON { kDropping };
+struct PlayerCharacter {
+    inline static PlayerCharacter* current{};
+    bool has3D=true,worn=true;
+    Cell cell;
+    TESObjectARMO* armor{};
+    TESObjectREFR* removed{};
+    int removeCalls{},pickupCalls{},pickedQuantity{},wornReads{};
+    std::function<void()> onWorn,onRemove,onPickup;
+    static PlayerCharacter* GetSingleton() { return current; }
+    void* Get3D(bool) { return has3D?this:nullptr; }
+    Cell* GetParentCell() { return &cell; }
+    TESObjectARMO* GetWornArmor(FormID form,bool) { ++wornReads; auto f=std::exchange(onWorn,{});if(f)f();return worn&&armor&&armor->id==form?armor:nullptr; }
+    ObjectRefHandle RemoveItem(TESBoundObject*,int,ITEM_REMOVE_REASON,void*,void*,NiPoint3*,NiPoint3*) {
+        ++removeCalls; auto f=std::exchange(onRemove,{});if(f)f(); return removed?removed->GetHandle():ObjectRefHandle{};
+    }
+    void PickUpObject(TESObjectREFR*,int count,bool,bool) { ++pickupCalls;pickedQuantity+=count;auto f=std::exchange(onPickup,{});if(f)f(); }
+};
+enum class BSEventNotifyControl { kContinue };
+template<class T> struct BSTEventSource {};
+struct ActorHandle { PlayerCharacter* value{}; PlayerCharacter* get() const { return value; } };
+struct TESEquipEvent { ActorHandle actor; FormID baseObject{}; };
+inline const char* FormTypeToString(int) { return "AlchemyItem"; }
+}
+using TESObjectREFR=RE::TESObjectREFR;
+
+namespace SKSE {
+struct Tasks {
+    std::vector<std::function<void()>> queue;
+    void AddTask(std::function<void()> f) { queue.push_back(std::move(f)); }
+    void Drain() { auto pending=std::exchange(queue,{});for(auto& task:pending)task(); }
+};
+inline Tasks tasks;
+inline bool available=true;
+inline Tasks* GetTaskInterface() { return available?&tasks:nullptr; }
+}
+
+namespace BodyPouches {
+namespace Loc {
+template<class... T> void Info(T&&...) {}
+template<class... T> void Warn(T&&...) {}
+template<class... T> void Debug(T&&...) {}
+template<class... T> void Error(T&&...) {}
+}
+namespace Keys { @@KEYS@@ }
+namespace Diagnostics { enum class Event { @@EVENTS@@ }; }
+namespace Game {
+inline std::function<void()> onDescribe,onHeld;
+inline RE::TESBoundObject* held{};
+inline Core::Item Describe(RE::AlchemyItem* potion) { auto f=std::exchange(onDescribe,{});if(f)f();return potion->item; }
+struct PlayerPack { static RE::TESBoundObject* Held(const Core::FormKey&) { auto f=std::exchange(onHeld,{});if(f)f();return held; } };
+}
+// This controlled boundary models only copied admission/token changes. It is not
+// an independent implementation or qualification of the production adapter/API.
+struct AdmissionBoundary {
+    VR::BodySlotsDemo::CopiedState state;
+    bool provider=true,left=true,right=true;
+    int reconciles{},allows{},invalidates{},resets{};
+    AdmissionBoundary() { state.equipmentEpoch=1;state.view.saveGeneration=1;state.view.viewRevision=1; }
+    VR::BodySlotsDemo::Token CurrentToken() const { return state.available?state.token:VR::BodySlotsDemo::Token{}; }
+    void InvalidateEquipment() { ++invalidates;++state.equipmentEpoch;state.available=false;state.token={}; }
+    void Reset() { ++resets;++state.equipmentEpoch;++state.view.saveGeneration;state.available=false;state.token={}; }
+    void Reconcile(bool observed,bool worn) {
+        ++reconciles;state.observed=observed;state.worn=observed&&worn;state.requestedActive=state.worn;
+        state.available=provider&&state.worn;state.connected=provider;
+        state.token=state.available?VR::BodySlotsDemo::Token{state.equipmentEpoch,state.view.saveGeneration,state.view.viewRevision,7,1}:VR::BodySlotsDemo::Token{};
+    }
+    VR::BodySlotsDemo::CopiedState Copy() const { return state; }
+    bool Allows(bool isLeft,const VR::BodySlotsDemo::Token* token=nullptr) {
+        ++allows;return provider&&state.available&&(isLeft?left:right)&&(!token||(token->Valid()&&*token==state.token));
+    }
+};
+struct Clearable { bool active{};void Clear(){active=false;} };
+struct PackBoundary : Core::Pack {
+    std::vector<Core::Item> rows;
+    std::vector<Core::Item> Matching(const Core::Filter& filter) const override {
+        std::vector<Core::Item> result;for(const auto& row:rows)if(filter.Matches(row))result.push_back(row);return result;
+    }
+};
+struct HiggsBoundary {
+    RE::TESObjectREFR* held[2]{};bool canGrab=true;int grabs{};
+    std::function<void()> onCanGrab;
+    bool IsHolding(bool left) const {return held[left?0:1]!=nullptr;}
+    RE::TESObjectREFR* Held(bool left) const {return held[left?0:1];}
+    bool CanGrab(bool) {auto f=std::exchange(onCanGrab,{});if(f)f();return canGrab;}
+    void Grab(RE::TESObjectREFR*,bool) {++grabs;}
+};
+struct VrikBoundary {
+    int native=13,reads{};std::function<void()> onRead;
+    int SlotInReach(bool) {++reads;auto f=std::exchange(onRead,{});if(f)f();return native;}
+};
+inline const char* HandName(bool left) {return left?"left":"right";}
+inline std::int64_t Now(){return 1000;}
+inline constexpr std::int64_t kGrabCheckMs=200;
+
+class Mod {
+public:
+    inline static Mod* instance{};
+    static Mod& GetSingleton(){return *instance;}
+    Mod(){instance=this;}
+    bool working=true,_dataLoaded=true,_restorePending=false,_demoActive=false;
+    std::atomic<bool> _demoEquipmentDirty{false};
+    RE::TESObjectARMO* _demoBag{};
+    AdmissionBoundary _demoSlots;
+    Core::PouchSet _pouches;
+    PackBoundary _pack;
+    Core::LoadGate _loadState;
+    HiggsBoundary _higgs;
+    VrikBoundary _vrik;
+    std::mutex _lock;
+    Core::PendingGrab _pendingGrab[2];
+    RE::ObjectRefHandle _grabReference[2];
+    Clearable _sharedPresses[2],_sharedWithdrawal[2],_sharedButtons[2];
+    bool _drawQueued[2]{};
+    int _reach[2]{},_drawnFrom[2]{};
+    std::uint64_t _pendingDrawIds[2]{},_traceDrawSerial{},_worldGeneration=1,_higgsUpdate=1,_dropSerial{};
+    bool _inHiggsUpdate=true;
+    std::int64_t _displayAt=99;
+    struct PendingRelease {Core::CurrentUpdateRelease event;RE::ObjectRefHandle handle;std::uint64_t serial{};VR::BodySlotsDemo::Token bagToken;};
+    PendingRelease _pendingReleases[2];
+    std::unordered_map<std::uint32_t,std::uint64_t> _queuedDrops;
+    std::function<void(std::string_view)> onGeometry;
+    std::function<void(Diagnostics::Event)> onTrace;
+    bool Working()const{return working;}
+    static bool IsSecondaryHand(bool left){return left;}
+    static bool IsLeftHand(bool secondary){return secondary;}
+    static bool HandPosition(bool,RE::NiPoint3& point){point={1,2,3};return true;}
+    void NoteDropGeometry(bool,RE::TESObjectREFR*,const char* phase,std::uint64_t){if(onGeometry)onGeometry(phase);}
+    template<class... T>void Trace(Diagnostics::Event event,T&&...){if(onTrace)onTrace(event);}
+    class DemoEquipment {public:RE::BSEventNotifyControl ProcessEvent(const RE::TESEquipEvent*,RE::BSTEventSource<RE::TESEquipEvent>*);};
+    void RefreshDemoEquipment();
+    bool DemoAllows(int,bool,const VR::BodySlotsDemo::Token* =nullptr);
+    int PouchAt(bool,int);
+    void CancelPendingRelease(bool);
+    void SettleOutsideDrop(bool);
+    void ResolvePendingReleases();
+    void QueueStowDropped(int,bool,RE::ObjectRefHandle,std::uint64_t,VR::BodySlotsDemo::Token);
+    void InvalidateWorld();
+    bool Draw(int,bool,const Core::FormKey&,std::uint64_t,const VR::BodySlotsDemo::Token&);
+    void StowDropped(int,bool,RE::TESObjectREFR*,std::uint64_t,const VR::BodySlotsDemo::Token&);
+    bool HandleHolsterAttempt(int,bool,bool);
+    static void OnDropped(bool,::TESObjectREFR*);
+    static void OnGrabbed(bool,::TESObjectREFR*);
+};
+
+@@METHODS@@
+}
+namespace BodyPouches::VR {
+@@TOKENS@@
+}
+
+namespace {
+int checks{},failures{};
+#define CHECK(x) do{++checks;if(!(x)){++failures;std::cerr<<"FAIL "<<test<<":"<<__LINE__<<" " #x "\n";}}while(false)
+struct World {
+    BodyPouches::Mod mod;
+    RE::PlayerCharacter player;
+    RE::TESObjectARMO bag;
+    RE::AlchemyItem potion;
+    RE::TESObjectREFR bottle;
+    World(bool assigned=true){
+        RE::references.clear();SKSE::tasks.queue.clear();SKSE::available=true;
+        BodyPouches::Game::onDescribe={};BodyPouches::Game::onHeld={};
+        bag.id=0x01000803;player.armor=&bag;RE::PlayerCharacter::current=&player;mod._demoBag=&bag;
+        potion.id=0x123;potion.item.key={"Skyrim.esm",0x123};potion.item.effects={{"Skyrim.esm",0x456}};potion.item.count=5;
+        bottle.id=0xFF000001;bottle.handle=101;bottle.base=&potion;RE::references[101]=&bottle;
+        player.removed=&bottle;BodyPouches::Game::held=&potion;mod._pack.rows={potion.item};
+        mod._pouches.Set(BodyPouches::Core::Pouch(13,BodyPouches::Core::Mode::Exclusive));
+        if(assigned)mod._pouches.Assign(13,potion.item);
+        mod.RefreshDemoEquipment();
+    }
+    void Event(){RE::TESEquipEvent event{{&player},bag.id};BodyPouches::Mod::DemoEquipment sink;sink.ProcessEvent(&event,nullptr);}
+    void OffOn(){player.worn=false;Event();player.worn=true;Event();}
+    void FenceOffOn(){OffOn();mod.RefreshDemoEquipment();}
+};
+void Run(std::string_view test){
+    using BodyPouches::Mod;
+    if(test=="original_draw_capture"){
+        World w;const auto original=w.mod._demoSlots.CurrentToken();w.mod._higgs.onCanGrab=[&]{w.FenceOffOn();};
+        CHECK(!w.mod.HandleHolsterAttempt(13,true,false));CHECK(w.mod._demoSlots.CurrentToken()!=original);
+        SKSE::tasks.Drain();CHECK(w.player.removeCalls==0);
+    }else if(test=="unassigned_stow_fence"){
+        World w(false);const auto token=w.mod._demoSlots.CurrentToken();BodyPouches::Game::onDescribe=[&]{w.OffOn();};
+        w.mod.StowDropped(13,true,&w.bottle,1,token);CHECK(w.player.pickupCalls==0);CHECK(!w.mod._pouches.Find(13)->IsAssigned());
+    }else if(test=="normal_return"){
+        World w;auto token=w.mod._demoSlots.CurrentToken();Mod::OnDropped(true,&w.bottle);
+        CHECK(w.mod._pendingReleases[0].bagToken==token);CHECK(w.mod._pendingReleases[0].event.Active());
+        w.mod.ResolvePendingReleases();CHECK(SKSE::tasks.queue.size()==1);CHECK(w.player.pickupCalls==0);
+        SKSE::tasks.Drain();CHECK(w.player.pickupCalls==1);CHECK(w.player.pickedQuantity==1);CHECK(w.mod._queuedDrops.empty());
+    }else if(test=="off_on_before_resolve"){
+        World w;Mod::OnDropped(true,&w.bottle);w.OffOn();w.mod.ResolvePendingReleases();SKSE::tasks.Drain();
+        CHECK(w.player.pickupCalls==0);CHECK(SKSE::tasks.queue.empty());CHECK(w.mod._queuedDrops.empty());
+    }else if(test=="original_event_capture"){
+        World w;const auto original=w.mod._demoSlots.CurrentToken();w.bottle.onBase=[&]{w.FenceOffOn();};
+        Mod::OnDropped(true,&w.bottle);CHECK(w.mod._pendingReleases[0].bagToken==original);
+        CHECK(w.mod._demoSlots.CurrentToken()!=original);w.mod.ResolvePendingReleases();SKSE::tasks.Drain();CHECK(w.player.pickupCalls==0);
+    }else if(test=="queue_no_recapture"){
+        World w;Mod::OnDropped(true,&w.bottle);w.mod.onGeometry=[&](std::string_view phase){if(phase=="post_vrik_same_update")w.FenceOffOn();};
+        w.mod.ResolvePendingReleases();CHECK(SKSE::tasks.queue.size()==1);SKSE::tasks.Drain();CHECK(w.player.pickupCalls==0);
+    }else if(test=="queued_return_epoch"){
+        World w;Mod::OnDropped(true,&w.bottle);w.mod.ResolvePendingReleases();CHECK(SKSE::tasks.queue.size()==1);
+        w.FenceOffOn();SKSE::tasks.Drain();CHECK(w.player.pickupCalls==0);
+        Mod::OnDropped(false,&w.bottle);w.mod.ResolvePendingReleases();SKSE::tasks.Drain();CHECK(w.player.pickupCalls==1);
+    }else if(test=="draw_queue_epoch"){
+        World w;CHECK(!w.mod.HandleHolsterAttempt(13,true,false));CHECK(SKSE::tasks.queue.size()==1);
+        w.FenceOffOn();SKSE::tasks.Drain();CHECK(w.player.removeCalls==0);CHECK(!w.mod._pendingGrab[1].Active());
+        CHECK(!w.mod.HandleHolsterAttempt(13,false,false));SKSE::tasks.Drain();CHECK(w.player.removeCalls==1);CHECK(w.mod._pendingGrab[0].Active());
+    }else if(test=="draw_last_guard"){
+        World w;const auto token=w.mod._demoSlots.CurrentToken();BodyPouches::Game::onHeld=[&]{w.OffOn();};
+        CHECK(!w.mod.Draw(13,true,w.potion.item.key,5,token));CHECK(w.player.removeCalls==0);CHECK(!w.mod._pendingGrab[1].Active());
+    }else if(test=="stow_last_guard"){
+        World w;const auto token=w.mod._demoSlots.CurrentToken();BodyPouches::Game::onDescribe=[&]{w.OffOn();};
+        w.mod.StowDropped(13,true,&w.bottle,1,token);CHECK(w.player.pickupCalls==0);
+    }else if(test=="removed_survives"){
+        World w;const auto token=w.mod._demoSlots.CurrentToken();CHECK(w.mod.Draw(13,true,w.potion.item.key,5,token));
+        CHECK(w.player.removeCalls==1);CHECK(w.mod._pendingGrab[1].Active());CHECK(w.mod._grabReference[1].native_handle()==101);
+        w.player.worn=false;w.Event();w.mod.RefreshDemoEquipment();CHECK(!w.mod._demoActive);
+        CHECK(w.mod._pendingGrab[1].Active());CHECK(w.mod._pendingDrawIds[1]==5);CHECK(w.mod._grabReference[1].native_handle()==101);
+        CHECK(w.player.removeCalls==1);CHECK(w.player.pickupCalls==0);CHECK(w.mod._pouches.SlotOfHand(true)==13);
+        Mod::OnGrabbed(true,&w.bottle);CHECK(!w.mod._pendingGrab[1].Active());CHECK(w.mod._pendingDrawIds[1]==0);
+        CHECK(w.player.removeCalls==1);CHECK(w.player.pickupCalls==0);
+    }else if(test=="reset_before_callbacks"){
+        World w;auto token=w.mod._demoSlots.CurrentToken();CHECK(token.Valid());
+        w.mod.onTrace=[&](BodyPouches::Diagnostics::Event event){if(event==BodyPouches::Diagnostics::Event::LoadBegin)CHECK(!w.mod._demoSlots.CurrentToken().Valid());};
+        w.mod.InvalidateWorld();CHECK(w.mod._demoSlots.resets==1);CHECK(w.mod._loadState.Blocked());CHECK(!w.mod._demoSlots.CurrentToken().Valid());
+        w.mod._loadState.Complete();w.mod.RefreshDemoEquipment();CHECK(w.mod._demoSlots.CurrentToken()!=token);CHECK(!w.mod.DemoAllows(13,true,&token));
+    }else if(test=="queued_world_reset"){
+        World w;Mod::OnDropped(true,&w.bottle);w.mod.ResolvePendingReleases();CHECK(SKSE::tasks.queue.size()==1);
+        w.mod.InvalidateWorld();w.mod._loadState.Complete();w.mod.RefreshDemoEquipment();SKSE::tasks.Drain();CHECK(w.player.pickupCalls==0);
+        CHECK(!w.mod.HandleHolsterAttempt(13,true,false));CHECK(SKSE::tasks.queue.size()==1);w.mod.InvalidateWorld();w.mod._loadState.Complete();w.mod.RefreshDemoEquipment();SKSE::tasks.Drain();CHECK(w.player.removeCalls==0);
+    }else if(test=="native13_only"){
+        World w;const auto calls=w.mod._demoSlots.allows;CHECK(w.mod.PouchAt(true,0)==0);CHECK(w.mod.PouchAt(true,12)==0);
+        CHECK(w.mod._demoSlots.allows==calls);CHECK(w.mod.PouchAt(true,13)==13);CHECK(w.mod.HandleHolsterAttempt(12,true,false));CHECK(SKSE::tasks.queue.empty());
+        w.player.worn=false;w.Event();CHECK(!w.mod.HandleHolsterAttempt(13,true,false));CHECK(SKSE::tasks.queue.empty());
+    }else if(test=="event_dirty_only"){
+        World w;const auto old=w.mod._demoSlots.CurrentToken();const auto calls=w.mod._demoSlots.reconciles,reads=w.player.wornReads;
+        w.Event();CHECK(w.mod._demoEquipmentDirty.load());CHECK(w.mod._demoSlots.CurrentToken()==old);CHECK(w.mod._demoSlots.reconciles==calls);CHECK(w.player.wornReads==reads);
+        w.mod.RefreshDemoEquipment();CHECK(w.mod._demoSlots.CurrentToken()!=old);CHECK(!w.mod._demoEquipmentDirty.load());
+    }else if(test=="map_revalidation"){
+        World w;Mod::OnDropped(true,&w.bottle);w.mod._vrik.native=12;
+        w.mod.onGeometry=[&](std::string_view phase){if(phase=="post_vrik_same_update"){w.mod._queuedDrops.clear();w.mod._queuedDrops[101]=999;}};
+        w.mod.ResolvePendingReleases();CHECK(w.mod._queuedDrops.at(101)==999);CHECK(SKSE::tasks.queue.empty());CHECK(w.player.pickupCalls==0);
+    }else if(test=="unavailable"){
+        World w;Mod::OnDropped(true,&w.bottle);w.mod._demoSlots.provider=false;w.mod.ResolvePendingReleases();SKSE::tasks.Drain();CHECK(w.player.pickupCalls==0);
+        CHECK(!w.mod.DemoAllows(13,true));CHECK(!w.mod._demoActive);
+    }else throw std::runtime_error("unknown case");
+}
+}
+int main(int argc,char** argv){
+    if(argc==2)Run(argv[1]);
+    else for(auto test:{"original_draw_capture","unassigned_stow_fence","normal_return","off_on_before_resolve","original_event_capture","queue_no_recapture","queued_return_epoch","draw_queue_epoch","draw_last_guard","stow_last_guard","removed_survives","reset_before_callbacks","queued_world_reset","native13_only","event_dirty_only","map_revalidation","unavailable"})Run(test);
+    std::cout<<"checks="<<checks<<" failures="<<failures<<"\n";return failures?1:0;
+}

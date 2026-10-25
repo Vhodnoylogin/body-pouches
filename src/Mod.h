@@ -12,9 +12,11 @@
 #include "game/PlayerPack.h"
 #include "vr/HiggsLink.h"
 #include "vr/VrikLink.h"
+#include "vr/BodySlotsDemo.h"
 #include "diagnostics/State.h"
 
 #include <cstdint>
+#include <atomic>
 #include <mutex>
 #include <unordered_map>
 
@@ -82,6 +84,15 @@ namespace BodyPouches
 				RE::BSTEventSource<RE::InputEvent*>*) override;
 		};
 
+		class DemoEquipment final : public RE::BSTEventSink<RE::TESEquipEvent>
+		{
+		public:
+			RE::BSEventNotifyControl ProcessEvent(const RE::TESEquipEvent*,
+				RE::BSTEventSource<RE::TESEquipEvent>*) override;
+		};
+		void RefreshDemoEquipment();
+		[[nodiscard]] bool DemoAllows(int a_slot, bool a_isLeft, const VR::BodySlotsDemo::Token* a_token = nullptr);
+
 		// --- what the two mods call, and the only functions that may be static ---
 		static bool OnHolsterAttempt(int a_slot, bool a_secondaryHand, bool a_handOccupied);
 		static void OnConsumed(bool a_isLeft, ::TESForm* a_form);
@@ -90,14 +101,16 @@ namespace BodyPouches
 		static void OnGrabbed(bool a_isLeft, ::TESObjectREFR* a_refr);
 
 		// --- the work itself, always on the game's own thread ---
-		bool Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item, std::uint64_t a_causalId);
+		bool Draw(int a_slot, bool a_isLeft, const Core::FormKey& a_item, std::uint64_t a_causalId,
+			const VR::BodySlotsDemo::Token& a_bagToken = {});
 		void Trace(Diagnostics::Event a_event, int a_physicalHand = -1, int a_slot = 0,
 			std::uint32_t a_handle = 0, std::uint64_t a_causalId = 0,
 			std::uint64_t a_dropSerial = 0, std::uint64_t a_enqueuedGeneration = 0,
 			int a_quantity = 0, std::int64_t a_now = -1,
 			const Core::PendingGrab* a_pendingBefore = nullptr);
 		// A hand let go of something inside a pouch: take it in, or set the pouch up with it.
-		void StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial);
+		void StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial,
+			const VR::BodySlotsDemo::Token& a_bagToken = {});
 
 		// Called only after VRIK in the release's own update. Native reach owns
 		// arbitration; the shared spatial path applies only when native reach is zero.
@@ -106,7 +119,8 @@ namespace BodyPouches
 		void ResolvePendingReleases();
 		void CancelPendingRelease(bool a_isLeft);
 		void SettleOutsideDrop(bool a_isLeft);
-		void QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial);
+		void QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial,
+			VR::BodySlotsDemo::Token a_bagToken);
 		[[nodiscard]] bool SharedWorldReady(std::string_view* a_reason = nullptr);
 		[[nodiscard]] std::optional<double> SharedDistance(int a_slot, bool a_isLeft, std::string_view* a_reason = nullptr);
 		[[nodiscard]] double SharedRadius();
@@ -197,6 +211,7 @@ namespace BodyPouches
 			Core::CurrentUpdateRelease event;
 			RE::ObjectRefHandle handle;
 			std::uint64_t serial{};
+			VR::BodySlotsDemo::Token bagToken;
 		};
 		PendingRelease _pendingReleases[2]; // physical left/right; no stored reach
 		std::uint64_t _higgsUpdate{}; // public before/post callback pair, not engine frame
@@ -216,6 +231,11 @@ namespace BodyPouches
 		Game::Picture    _picture;
 		VR::VrikLink     _vrik;
 		VR::HiggsLink    _higgs;
+		VR::BodySlotsDemo _demoSlots;
+		RE::TESObjectARMO* _demoBag{ nullptr };
+		DemoEquipment _demoEquipment;
+		std::atomic<bool> _demoEquipmentDirty{ true };
+		bool _demoActive{ false };
 		Settings         _settings;
 		std::mutex       _lock;
 	};

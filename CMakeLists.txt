@@ -23,6 +23,7 @@ set(CMAKE_SKIP_INSTALL_RULES ON)
 option(BODYPOUCHES_BUILD_PLUGIN "Build the SKSE plugin (needs CommonLibSSE-NG)" ON)
 option(BODYPOUCHES_BUILD_TESTS  "Build the checks of the core" ON)
 option(BODYPOUCHES_WITH_DEVBENCH "Include the development-only DevBench inspection bridge" OFF)
+option(BODYPOUCHES_WEARABLE_DEMO "Build the private singleton wearable-bag/native14 demonstration" OFF)
 
 # ------------------------------------------------------------------------ core
 # No dependencies by design. A new file under src/core is picked up by the next
@@ -122,6 +123,9 @@ add_library(BodyPouches SHARED
     ${BODYPOUCHES_SOURCES}
     ${BODYPOUCHES_HEADERS}
 )
+if(BODYPOUCHES_WEARABLE_DEMO)
+    target_compile_definitions(BodyPouches PRIVATE BODYPOUCHES_WEARABLE_DEMO=1)
+endif()
 if(BODYPOUCHES_WITH_DEVBENCH)
     target_sources(BodyPouches PRIVATE contract/DevBenchAPI.cpp)
     target_compile_definitions(BodyPouches PRIVATE BODYPOUCHES_WITH_DEVBENCH=1)
