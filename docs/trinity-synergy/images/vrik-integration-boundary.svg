@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900" role="img" aria-labelledby="title desc">
+  <title id="title">Optional VRIK bridge: proposed ownership and staged demonstration</title>
+  <desc id="desc">Body Slots owns definitions, instances and saved customization; VRIK retains body anchors, spatial interpretation and presentation. First optional read-only geometry, separately agreed interaction and rendering later. Released Body Pouches 0.2.0 is the proof; the wearable demonstration is in development.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#355c80"/></marker>
+    <marker id="plannedArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#926627"/></marker>
+    <style>
+      text { font-family: "Segoe UI", "DejaVu Sans", sans-serif; fill: #182b3e; }
+      .h { font-size: 25px; font-weight: 700; }
+      .t { font-size: 19px; }
+      .s { font-size: 16px; fill: #43566a; }
+      .label { font-size: 17px; font-weight: 600; }
+      .arrow { fill: none; stroke: #355c80; stroke-width: 3; marker-end: url(#arrow); }
+      .planned { fill: none; stroke: #926627; stroke-width: 3; stroke-dasharray: 9 6; marker-end: url(#plannedArrow); }
+    </style>
+  </defs>
+  <rect width="1280" height="900" rx="18" fill="#f6f8fb"/>
+  <text x="44" y="48" class="h">Proposed responsibility boundary / Предлагаемые границы</text>
+  <text x="44" y="79" class="s">Concept diagram and status, not a game screen / Схема концепции и статусов</text>
+
+  <rect x="44" y="130" width="245" height="180" rx="12" fill="#ffffff" stroke="#b5c2d0" stroke-width="2"/>
+  <text x="64" y="168" class="h">Morphbench</text>
+  <text x="64" y="205" class="t">Offline placement</text>
+  <text x="64" y="233" class="s">Размещение вне игры</text>
+  <text x="64" y="272" class="s">Author defaults + package</text>
+  <text x="64" y="295" class="s">Исходные данные + пакет</text>
+
+  <rect x="355" y="130" width="330" height="180" rx="12" fill="#eaf3fb" stroke="#517da4" stroke-width="2"/>
+  <text x="377" y="168" class="h">Body Slots</text>
+  <text x="377" y="204" class="t">Definitions • instances</text>
+  <text x="377" y="232" class="s">Определения • экземпляры</text>
+  <text x="377" y="260" class="s">Saved customization / Подгонка</text>
+  <text x="377" y="293" class="label">One configuration owner</text>
+
+  <rect x="780" y="130" width="456" height="180" rx="12" fill="#ffffff" stroke="#517da4" stroke-width="2"/>
+  <text x="803" y="168" class="h">VRIK</text>
+  <text x="803" y="204" class="t">Body • anchors • spatial interpretation</text>
+  <text x="803" y="232" class="s">Тело • привязки • пространственные проверки</text>
+  <text x="803" y="270" class="t">Keeps presentation / Отображение</text>
+  <text x="803" y="297" class="s">No anchor → unavailable / нет узла → недоступно</text>
+
+  <path d="M 289 217 H 348" class="arrow"/>
+  <text x="290" y="120" class="s">Package / пакет</text>
+  <path d="M 685 217 H 772" class="arrow"/>
+  <text x="697" y="179" class="label">1. Read</text>
+  <text x="697" y="200" class="s">Чтение</text>
+
+  <rect x="355" y="378" width="330" height="142" rx="12" fill="#ffffff" stroke="#b5c2d0" stroke-width="2"/>
+  <text x="377" y="411" class="h">Content / equipment</text>
+  <text x="377" y="439" class="t">provider / Провайдер</text>
+  <text x="377" y="472" class="s">Keys • assignments • rules</text>
+  <text x="377" y="499" class="s">Ключи • назначения • правила</text>
+  <path d="M 520 378 V 318" class="arrow"/>
+  <text x="534" y="349" class="s">Caller identity / ключи провайдера</text>
+
+  <rect x="780" y="378" width="456" height="142" rx="12" fill="#fff5df" stroke="#bd914e" stroke-width="2" stroke-dasharray="8 5"/>
+  <text x="803" y="408" class="h">2. Agree separately</text>
+  <text x="803" y="432" class="s">Согласовать отдельно</text>
+  <text x="803" y="460" class="t">Interaction • holder • item preview</text>
+  <text x="803" y="486" class="s">Взаимодействие • держатель • предмет</text>
+  <text x="803" y="510" class="s">One holder renderer; HIGGS owns possession</text>
+  <path d="M 1008 310 V 369" class="planned"/>
+  <path d="M 685 449 H 772" class="planned"/>
+
+  <line x1="44" y1="566" x2="1236" y2="566" stroke="#c9d3dd"/>
+  <text x="44" y="606" class="h">Demonstration stages / Этапы демонстрации</text>
+
+  <rect x="44" y="634" width="360" height="176" rx="12" fill="#eaf5ed" stroke="#6c9b76" stroke-width="2"/>
+  <text x="65" y="670" class="label">RELEASED / ВЫПУЩЕНО</text>
+  <text x="65" y="706" class="t">Body Pouches 0.2.0</text>
+  <text x="65" y="738" class="s">Native-slot pouch • draw • drink • return</text>
+  <text x="65" y="765" class="s">Слот • извлечение • питьё • возврат</text>
+  <text x="65" y="795" class="s">Existing proof / Существующий результат</text>
+
+  <rect x="430" y="634" width="360" height="176" rx="12" fill="#eaf3fb" stroke="#517da4" stroke-width="2"/>
+  <text x="451" y="670" class="label">PROTOTYPE / ПРОТОТИП</text>
+  <text x="451" y="706" class="t">Optional read-only geometry</text>
+  <text x="451" y="738" class="s">Body Slots foundation + private adapter</text>
+  <text x="451" y="765" class="s">Геометрия; игровой тест ещё впереди</text>
+  <text x="451" y="795" class="s">Offline checks ≠ game qualification</text>
+
+  <rect x="816" y="634" width="420" height="176" rx="12" fill="#fff5df" stroke="#bd914e" stroke-width="2" stroke-dasharray="8 5"/>
+  <text x="837" y="670" class="label">IN DEVELOPMENT / В РАЗРАБОТКЕ</text>
+  <text x="837" y="706" class="t">Wearable-bag demonstration</text>
+  <text x="837" y="738" class="s">Instances • model binding • presentation</text>
+  <text x="837" y="765" class="s">Экземпляры • привязка • отображение сумки</text>
+  <text x="837" y="795" class="s">Target workflow, not working proof yet</text>
+
+  <text x="44" y="857" class="s">Solid: proposed data/observation boundary. Dashed: later agreed work. Full concept remains in Body Pouches.</text>
+  <text x="44" y="882" class="s">Сплошная линия — граница данных/наблюдений; пунктир — последующие согласованные работы.</text>
+</svg>
