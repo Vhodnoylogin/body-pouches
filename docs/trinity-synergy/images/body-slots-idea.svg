@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="680" viewBox="0 0 1280 680" role="img" aria-labelledby="title desc">
+  <title id="title">Body Slots expands VRIK's slots while VRIK retains interaction</title>
+  <desc id="desc">Target architecture. VRIK alone has fourteen built-in holsters. In full Body Slots mode those native holsters are disabled and replaced by fourteen managed equivalents with matching accepted item types and positions, plus new mod-defined potion, food and equipment slots. VRIK retains body and hand interaction mechanics. Integration is not complete in the current prototype.</desc>
+  <style>
+    text { font-family: "Segoe UI", "DejaVu Sans", sans-serif; fill: #193249; }
+    .title { font-size: 29px; font-weight: 700; }
+    .heading { font-size: 24px; font-weight: 700; }
+    .body { font-size: 20px; }
+    .small { font-size: 17px; fill: #435b70; }
+    .slot { fill: #dbe6ef; stroke: #65829b; stroke-width: 2; }
+  </style>
+  <rect width="1280" height="680" rx="18" fill="#f6f8fb"/>
+  <text x="40" y="48" class="title">More slots and custom responses. The same VRIK interaction.</text>
+  <text x="40" y="79" class="small">Target design; the current prototype has not completed this integration</text>
+  <rect x="40" y="112" width="420" height="369" rx="14" fill="#fff" stroke="#9eb1c2" stroke-width="2"/>
+  <text x="64" y="153" class="heading">VRIK alone</text>
+  <text x="64" y="192" class="body">14 built-in holsters</text>
+  <text x="64" y="224" class="body">Fixed weapon-oriented slot types</text>
+  <g class="slot">
+    <rect x="66" y="262" width="38" height="38" rx="6"/><rect x="118" y="262" width="38" height="38" rx="6"/><rect x="170" y="262" width="38" height="38" rx="6"/><rect x="222" y="262" width="38" height="38" rx="6"/><rect x="274" y="262" width="38" height="38" rx="6"/><rect x="326" y="262" width="38" height="38" rx="6"/><rect x="378" y="262" width="38" height="38" rx="6"/>
+    <rect x="66" y="315" width="38" height="38" rx="6"/><rect x="118" y="315" width="38" height="38" rx="6"/><rect x="170" y="315" width="38" height="38" rx="6"/><rect x="222" y="315" width="38" height="38" rx="6"/><rect x="274" y="315" width="38" height="38" rx="6"/><rect x="326" y="315" width="38" height="38" rx="6"/><rect x="378" y="315" width="38" height="38" rx="6"/>
+  </g>
+  <text x="64" y="405" class="small">Native slots remain in VRIK.</text>
+  <text x="64" y="437" class="small">They work normally without Body Slots.</text>
+  <path d="M 487 294 H 645 L 625 277 M 645 294 L 625 311" fill="none" stroke="#527c9d" stroke-width="5"/>
+  <text x="489" y="253" class="small">Full Body Slots</text>
+  <text x="535" y="277" class="small">mode</text>
+  <rect x="680" y="112" width="560" height="369" rx="14" fill="#eaf5ed" stroke="#6c9b76" stroke-width="2"/>
+  <text x="704" y="153" class="heading">VRIK + Body Slots</text>
+  <text x="704" y="192" class="body">14 managed equivalents + new slots</text>
+  <text x="704" y="224" class="small">Original item types and positions preserved</text>
+  <rect x="704" y="253" width="508" height="56" rx="8" fill="#fff" stroke="#6c9b76"/>
+  <text x="721" y="288" class="body">Potion slot → potion provider</text>
+  <rect x="704" y="322" width="508" height="56" rx="8" fill="#fff" stroke="#6c9b76"/>
+  <text x="721" y="357" class="body">Food slot → shared HIGGS eating action</text>
+  <rect x="704" y="391" width="508" height="56" rx="8" fill="#fff" stroke="#6c9b76"/>
+  <text x="721" y="426" class="body">Wearable item → its own configurable slots</text>
+  <rect x="40" y="512" width="1200" height="132" rx="14" fill="#eaf2fa" stroke="#517da4" stroke-width="2"/>
+  <text x="64" y="546" class="heading">Body Slots manages slots. VRIK handles interaction with them.</text>
+  <text x="64" y="579" class="body">Creation • types and behavior bindings • equipment • placement • saved customization</text>
+  <text x="64" y="616" class="small">Full mode: native 14 disabled; their managed equivalents use the common VRIK mechanics.</text>
+</svg>

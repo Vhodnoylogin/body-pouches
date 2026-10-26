@@ -272,7 +272,7 @@ Status CopySlotPresentation(ClientToken, SlotId, SlotPresentationSnapshot* outPr
 
 ### Content providers
 
-Body Slots supplies generic content filters and policy bindings. BindSlotContent attaches the content executor and its action rights to a VRIK runtime slot; it references the registry policy rather than creating a second filter definition. BindNativeSlot is an optional compatibility bridge for native geometry and player placement without a fictitious weapon category. Releasing callback-bearing bindings drains their calls; new services preserve the existing holster interface.
+Body Slots supplies generic content filters, extensible content/action types and bindings to registered behavior providers. A slot can accept only potions or route food interaction through a standardized HIGGS consumption service; these are target contracts, not claims that those generic action handlers are already implemented. BindSlotContent attaches the content executor and its action rights to a VRIK runtime slot; it references the registry policy rather than creating a second filter definition. BindNativeSlot is an optional compatibility bridge for native geometry and player placement without a fictitious weapon category. Releasing callback-bearing bindings drains their calls; new services preserve the existing holster interface.
 
 **Pseudo-ABI**
 
@@ -364,7 +364,9 @@ Status CopyHitSnapshot(ClientToken, uint64_t hitId, HitSnapshot* outSnapshot);
 
 ## Separate slot mod and offline authoring
 
-Slot creation becomes a separate service, with **Body Slots** as a working name. Its main purpose is to let a mod author create new slots outside the game. Keeping VRIK's native 14 holsters is an optional compatibility route. The three frameworks keep their domains; this service supplies the declarative slot data that VRIK uses at runtime.
+**Body Slots** removes VRIK's fixed fourteen-slot ceiling and fixed weapon-oriented slot types: mods can create additional slots, change their content/action types and bind their own interaction responses. Body Slots owns the slots themselves—their definitions and instances, equipment association, placement and saved customization—while VRIK retains the mechanics of body binding, reach, interaction and presentation. A potion-only slot or a food slot using a standardized HIGGS consumption action changes the registered policy/behavior, not the common VRIK interaction mechanism. Gameplay responses remain with their registered providers. “Unlimited” means no architectural fourteen-slot restriction; practical resource limits remain explicit implementation capabilities. Offline authoring and the creation API are two ways to supply slots, rather than offline editing being the purpose of the service.
+
+The original fourteen VRIK holsters remain available when Body Slots is absent. In the fully integrated Body Slots mode, they are disabled and replaced by fourteen managed counterparts with matching accepted item types and positions, plus any additional mod-defined slots. Compatibility mappings preserve settings and saved assignments. Only one interaction/presentation path for each equivalent slot is active. This handover is a target requirement, not a completed capability of the present prototype.
 
 ### Visual editor before launching the game
 
@@ -515,7 +517,7 @@ My experimental adaptation aims to retain the equipment feature while using VRIK
 
 | What the original mod or experimental adaptation has to do | What shared services could provide |
 |---|---|
-| Original: create private shoulder zones and disable VRIK's shoulder holsters to avoid competing actions | Body Slots: shared placement and content policy; VRIK: optional native bindings and presentation, with provider action rights instead of disabling the player's holsters |
+| Original: create private shoulder zones and disable VRIK's shoulder holsters to avoid competing actions | Body Slots: equivalent managed shoulder slots with shared placement and content policy; VRIK: common interaction and presentation, with provider action rights on those slots |
 | Adaptation: rely on weapon-type and hand filtering before receiving an occupied slot's action offer; the empty left hand is filtered out | VRIK: independent zone observations and provider-defined action offers, while preserving the player's explicit access restrictions |
 | Adaptation: fit drawing into VRIK's internal hand choice; the existing call cannot name both slot and destination hand | VRIK: an explicit slot-to-physical-hand request routed to the mod's equipment executor, with a confirmed result |
 | Adaptation: use proxy type for equipment, display and holster eligibility at once; changing it for one purpose affects the others | Body Slots: independent eligibility configuration; VRIK: separate content/presentation observations, distinguishing original item, proxy and displayed model |
