@@ -1,60 +1,50 @@
-# From potion pouches to reusable body slots: a proposal for Shizof
+# Shared services and Body Slots: a proposal for Shizof
 
 [Русская версия](vrik-integration-proposal-ru.md) · [Full concept](concept-en.md) · [Implementation status](implementation-status.md)
 
-Shizof, thank you for VRIK and your help with Body Pouches. Its release demonstrated how much a small mod can achieve by using VRIK and HIGGS. This proposal takes the next step: let other mods provide wearable bags and other holders without each implementing another body-slot system.
+Shizof, thank you for VRIK and your help with Body Pouches. Releasing it showed what a small mod can do by using existing frameworks. It also exposed a recurring difficulty: third-party mods still have to recreate slot management, input coordination or parts of another mod's internal behavior when an interface cannot express what they need.
 
-This brief selects one reviewable boundary from the existing [VRIK responsibilities](concept-en.md#vrik-body-hands-zones-and-slots) and [separate slot service](concept-en.md#separate-slot-mod-and-offline-authoring) sections. The full concept remains maintained only here in Body Pouches.
+## The idea in one minute
 
-## The result we want to show
+Keep each framework responsible for its own domain and let other mods ask it for observations and actions. A potion mod should define which potion to offer; it should be able to use the shared body, slot and physical-hand services instead of building them again.
 
-The player equips a potion bag. Its usable slot appears where the bag hangs on the body. The player reaches into that bag and takes a potion through the familiar VRIK/HIGGS interaction. Removing the bag disables its slot. Another mod could use the same services for an ammunition holder or a different wearable container, supplying its own item rules and appearance.
-
-![Target player workflow: equipping a bag enables its slot; removing it disables the slot. This is an illustration, not a game screenshot.](images/wearable-slot-workflow.svg)
-
-Today Body Pouches uses one of VRIK's existing holsters. The proposed shared service would let an item bring its own slot, with placement and customization managed once. This is the existing concept applied to one concrete example.
-
-## What is actually ready
-
-| Part | Present result | What this establishes |
-|---|---|---|
-| [Body Pouches 0.2.0](https://www.nexusmods.com/skyrimspecialedition/mods/194796) | Released native-holster potion pouch: assign, draw, drink, return and save | Existing gameplay, with the released mod's documented limitations |
-| Body Slots | Separate built plugin and SDK; definitions, per-instance settings and activation; uploaded to an unpublished Nexus draft | A mod-author foundation checked outside the game; it does not itself add playable holsters to released VRIK |
-| [Private wearable demonstration source and diff](https://github.com/Vhodnoylogin/body-pouches/pull/1) | One equip item controls a real Body Slots instance; a private installation archive is prepared | Both build modes and offline logic/ESP checks pass; actual equipment, visuals and interaction still need game validation |
-| [Morphbench Slots experimental build](https://github.com/Vhodnoylogin/morphbench/releases/tag/v0.8.0-slots.1) | Separate prerelease for authoring slot placement outside the game | Authoring/export checks pass; this is separate from the stable Nexus release |
-
-The wearable demonstration deliberately reuses **native holster13 in released VRIK** and existing HIGGS interaction. It prepares a small demonstration without distributing a reconstructed VRIK DLL. It does not yet demonstrate arbitrary new slots, binding to an equipment model, or several interchangeable copies of a bag. The figure above shows the target workflow; **the new wearable build is not game-validated proof yet**.
-
-## Why keep the slot manager separate
-
-| Participant | Responsibility in this example |
+| Participant | Proposed responsibility |
 |---|---|
-| Body Slots | Store slot descriptions, each bag's logical slot instance, placement and saved adjustments; enable or disable an instance when requested by its owner |
-| VRIK | Supply the calibrated body, map body attachment points, interpret where the virtual hands are, and retain its agreed presentation responsibilities |
-| Body Pouches | Observe whether its bag is worn and define potion selection, assignment and gameplay behavior |
-| HIGGS | Retain physical possession and handling of the potion |
-| Morphbench | Let the author place and configure default slots outside the game |
+| HIGGS | Controller input coordination, physical hands, grabbing and possession |
+| VRIK | The calibrated player body, virtual-hand positions, body attachment points, spatial slot interaction and its agreed presentation responsibilities |
+| PLANCK | NPC physical animation, ragdoll lifetime and physical hits |
+| Body Slots | Create and configure slots; store definitions, individual instances and saved adjustments |
+| A gameplay mod | Its items, selection rules and gameplay, using those services |
 
-The equipment provider supplies stable identities for individual bags. A holder's appearance and the preview of its contents remain separate, with one declared owner for displaying the holder. The [technical boundary diagram](images/vrik-integration-boundary.svg) shows these relationships. The complete responsibilities remain in the linked concept.
+These are the existing concept's proposed boundaries, not a claim that the complete shared API already exists. A second stage would move address handling and reusable engine operations into CommonLib; gameplay ownership stays with the mods.
 
-## Start with an optional read-only bridge
+## A concrete target: a wearable potion bag
 
-The first VRIK change would let the separate service find its slots relative to VRIK's calibrated body. VRIK would read the slot definitions, map their named attachment points after its body update, and report each slot's position and availability. Definitions would be copied when needed, outside the per-hand hot path. An unavailable attachment point would leave its slot unavailable; an absent Body Slots provider would preserve the existing native path.
+Equip a bag: its slot becomes available where the bag hangs. Reach into it and take a potion through the familiar VRIK/HIGGS interaction. Remove the bag: its slot becomes unavailable. Another mod could supply a different holder and item rules through the same services.
 
-This first bridge supplies body-relative spatial information. New-slot interaction and rendering would be agreed separately. It therefore does not require moving all existing holster behavior at once.
+![Target workflow: the bag enables its slot when worn. Illustration, not a game screenshot.](images/wearable-slot-workflow.svg)
 
-The [private draft MR](https://github.com/Vhodnoylogin/vrik-reconstruction/pull/1) makes that first boundary inspectable. Its isolated `f392…` prototype has this measured diff:
+Body Slots would store the slot description, placement and customization. The equipment mod would say which particular bag is worn. VRIK would bind the slot to the actual body and interpret the hand's reach. HIGGS would handle the physical potion. A holder's model and the preview of its contents remain separate, with one declared owner for displaying the holder.
 
-| Scope | Change |
-|---|---|
-| Existing `main.cpp` | 8 added lines |
-| Existing `vrikbody.cpp` | 11 added lines |
-| Entire first prototype | 10 files; 506 additions; 0 removals |
+## What is ready, and what is not
 
-The other files introduce adapter code and documentation. These numbers describe **only the first read-only prototype**, not the effort or risk of full integration, interaction or rendering.
+- **Released:** Body Pouches 0.2.0 uses an existing VRIK holster for potion assignment, drawing, drinking, return and saved selection.
+- **Built and checked outside the game:** a separate Body Slots plugin and SDK, with definitions, instances, saved placement and activation. Runtime/SDK archives are in an unpublished Nexus draft.
+- **Prepared demonstration:** one wearable item controls a real Body Slots instance through released VRIK's existing holster13. Its actual equipment, visible model and potion interaction still need game validation. It does not yet demonstrate arbitrary new slots or equipment-model binding.
+- **Available separately:** [Morphbench Slots experimental build](https://github.com/Vhodnoylogin/morphbench/releases/tag/v0.8.0-slots.1) for authoring default placement outside the game.
 
-The MR is private; its code diff is visible only to people with repository access. It uses reconstructed source, which is not authoritative maintainer source. No closed-source excerpts are reproduced here or proposed for public distribution. Its independently defined adapter boundary can be adapted to your implementation and conventions; accepting the reconstruction is not a prerequisite for discussing it.
+The [0.8.8 / PLANCK update assessment](upstream-update-2026-10-26.md) separates current compatibility evidence from those remaining game checks.
 
-## What I would like to discuss
+## A small first boundary to discuss
 
-I would welcome your judgement on the ownership split and a suitable optional read-only integration point first. We can then agree separately on lifecycle, content/presentation observations and any interaction requests, preserving the original fourteen holsters and existing consumers. The proposal does not assign implementation or maintenance commitments to you.
+Would an optional bridge make sense through which VRIK reads slot definitions, maps named attachment points after updating its body, and reports positions and availability? Definitions would be copied outside the per-hand hot path. Missing Body Slots would preserve the existing native path. This first step would supply spatial observations; new-slot interaction and rendering would be agreed separately, preserving the original fourteen holsters and existing users.
+
+The [first limited MR](https://github.com/Vhodnoylogin/vrik-reconstruction/pull/1) illustrates that boundary. The [complete current-work review](https://github.com/Vhodnoylogin/vrik-reconstruction/pull/2) now puts VRIK and the full Body Slots history in separate directories in one private repository. Both require repository access. The VRIK work uses a private reconstruction based on 0.8.7; it has not been rebased to 0.8.8 and is not authoritative maintainer source. The independently defined boundary can be adapted to your implementation without accepting that reconstruction.
+
+## Your feedback would decide the next step
+
+1. Does keeping slot definitions and saved customization in a separate optional mod fit your view of VRIK?
+2. Is the proposed body-attachment bridge a sensible first integration point, or would you prefer another boundary or existing API?
+3. Which parts of generic slot interaction and presentation should remain in VRIK, and what would you change before we proceed?
+
+I can contribute AI-assisted code analysis and implementation drafts for your review at no financial cost to you. This proposal does not assume an implementation or maintenance commitment from you. The [full concept](concept-en.md) remains the single maintained description of the broader design; this page is its short introduction.
