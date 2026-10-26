@@ -2,7 +2,7 @@
 
 [Русская версия](vrik-integration-proposal-ru.md) · [Full concept](concept-en.md) · [Implementation status](implementation-status.md)
 
-Shizof, the idea of Body Slots is to give VRIK a mod-defined set of slots, without its fixed fourteen-slot ceiling or fixed weapon-oriented types, while keeping the actual mechanics of interacting with a slot in VRIK.
+The idea of Body Slots is to give VRIK a mod-defined set of slots, without its fixed fourteen-slot ceiling or fixed weapon-oriented types, while keeping the actual mechanics of interacting with a slot in VRIK.
 
 ## What Body Slots changes
 
@@ -16,7 +16,7 @@ For example:
 
 The slot set is defined by installed mods rather than a fixed fourteen-entry table.
 
-![Target design: managed equivalents of the original fourteen holsters plus new mod-defined slots, with the same VRIK interaction mechanics.](images/body-slots-idea.svg)
+![Example of the target workflow: wearing a bag enables its slot; removing the bag disables it. Concept illustration, not a game screenshot.](images/wearable-slot-workflow.svg)
 
 ## The slot and the interaction have different owners
 
@@ -38,10 +38,4 @@ A separate Body Slots plugin and SDK already provide definitions, instances, sav
 
 The [complete private code review](https://github.com/Vhodnoylogin/vrik-reconstruction/pull/2) separates VRIK and Body Slots into two directories and preserves their histories. The [first limited MR](https://github.com/Vhodnoylogin/vrik-reconstruction/pull/1) shows an initial read-only bridge, not the complete goal. Both require access; reconstructed VRIK remains 0.8.7-based, not authoritative maintainer source or an already ported 0.8.8 implementation.
 
-## The feedback we need
-
-1. Does this division make sense: Body Slots owns extensible slots, while VRIK keeps the common interaction mechanics?
-2. How would you prefer VRIK to accept a dynamic slot set and delegate each slot's custom response?
-3. What compatibility requirements should govern replacing the native fourteen with equivalent managed slots?
-
-This is the slot part of the [existing cooperation concept](concept-en.md): HIGGS owns input/physical handling, VRIK owns body interaction, PLANCK owns NPC physics, and gameplay mods use their services. CommonLib remains the second stage for shared engine operations. I can help with AI-assisted analysis and implementation drafts for your review at no financial cost to you; no implementation or maintenance commitment is assumed.
+This is the slot part of the [existing cooperation concept](concept-en.md): HIGGS owns input/physical handling, VRIK owns body interaction, PLANCK owns NPC physics, and gameplay mods use their services. CommonLib remains the second stage for shared engine operations.
