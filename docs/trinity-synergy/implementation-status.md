@@ -31,6 +31,10 @@ The [upstream update assessment](upstream-update-2026-10-26.md) compares the dow
 
 The private wearable Body Pouches demonstration now has [committed source and instructions](https://github.com/Vhodnoylogin/body-pouches/tree/demo/wearable-bags) and a locally staged private review package. One deliberately unique ARMO controls a real Body Slots instance through actual worn-form observation; released VRIK supplies native13 interaction and Art. Both demo and default plugin modes compile. The production consumer passes64 actual-service-DLL and131 explicit failure checks;81 independent production-method checks and four negative controls cover queued-action cancellation and preserved delivered potions; seven ESP/template checks preserve the original three records and verify the actual Skyrim master references. These are **offline results, not game acceptance**. Worn equipment, visible Art, both-hand inventory behavior and save/load remain in the [game acceptance plan](https://github.com/Vhodnoylogin/body-pouches/blob/demo/wearable-bags/docs/wearable-demo-validation.md). Released Body Pouches 0.2.0 and its archive are unchanged.
 
+## Public API feasibility assessment — 28 October 2026
+
+The [current public API assessment](public-api-feasibility.md) distinguishes independently implementable Body Slots services from missing provider contracts. Additional slots, geometry, equipment binding, visuals and persistence need no VRIK slot-creation extension; their runtime observation adapter remains unqualified. Public VRIK Papyrus already exposes hand coordinates, but neither those scalar calls nor C++001 provide the complete proposed coherent pose contract. Public HIGGS001 supplies limited observations and grab requests, not the agreed common hand/input authority, owner-scoped grants or confirmed transfers. Full native14 migration remains separate and must account for assignment loss on global disable/reinitialization. This is analysis only; no source, binary, build, installation or game checkpoint changed, and implementation remains paused.
+
 ## Implemented and checked
 
 | Area | Implemented | Evidence and practical limit |
