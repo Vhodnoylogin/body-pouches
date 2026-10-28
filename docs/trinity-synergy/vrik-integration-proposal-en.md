@@ -2,6 +2,8 @@
 
 [Русская версия](vrik-integration-proposal-ru.md) · [Full concept](concept-en.md) · [Implementation status](implementation-status.md)
 
+> Earlier integration proposal, retained for context. The [concept revised on 28 October 2026](concept-en.md#responsibilities) supersedes the ownership boundary below: HIGGS owns hand state/use, Body Slots owns all slot mechanics, and VRIK provides the body and virtual hand poses. This page and its illustration do not describe the current integration plan.
+
 The idea of Body Slots is to give VRIK a mod-defined set of slots, without its fixed fourteen-slot ceiling or fixed weapon-oriented types, while keeping the actual mechanics of interacting with a slot in VRIK.
 
 ## What Body Slots changes
