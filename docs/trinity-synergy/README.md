@@ -1,4 +1,4 @@
-# VRIK HIGGS and PLANCK synergy concept
+# HIGGS VRIK PLANCK PPB and Body Slots synergy concept
 
 This directory is the single source of the cooperation concept and its two
 language versions:
@@ -9,7 +9,7 @@ language versions:
 - [CommonLib assessment](commonlib-assessment.md): current technical reuse and extension candidates for the second stage.
 
 Body Pouches intends to migrate to this architecture. The proposal is hosted
-here because Body Pouches is maintained by its owner independently of the three
+here because Body Pouches is maintained by its owner independently of the
 framework repositories. Hosting the concept does not mean the new services are
 implemented or agreed with the framework authors.
 
@@ -22,3 +22,5 @@ Edit the full concept only here and keep both languages aligned. Framework
 repositories contain short summaries and their own architectural requirements,
 with links to this directory; they do not maintain copies of the full concept.
 The function and event declarations are illustrative pseudo-ABI, not a released SDK.
+
+PPB supplies anatomical geometry, body fitting and touch evidence in the proposed architecture. HIGGS owns hand use, PLANCK live NPC physics, VRIK body pose and Body Slots all slot mechanics. The public PPB API already provides NPC capsule/contact observations; player-body surfaces and coordinated physical publication remain proposed extensions.
