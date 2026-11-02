@@ -16,6 +16,13 @@
       "source": {
         "url": "https://github.com/adamhynek/stuf_vr",
         "commit": "92814e7a59ce58dff923b7bd3eae35b788b111b7"
+      },
+      "apiReview": {
+        "simplification": "A narrow default weapon-draw policy could replace four private patches.",
+        "remainingBoundary": "Raw trigger masking is too broad; action-specific default policy is absent.",
+        "compositionScenario": "Disable trigger draw while menu selection, spells and an allowed slot action still work.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -33,6 +40,13 @@
       "archive": {
         "file": "Instant Equip VR 1.2.0-44571-1-2-0-1765671316.zip",
         "sha256": "943a05901c77a05a1b524c8358c9b9fd71c718b4bc2261c25a5235d7ae33c4f3"
+      },
+      "apiReview": {
+        "simplification": "Equipment consumers can use observed completion rather than fixed delay.",
+        "remainingBoundary": "Animation acceleration stays with Instant Equip; little direct mandatory integration benefit.",
+        "compositionScenario": "Fast equip and a slot withdrawal must agree when physical possession actually changes.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -52,6 +66,13 @@
       "archive": {
         "file": "SwapDropAndHoldRedux 3.0.1 185816 3.0.1 2026-10-26T18-26Z L5WQbqL5D.zip",
         "sha256": "06376cf97fe56c14754c395495c723904af66f53c97063bccc20a3ab115b419b"
+      },
+      "apiReview": {
+        "simplification": "Shared gestures, exact transfer protocol and grip transforms replace duplicated hand plumbing.",
+        "remainingBoundary": "Full two-item exchange, proxy manufacture and all persistent grip modes need a domain port.",
+        "compositionScenario": "Swap while the second item fails to equip; preserve both original instances and report partial outcome.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -70,6 +91,13 @@
       "archive": {
         "file": "Interactive Torch Lighting VR 140404 2.0 2026-07-29T03-04Z L5WQbq2bA.zip",
         "sha256": "6ed7b5193d97522965ad8080ca6e5495e3c12b946f2e0fb578fba440131db7f4"
+      },
+      "apiReview": {
+        "simplification": "Contact-started hand use and coherent observations replace competing polling/input.",
+        "remainingBoundary": "Typed LIGHT transition and actual flame/model completion remain domain work.",
+        "compositionScenario": "Ignite during a competing hand session, then extinguish or unload without replaying its inputs.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -90,6 +118,13 @@
       "archive": {
         "file": "Immersive Harvesting 1.5.23 186754 1.5.23 2026-09-19T16-19Z n0oTCmHMT.zip",
         "sha256": "60826e09b75cc63e384430dc0e490a481a03aebbcaf35b407dc8c6f6fe1c433a"
+      },
+      "apiReview": {
+        "simplification": "Shared hand arbitration and live footprint transitions remove climbing-specific reservation patches.",
+        "remainingBoundary": "Native harvest awards, staged visuals and nonbutton priority rounds are separate.",
+        "compositionScenario": "Catch an insect one-handed, add then release its second pinch while another consumer wants that hand.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -109,6 +144,13 @@
       "archive": {
         "file": "1_Immersive Pickpocketing VR 189538 1.1 2026-09-03T16-37Z JrECN2WqU.zip",
         "sha256": "f93b32364626650a4d1aaeda96b2423ce05789c1ae12ff2d872e6f64fe752a2b"
+      },
+      "apiReview": {
+        "simplification": "Anatomical reach, dwell sessions, haptics and shared handover reduce duplicate mechanics.",
+        "remainingBoundary": "NPC exact-item theft/crime executor is absent from ordinary player inventory.",
+        "compositionScenario": "NPC model or inventory changes after selection; do not take another item or bypass AttemptPickpocket.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -127,6 +169,13 @@
       "archive": {
         "file": "Interactive Animal Skinning VR 188121 1 2026-08-12T07-04Z QRde31wGS.zip",
         "sha256": "35ace3bef11b89380ebaaccf8a5dd91cde10223e59453ea42395086a83515a30"
+      },
+      "apiReview": {
+        "simplification": "Anatomical/hit evidence plus correlated loot receipts replace duplicate hit and handover inference.",
+        "remainingBoundary": "Inactive corpse coverage and skinning loot/time policy need explicit support.",
+        "compositionScenario": "Receive a cut at actor retirement; do not apply a newer body child or award loot twice.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -143,6 +192,13 @@
       "archive": {
         "file": "Immersive Pickup Only.7z-70913-1-1-0-1658087405.7z",
         "sha256": "a05ee334f30f14dd89fd0340d2d4fc00959eb96f26d0e745a9e914741e89fde4"
+      },
+      "apiReview": {
+        "simplification": "An optional narrow default-pickup policy could share user control.",
+        "remainingBoundary": "Existing perk already isolates the task; no necessary physics or slot dependency.",
+        "compositionScenario": "Disable vanilla pickup while physical HIGGS pickup and unrelated activation remain usable.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -162,6 +218,13 @@
       "archive": {
         "file": "Immersive Equip VR 186897 2.0.0 2026-08-12T06-27Z s6Og0d9LM.zip",
         "sha256": "e33948058f02b8d06d1cffc79484f7f7a7c338c77c964eb84a69e3b041150970"
+      },
+      "apiReview": {
+        "simplification": "Body Slots regions and HIGGS input/transfer authority replace body-zone and grip plumbing.",
+        "remainingBoundary": "Worn biped/ring/amulet instance observations and compound swaps need an executor.",
+        "compositionScenario": "Drop armor near its equip region while an old equipped piece is held elsewhere; no instance loss.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -182,6 +245,13 @@
       "archive": {
         "file": "Precision Physic Bodies 2.2.1 186100 2.2.1 2026-09-18T02-41Z UK35XnjNl.zip",
         "sha256": "8902791e6f95ec35320716b93d5a5f6bc7bc62b808481b0e9cb11419c251ed1c"
+      },
+      "apiReview": {
+        "simplification": "Owner-applied hand boxes and NPC capsule/drive proposals replace overlapping physical writers.",
+        "remainingBoundary": "Correlated anatomy generations, removable subscriptions and full pose fitting remain a PPB adapter.",
+        "compositionScenario": "Contact old capsule, replace NPC model, then query geometry; refuse mixing old evidence with new child.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -202,6 +272,13 @@
       "archive": {
         "file": "Shields And Swords Unlocked VR 184001 1.2 2026-07-22T11-30Z OyYrPub9A.zip",
         "sha256": "9e4b7a0387015ffea78787dd82042213919132ebccfd4d7fd24ad903036a9c09"
+      },
+      "apiReview": {
+        "simplification": "Body Slots holsters and exact proxy/original transfer protocol replace private holster plumbing.",
+        "remainingBoundary": "Proxy/material/block rules stay consumer-owned; cosmetic contact is separate from damage.",
+        "compositionScenario": "Own sword touches own shield without allowing a hit; swap proxy and retain enchant/temper/charge.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -221,6 +298,13 @@
       "archive": {
         "file": "Weapon Throw VR 31374 1.4.0 2026-08-09T21-09Z 9LMpgbzyP.rar",
         "sha256": "c353113399a7411c21f05305df9aca92eaabe67ce101cf904af8d79f509a42bf"
+      },
+      "apiReview": {
+        "simplification": "Shared input, movement and confirmed release reduce duplicated hand ownership logic.",
+        "remainingBoundary": "Projectile launch/recall/embedded identity require the Weapon Throw domain executor.",
+        "compositionScenario": "Recall after cell change or failed re-equip; never spawn a second copy of the original item.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -240,6 +324,13 @@
       "archive": {
         "file": "Dual Wield Block VR 1.7.0-28456-1-7-0-1663724839.zip",
         "sha256": "0e5480ce4f804ff2f12d0886efd71db406a069cfdd4794b3502859edc4650218"
+      },
+      "apiReview": {
+        "simplification": "Coherent pose/motion and continuous sessions replace raw tracking and conflicting hand use.",
+        "remainingBoundary": "Stance/hysteresis/animation and owned vanilla block thresholds remain domain policy.",
+        "compositionScenario": "A block stance overlaps a second grip; resolve hand authority without changing unrelated combat thresholds.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -259,6 +350,13 @@
       "archive": {
         "file": "Simple Realistic Archery VR-28524-1-26-1617578073.7z",
         "sha256": "f4c0ad93d32ec3e992a8a9913c35f0786deeb5412f2be732eb4b008503fe0117"
+      },
+      "apiReview": {
+        "simplification": "Extended controls/multitaps and Body Slots quiver placement replace input and geometry polling.",
+        "remainingBoundary": "Ammo selection/equipment and nocked-arrow evidence plus PSC integration remain absent.",
+        "compositionScenario": "Multi-tap ammo selection near a pouch then open menu; no accidental arrow or potion action.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -278,6 +376,13 @@
       "archive": {
         "file": "Pull Arrows VR 169833 2.0.0 2026-07-12T12-24Z Ae46W7BnM.zip",
         "sha256": "c5fc8a5db0d3739e11c1ac9749943717908c4857a2247104d9ad2a369f0cf02a"
+      },
+      "apiReview": {
+        "simplification": "Validated NPC endpoints, held-item constraints and receipts replace private physical ownership.",
+        "remainingBoundary": "Embedded engine/WTVR item extraction, exact ammo, break/bleed and measured force need domain support.",
+        "compositionScenario": "Extract while NPC body is replaced; break the stale constraint without duplicate Drop on Death loot.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -297,6 +402,13 @@
       "archive": {
         "file": "1_Immersive Smithing 1.0.5-72298-1-0-5-1723108922.zip",
         "sha256": "142c3b245329e7b259e4a9dc58c0f3b7bd31215e936d8fa2520135e1c3e6eafb"
+      },
+      "apiReview": {
+        "simplification": "Scoped ignore-global-force policy directly replaces ForcePhysicsGrab save/restore.",
+        "remainingBoundary": "Crafting and world-workbench geometry stay local; existing PSC needs an adapter or port.",
+        "compositionScenario": "Two crafting uses request different grab modes; ending one cannot restore over the other.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -317,6 +429,13 @@
       "archive": {
         "file": "Body Pouches 0.2.0 194796 0.2.0 2026-10-10T21-50Z uhRBKsNO4.7z",
         "sha256": "3835c5dc9c8424056ee139633fd0253227409fd1a3b783241ccfc5406876647e"
+      },
+      "apiReview": {
+        "simplification": "Persistent equipment slots plus ordinary inventory helper remove slot/transfer plumbing.",
+        "remainingBoundary": "Actual released consumer port, potion assignments/order and particular-bag policy remain.",
+        "compositionScenario": "Two pouches select the same remaining potion; exactly one withdrawal succeeds and preview follows receipts.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -339,6 +458,13 @@
       "archive": {
         "file": "VR Physical Lockpicking 196953 1.0.1 2026-10-27T02-57Z 4t2yDc4SQ.zip",
         "sha256": "fecdbafb3d30744877648e2ade76061e1d94b9e66348cc4ddd8d50b626687e15"
+      },
+      "apiReview": {
+        "simplification": "Activation-started two-hand use, haptics and held-button drainage replace shared plumbing.",
+        "remainingBoundary": "Authorized UI/paused use, full rendered hands and tool targets remain separate gaps.",
+        "compositionScenario": "Finish a paused lock interaction holding trigger; its Up must not cause draw or pouch action.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -360,6 +486,13 @@
       "archive": {
         "file": "TrueWieldVR 1.2.0 191123 1.2.0 2026-10-03T00-50Z XnIqaC6ha.zip",
         "sha256": "eaa8f1c61a90ba1bba0bd30ce0dcff3808b9d2253f96e79fc796c391d6515521"
+      },
+      "apiReview": {
+        "simplification": "Properties, secondary grip and motion primitives reduce competing low-level writers.",
+        "remainingBoundary": "Equipped-weapon impedance/gravity/motor, measured force and numeric melee scaling are absent.",
+        "compositionScenario": "Weight/gravity and contact constraint share an actuator budget while NPC hit scaling remains exact.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     },
     {
@@ -381,7 +514,15 @@
       "archive": {
         "file": "VR Climbing - Aelove Version 170321 0.11.3 2026-09-19T22-42Z vlGiB9you.7z",
         "sha256": "d767ee3b630160780ae248c05794c59c6cf90ded9078480a50c81cf2a771ce88"
+      },
+      "apiReview": {
+        "simplification": "Owned supports and hand-footprint transitions replace global HIGGS reserve/restore.",
+        "remainingBoundary": "Locomotion/fall/stamina, rendered targets and nonbutton proposal priority remain consumer/integration work.",
+        "compositionScenario": "Add second wall grip while harvesting wants it, then lose moving/NPC endpoint without losing first authority.",
+        "consumerMigratedByThisReview": false,
+        "scenarioGameQualified": false
       }
     }
-  ]
+  ],
+  "assessmentPolicy": "Consumer-driven source/API criticism, not a port or game compatibility result. Proposed scenarios are acceptance targets, not recorded passes. See implementation-status.md for published source and evidence."
 }

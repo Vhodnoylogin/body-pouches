@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "purpose": "CommonLib stage2 preparation only; no library implementation",
   "sources": {
-    "HIGGS": "e716f8bb9a7c2f7a5d4740866362e5edcb37715a",
-    "PLANCK": "ea5472aabc8b3d7701ef684c1412f69a6480a7dd",
+    "HIGGS": "374173095fa72d8005924b2fc6c6d2db381db04d",
+    "PLANCK": "28eb8a7f7247a5639a9f2cfcaa02147f61f8e1b5",
     "CommonLib": "a898f469851c464d05137bb74b069dd234897643",
     "AddressLibrary": "57568d0966d6fa09e04155367efa6eca58df7054"
   },
@@ -82,8 +82,8 @@
     "HIGGS/include/effects.h": "f82baf74aadcf5d9d32b74cec510e2237d1d8426bf28c76e2265ecaf770f21a7",
     "HIGGS/include/finger_animator.h": "ab5db667b6efba7d678466e573c781a1ebb27d349792d8c17992e16201348274",
     "HIGGS/include/finger_curves.h": "be344967c121823e3fd12f58a2353ce81f7b2033cd09e195c54213d89249dcf1",
-    "HIGGS/include/hand.h": "5bcea154faa24a1619bff211a769c7854e4f3803edb2594d323bc5ffc97073ca",
-    "HIGGS/include/hand_broker.h": "4f829732006a6ca726cdfde242098ef0487d873e5a0048abdc3f8e6d34acb75b",
+    "HIGGS/include/hand.h": "75667705161c0fcfab3090cea923499deb3388a2e0c0080ba520b6ef039ac4ee",
+    "HIGGS/include/hand_broker.h": "101fb19a3f9aa4d5453167366e5e8c9e9517e5ed6b2bb119e9caa64719163d74",
     "HIGGS/include/hand_input_extended.h": "cf38f0c50d7dae828b0ab4272e43d67c796c677f0ab6af942d73f932eae611e9",
     "HIGGS/include/hand_observations.h": "56c567cff335e42962701350dd172fddae35a4c8e6361adaacd2cec5b6051be0",
     "HIGGS/include/hand_parts.h": "e3df87bea8a21923841b560774578fe4dfa5ea2cac82348b01f0290347e36d9b",
@@ -101,12 +101,16 @@
     "HIGGS/include/higgshandpartsnative.h": "8de2943fc35c45636775c943c37541862dcfae470fa07e9ae86de78595b14e9c",
     "HIGGS/include/higgshandrouting.h": "38823667bb2c9dbb7569fb1ff00426c42453efeca442353c552e1f90ad73753a",
     "HIGGS/include/higgshanduse.h": "857bd8d43572dab4972893f3372e57eca1007e5ba9d51b9f0be683ecb7776244",
+    "HIGGS/include/higgshandusetransition.h": "9563f97da4111f1586c270d52196db6f27072278611f6d80c10b20776477884b",
     "HIGGS/include/higgshaptics.h": "5ee7b126158ee31795ba37af5353583a8f4c5b5bc0e219c959b510eb0a72eaba",
     "HIGGS/include/higgsinput.h": "6251c09f889a1a4ca1b5bee5c51956759efcc426a3934e6620e12d987b33d9d2",
+    "HIGGS/include/higgsinputcontext.h": "3033359c08a0a2ef28310aebceb004a5992c4294050527aa9bc266d9f8cfa79c",
     "HIGGS/include/higgsinterface001.h": "badada73592dca2f1f339e0ea1c25a2e0618ffadafd8078c56290a75727e4158",
     "HIGGS/include/higgsinventory.h": "f4119c8becf969accb7dbb6221743b256ad51eace036337c35d19edf842dad91",
     "HIGGS/include/higgsmotion.h": "1e96900035c65a4be76a7620d997c3a11df131b1cbaa40648a28cfa416352913",
     "HIGGS/include/higgsobservations.h": "b43337a6e80d603f5579e184f91fe4eb8ed16d440ad0eb52bf6950093f545e7a",
+    "HIGGS/include/higgsowncontact.h": "3c16234a46b736e91e45f427f6ac672e4d5aab7170f1a5d8d731ccce2c8870cf",
+    "HIGGS/include/higgsowncontactnative.h": "e52ac1a9cb6915cb456d2aacb8351d21bf21f21c4477f6247275ec4313ce2c98",
     "HIGGS/include/higgsphysicalpolicy.h": "f8d0d51d7e811d7df6e95ace03db8c79ecdccf95296e0110a358dc5cb67f28f2",
     "HIGGS/include/higgssupport.h": "6bcfba7aa1cea9f66123ee42e6153b110d6e794052dd996eeb5272122a84e518",
     "HIGGS/include/higgssynergy.h": "a1bcf633829a9bcfceb81f83e82043565a62c54a02734466d0ce9ab0f0a516b2",
@@ -118,6 +122,7 @@
     "HIGGS/include/math_utils.h": "3d13725f9fb07821376e5638942c9c78fdd7560d803bba9e7e66a9de2ef82569",
     "HIGGS/include/menu_checker.h": "97b53ca20f6304cdcf8a90e55654658d46d0446ead77976a6f060becab932ed0",
     "HIGGS/include/motion_runtime.h": "a7c613502d8c4d49860076031404cddea7eff03ec23c945af3d6b8184f2b6c02",
+    "HIGGS/include/own_contact.h": "30e8173a0c6ff5f5a85bfdf4bed4ff99cb232cd71fa0778fbec6f1b4269c51db",
     "HIGGS/include/papyrusapi.h": "9e7b0b4fa3405da92e53d10985c1e9316715e820afaf49637fa945ec7b3767b8",
     "HIGGS/include/physics.h": "553fe0d8b7667fea4b0ee22f819b8676ec7af47f535b6c14bb877526532141aa",
     "HIGGS/include/pluginapi.h": "e00a27f4de89a2f1886be247d87d2c0f5e3eda9d03bde540a40f1abb40c5c7ed",
@@ -133,7 +138,7 @@
     "HIGGS/include/version.h": "c05254713cf53cdc5bd8ce3208c42c7d4cb3a244948989633bef3016ba0aa73b",
     "HIGGS/include/vrikinterface001.h": "694de6375f471c2255bbff7e27924085b686cb11778baf50802a4fd2bf9e60a9",
     "HIGGS/src/draw.cpp": "6f56d9a40ccb89c0cea43a8933bb8cc3f6ef30f32673e1e32fca80e624c8952b",
-    "HIGGS/src/hand.cpp": "8ede8c4b0ce57cef144e247bea028827cfaee6fecd1d7590ad2c023d6cf649b8",
+    "HIGGS/src/hand.cpp": "c6f987dc5e03942c5e001543a403e69765305e3cfa5341c121c663b71739dc9c",
     "HIGGS/src/hooks.cpp": "00f108c016da51506f8292bebc35d99be80928b42c2eb7b4c51084febc867ac6",
     "HIGGS/src/main.cpp": "57e1f4efc5218d5c913e83e90dedcfd9820f9d6bebc72d7789afb2f3dadc18f4",
     "HIGGS/src/RE/havok.cpp": "ca73b52d31e4b5d7e90b494685d70d3205785416f24e4a4b5bb2a338474d64db",
@@ -147,6 +152,8 @@
     "PLANCK/include/higgs_contracts/higgshandapi.h": "25edd3851e53314b934c0ada71f193bd32f5ec997c591847714fbd66ff01f726",
     "PLANCK/include/higgs_contracts/higgshandparts.h": "c84e10ecf89b038540a64228dc1895686d051cd08f024a184e013e9fa83663b6",
     "PLANCK/include/higgs_contracts/higgshandpartsnative.h": "8de2943fc35c45636775c943c37541862dcfae470fa07e9ae86de78595b14e9c",
+    "PLANCK/include/higgs_contracts/higgsowncontact.h": "3c16234a46b736e91e45f427f6ac672e4d5aab7170f1a5d8d731ccce2c8870cf",
+    "PLANCK/include/higgs_contracts/higgsowncontactnative.h": "e52ac1a9cb6915cb456d2aacb8351d21bf21f21c4477f6247275ec4313ce2c98",
     "PLANCK/include/higgsinterface001.h": "b2a001a55b414d6d0eab3f44d033e42f7bb052cdc459510e3093c4ba3dce0fac",
     "PLANCK/include/main.h": "7fd4319278a512a9aa92dc9044e21e9a0fe622d7f96cd0fe3710de17e04d4f71",
     "PLANCK/include/math_utils.h": "c9a2f5f9b349ad7b82858bed01e9d4a9a3e61d430aaf165bf1a9847a55fde63f",
@@ -167,11 +174,12 @@
     "PLANCK/include/synergy_drive_native.h": "d187ce1de0cf04dcaa052e2f6852a80c678eb8a1ab4f5a7475284c3cdc2381ab",
     "PLANCK/include/synergy_drive_runtime.h": "280e298eae5fcaca2551948d1e88b37c9ef70763c0b5845fa65d878dca441f16",
     "PLANCK/include/synergy_hand_parts.h": "cdb3d262396adb7336ef607537fbf09d7d7721ce699ec3731fa043aa2cb99949",
+    "PLANCK/include/synergy_own_contact.h": "c968adc30aed6af046ae3bab6ea2d5f6c1ffab6099c733c1c2d1983563bd1eab",
     "PLANCK/include/synergy_runtime.h": "1532ec7f515c0a160d24bb6159af255f56cc4844c0b6d2af05a56bc126b9434b",
     "PLANCK/include/utils.h": "6a5bee6b9be713eef55015a3039f2bf4f0991eb8771d68d3d307ef803c8a8078",
     "PLANCK/include/version.h": "a0b150bf53b34d88bf22b9d6d88d214fffed317bd06f98d3fd97b97075685e88",
     "PLANCK/src/draw.cpp": "6f56d9a40ccb89c0cea43a8933bb8cc3f6ef30f32673e1e32fca80e624c8952b",
-    "PLANCK/src/main.cpp": "779ca84094e60bbf2b1d8c08710293f2cb0bc78dff06b1f602a65b6de9f15752",
+    "PLANCK/src/main.cpp": "006a5baa2733ac70f8175415ae7947d120cc8af9ae019abf3da00a86c5db87b1",
     "PLANCK/src/RE/havok.cpp": "cd6bdc5b723e48b1c53462776552a434256d38741b26d80390e460d45ad8fda9",
     "PLANCK/src/RE/offsets.cpp": "eb3081dd2d1a6d528b0a352d8949a2e1e6288e1e2a3340e4cd9be899772e49e4",
     "PLANCK/src/RE/sdk_bindings.cpp": "efa219a487a8dc301d9fc44b92838b1923d7e23349b08987673cfce0b75f668f"
@@ -305,7 +313,7 @@
     {
       "provider": "HIGGS",
       "path": "src/hand.cpp",
-      "line": 980,
+      "line": 982,
       "symbol": "defaultObjectManager",
       "relocation": "RelocPtr",
       "type": "BGSDefaultObjectManager",
@@ -6320,7 +6328,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 88,
+      "line": 108,
       "symbol": "CheckHitEventsFunctor_vtbl",
       "relocation": "RelocAddr",
       "type": "void *",
@@ -6338,7 +6346,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 6469,
+      "line": 6495,
       "symbol": "HitFrameHandler_Handle_vtbl",
       "relocation": "RelocPtr",
       "type": "_HitFrameHandler_Handle",
@@ -6356,7 +6364,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 6488,
+      "line": 6514,
       "symbol": "AttackWinStartHandler_Handle_vtbl",
       "relocation": "RelocPtr",
       "type": "_AttackHandler_Handle",
@@ -6374,7 +6382,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 6502,
+      "line": 6528,
       "symbol": "AttackWinEndHandler_Handle_vtbl",
       "relocation": "RelocPtr",
       "type": "_AttackHandler_Handle",
@@ -6392,7 +6400,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 6516,
+      "line": 6542,
       "symbol": "AttackStopHandler_Handle_vtbl",
       "relocation": "RelocPtr",
       "type": "_AttackHandler_Handle",
@@ -6410,7 +6418,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 6534,
+      "line": 6560,
       "symbol": "Actor_SetPosition_vtbl",
       "relocation": "RelocPtr",
       "type": "_Actor_SetPosition",
@@ -6428,7 +6436,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 6706,
+      "line": 6732,
       "symbol": "bhkCollisionFilter_SetFromBGSCollisionLayers_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6450,7 +6458,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 6718,
+      "line": 6744,
       "symbol": "UpdateRagdollPostPhysics_Actor_UpdateFromCharacterControllerAndFootIK_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6472,7 +6480,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 6738,
+      "line": 6764,
       "symbol": "Character_ModifyMovementData_vtbl",
       "relocation": "RelocPtr",
       "type": "_Actor_ModifyMovementData",
@@ -6490,7 +6498,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 6886,
+      "line": 6912,
       "symbol": "hkaKeyFrameHierarchyUtility_CalculateApplyKeyframeData_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6512,7 +6520,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 6909,
+      "line": 6935,
       "symbol": "Character_InitLoadGame_vtbl",
       "relocation": "RelocPtr",
       "type": "_Character_InitLoadGame",
@@ -6530,7 +6538,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 6936,
+      "line": 6962,
       "symbol": "Actor_CheckAndHandleMotionOrAnimationDrivenChange_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6552,7 +6560,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7306,
+      "line": 7332,
       "symbol": "MovementPlannerArbiter_ActorState_CalculateSpeedsWithAcceleration_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6574,7 +6582,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7322,
+      "line": 7348,
       "symbol": "MovementPlannerArbiter_ActorState_CalculateRotSpeeds_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6596,7 +6604,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7339,
+      "line": 7365,
       "symbol": "hkbBehaviorGraph_update_hkbUtils_collectActiveNodesLeafFirst_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6618,7 +6626,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7409,
+      "line": 7435,
       "symbol": "BSCyclicBlendTransitionGenerator_handleEvent_vtbl",
       "relocation": "RelocPtr",
       "type": "_hkbNode_handleEvent",
@@ -6636,7 +6644,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7424,
+      "line": 7450,
       "symbol": "hkbStateMachine_requestTransitions_hkbStateMachine_beginTransition_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6658,7 +6666,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7458,
+      "line": 7484,
       "symbol": "ahkpCharacterProxy_updateManifold_vtbl",
       "relocation": "RelocPtr",
       "type": "_ahkpCharacterProxy_updateManifold",
@@ -6676,7 +6684,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7716,
+      "line": 7742,
       "symbol": "BSLookAtModifier_modify_vtbl",
       "relocation": "RelocPtr",
       "type": "_BSLookAtModifier_modify",
@@ -6694,7 +6702,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7772,
+      "line": 7798,
       "symbol": "PlayerCharacter_Load3D_vtbl",
       "relocation": "RelocPtr",
       "type": "_PlayerCharacter_Load3D",
@@ -6712,7 +6720,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7858,
+      "line": 7884,
       "symbol": "bhkLinearCaster_linearCast_hkpWorld_linearCast_HookLoc",
       "relocation": "RelocPtr",
       "type": "uintptr_t",
@@ -6734,7 +6742,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7945,
+      "line": 7971,
       "symbol": "DoColorPass_NiCamera_FinishAccumulatingPostResolveDepth_HookLoc",
       "relocation": "RelocPtr",
       "type": "uintptr_t",
@@ -6756,7 +6764,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7972,
+      "line": 7998,
       "symbol": "processHavokHitJobsHookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6778,7 +6786,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7974,
+      "line": 8000,
       "symbol": "PlayerCharacter_UpdateWeaponSwing_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6800,7 +6808,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7976,
+      "line": 8002,
       "symbol": "postPhysicsHookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6822,7 +6830,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7978,
+      "line": 8004,
       "symbol": "driveToPoseHookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6844,7 +6852,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7980,
+      "line": 8006,
       "symbol": "hkbRagdollDriver_driveToPose_hkaRagdollRigidBodyController_driveToPose_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6866,7 +6874,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7982,
+      "line": 8008,
       "symbol": "potentiallyEnableMeleeCollisionLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6888,7 +6896,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7984,
+      "line": 8010,
       "symbol": "preCullActorsHookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6910,7 +6918,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7986,
+      "line": 8012,
       "symbol": "BShkbAnimationGraph_PreGenerate_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6932,7 +6940,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7988,
+      "line": 8014,
       "symbol": "Actor_TakePhysicsDamage_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6954,7 +6962,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7990,
+      "line": 8016,
       "symbol": "Character_MovementControllerUpdate_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6976,7 +6984,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7992,
+      "line": 8018,
       "symbol": "Actor_KillEndHavokHit_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -6998,7 +7006,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7994,
+      "line": 8020,
       "symbol": "ActorProcess_ExitFurniture_RemoveCollision_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7020,7 +7028,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7995,
+      "line": 8021,
       "symbol": "ActorProcess_ExitFurniture_ResetRagdoll_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7042,7 +7050,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7996,
+      "line": 8022,
       "symbol": "ActorProcess_EnterFurniture_SetWorld_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7064,7 +7072,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7998,
+      "line": 8024,
       "symbol": "Character_HitTarget_HitData_Populate_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7086,7 +7094,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 7999,
+      "line": 8025,
       "symbol": "Actor_GetHit_DispatchHitEventFromHitData_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7108,7 +7116,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8000,
+      "line": 8026,
       "symbol": "ScriptEventSourceHolder_DispatchHitEventFromHitData_DispatchHitEvent_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7130,7 +7138,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8002,
+      "line": 8028,
       "symbol": "Papyrus_IAnimationGraphManagerHolder_GetAnimationVariableBool_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7152,7 +7160,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8004,
+      "line": 8030,
       "symbol": "Actor_IsRagdollMovingSlowEnoughToGetUp_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7174,7 +7182,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8006,
+      "line": 8032,
       "symbol": "GetUpStart_ZeroOutPitchRoll_Loc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7196,7 +7204,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8007,
+      "line": 8033,
       "symbol": "BSGeometry_SetVRMeleeAlphaAndEmissive_SetFadeNodeAlpha_Loc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7218,7 +7226,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8009,
+      "line": 8035,
       "symbol": "GetUpEnd_RemoveRagdollFromWorld_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7240,7 +7248,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8010,
+      "line": 8036,
       "symbol": "GetUpEnd_SetMotionTypeKeyframed_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7262,7 +7270,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8011,
+      "line": 8037,
       "symbol": "GetUpEndHandler_Handle_RemoveCollision_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7284,7 +7292,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8013,
+      "line": 8039,
       "symbol": "hkbRagdollDriver_extractRagdollPoseInternal_hkaPoseMatchingUtility_computeReferenceFrame_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7306,7 +7314,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8015,
+      "line": 8041,
       "symbol": "hkaRagdollInstance_getApproxWorldFromBoneTransformAt_hkpMotion_approxTransformAt_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7328,7 +7336,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8017,
+      "line": 8043,
       "symbol": "MapRagdollPoseToAnimPoseModelSpace_hkaSkeletonMapper_mapPose_HookLoc_1",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7350,7 +7358,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8019,
+      "line": 8045,
       "symbol": "MapRagdollPoseToAnimPoseModelSpace_hkaSkeletonMapper_mapPose_HookLoc_2",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7372,7 +7380,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8021,
+      "line": 8047,
       "symbol": "hkbRagdollDriver_mapHighResPoseLocalToLowResPoseLocal_hkaSkeletonMapper_mapPose_HookLoc",
       "relocation": "RelocAddr",
       "type": "uintptr_t",
@@ -7394,7 +7402,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8629,
+      "line": 8655,
       "symbol": "Character_IAnimationGraphManagerHolder_NotifyAnimationGraph_vtbl",
       "relocation": "RelocPtr",
       "type": "_IAnimationGraphManagerHolder_NotifyAnimationGraph",
@@ -7412,7 +7420,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8661,
+      "line": 8687,
       "symbol": "PlayerCharacter_IAnimationGraphManagerHolder_NotifyAnimationGraph_vtbl",
       "relocation": "RelocPtr",
       "type": "_IAnimationGraphManagerHolder_NotifyAnimationGraph",
@@ -7430,7 +7438,7 @@
     {
       "provider": "PLANCK",
       "path": "src/main.cpp",
-      "line": 8674,
+      "line": 8700,
       "symbol": "PlayerCharacter_UpdateAnimation_vtbl",
       "relocation": "RelocPtr",
       "type": "_Actor_UpdateAnimation",
@@ -18950,12 +18958,12 @@
   "unparsedDeclarations": [],
   "sourceStates": {
     "HIGGS": {
-      "head": "e716f8bb9a7c2f7a5d4740866362e5edcb37715a",
+      "head": "374173095fa72d8005924b2fc6c6d2db381db04d",
       "dirty": false,
       "workingTreeChanges": []
     },
     "PLANCK": {
-      "head": "ea5472aabc8b3d7701ef684c1412f69a6480a7dd",
+      "head": "28eb8a7f7247a5639a9f2cfcaa02147f61f8e1b5",
       "dirty": false,
       "workingTreeChanges": []
     },

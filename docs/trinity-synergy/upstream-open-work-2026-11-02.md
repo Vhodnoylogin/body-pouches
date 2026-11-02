@@ -40,3 +40,7 @@ Geometry fitting, endpoint/drive policies and hand-part attribution do not solve
 **Recommendation:** treat this as a useful additional API example, not a demonstrated release blocker. Explore a small opt-in pair/contact-response contract coordinated by HIGGS before PLANCK's suppression, separating cosmetic evidence/audio/haptics, optional physical response and combat damage. Preserve current combat defaults. Validate equipped versus held items, handedness, secondary grips/fingers, taps versus rubbing, angular motion, duplicate sounds/haptics and lifecycle retirement. Keyframed contacts alone cannot promise controller resistance.
 
 No outreach, merge, patch application, installation or game test was performed. This review does not claim author agreement or game qualification; code/build evidence remains separate from runtime acceptance.
+
+## Saved development continuation
+
+The later [checkpoint](checkpoint-2026-11-02.md) implements context-aware input handoff rather than merely including PR6, and adds a HIGGS-owned bilateral cosmetic-evidence service with PLANCK forwarding. The original upstream review above retains its date/scope. No upstream item was changed; no feedback consumer or game-qualified issue2 fix is claimed.

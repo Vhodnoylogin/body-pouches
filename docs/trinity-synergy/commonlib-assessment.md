@@ -4,7 +4,7 @@ Updated: 2 November 2026. Scope: the second level of the [synergy concept](conce
 
 ## Current delivered runtime assessment — 2 November 2026
 
-HIGGS `e716f8bb9a7c2f7a5d4740866362e5edcb37715a`, PLANCK `ea5472aabc8b3d7701ef684c1412f69a6480a7dd` (physical code `87d7f2e`) and Body Slots `d0900f3c19dab77afcd029387f76c5171c50c808` now have published source and complete source-pinned native builds; see the [implementation ledger](implementation-status.md). This resolves the external SDK/linkage blocker. It does not migrate HIGGS/PLANCK to CommonLib, qualify running-game behavior or implement the complete concept.
+HIGGS `374173095fa72d8005924b2fc6c6d2db381db04d`, PLANCK `28eb8a7f7247a5639a9f2cfcaa02147f61f8e1b5` and Body Slots `909c0c328ae6781baece39690c3db8fb51519e88` now have published source and complete source-pinned native builds; see the [implementation ledger](implementation-status.md). This resolves the external SDK/linkage blocker. It does not migrate HIGGS/PLANCK to CommonLib, qualify running-game behavior or implement the complete concept.
 
 Body Slots already consumes CommonLibSSE-NG v3.7.0 (`c4ab853d095e81e3390b282d7ba01ab2f24ebf25`) in its independent adapter. That build pin is distinct from the 9.1.0 fork inspected below. The refreshed address inventory names the final published provider inputs and preserves the same 700 declarations/537 addresses, including 158 shared addresses: 126 existing-wrapper candidates, nine metadata-only matches and 565 extension-or-further-audit entries. Those last entries are not a count of missing CommonLib methods.
 
@@ -24,6 +24,16 @@ The final parts/physical-policy reviews reinforce creation-world retention, whol
 The [open upstream work review](upstream-open-work-2026-11-02.md) is additional requirements evidence, not library work already performed. CustomMenu routing remains provider input/menu policy; Body Slots owns body zones; cosmetic own-weapon contacts need a HIGGS/PLANCK contract. CommonLib may supply low-level event/contact-point/material access, but cannot decide ownership, gameplay admission or whether cosmetic feedback should cause damage.
 
 Earlier detailed building-block and historical extraction assessments below keep their original versions and qualification limits. The second level of synergy remains the later move of verified engine addresses and shared technical operations into CommonLib, while cross-mod ownership stays in the providers.
+
+### Consumer-driven continuation: context, sessions and own-item contacts
+
+The [twenty-consumer criticism](consumer-contract-matrix.md#implementation-aware-criticism) distinguishes provider work from library reuse. Atomic hand-footprint changes, menu-context generations, stale-grant admission and grant-bound native cleanup are HIGGS coordination, not CommonLib services. The original interface 001 remains separate from the additive tables.
+
+For the cosmetic contact adapter, the inspected CommonLib already models `RE::TESEquipEvent` (0x18) and the `BSTEventSource<TESEquipEvent>` base at 0x478 in `ScriptEventSourceHolder`, with typed `GetEventSource`, `AddEventSink` and `RemoveEventSink`. A stage-two provider port can reuse that typed source instead of its current legacy-SDK observer declaration/member cast, subject to runtime/event-lifetime qualification. A declaration and compile-time offset comparison are not an observed in-game event. No new address is needed merely to define an equipment episode.
+
+CommonLib also has `hkpKeyframedRigidMotion::GetPointVelocity`; that is not evidence of a polymorphic helper valid for every rigid motion. The contact bridge needs point-relative velocity for both actual bodies, including angular motion. Audit the existing motion hierarchy and virtual dispatch before reusing/extending a general method. Normal orientation, Havok metres versus Skyrim units, retained body/shape/world lifetime and exact common-point semantics belong in the technical qualification. HIGGS still owns contact-item provenance, policy leases and admitted cosmetic evidence; PLANCK retains its existing contact/hit decision. Neither a library helper nor a cosmetic event proves delivered audio, hardware haptics or combat damage.
+
+No CommonLib source or address mapping is changed by this continuation. The separately recorded literal-address inventory does not enumerate these virtual-call and layout obligations.
 
 ## Address inventory and resolved native linkage — 2 November 2026
 

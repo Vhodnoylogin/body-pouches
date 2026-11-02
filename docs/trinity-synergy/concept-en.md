@@ -136,6 +136,8 @@ enum class HandAvailability : uint32_t { Ready, Reserved, Unavailable, Unknown }
 
 CopyHandState names physical left/right separately from dominant/off hand. An input or release observation identifies its matching pose sample: Body Slots tests its geometry against a coherent observation rather than combining an earlier drop with an arbitrary current pose. A post-update callback alone cannot guarantee this. Regrabbing, consuming, loading or losing tracking invalidates pending offers before execution.
 
+The original weapon type, actual game equipment location and physical grip are separate observations. A greatsword can remain the original greatsword while a supported equipment executor places it in one game-hand slot; two physical hands supporting one weapon are different from two separately equipped weapons. Consumers must not reconstruct occupancy or the owning physical hand from the base weapon type alone. Cross-hand drawing names the exact item, previous equipment location and destination hand, with an explicit policy for an occupied destination.
+
 **Pseudo-ABI**
 
 ```cpp
@@ -245,6 +247,10 @@ namespace HIGGS {
 Status RegisterActionExecutor(ClientToken, const ActionExecutorInfo*, ActionExecutorCallback, void* userContext, ExecutorId* outExecutor, Lease* outRegistration);
 
 Status ReportExecutionResult(ClientToken, const ExecutionResult*);
+
+Status RequestEquipmentTransition(ClientToken, const EquipmentTransitionRequest*, RequestId* outRequest);
+
+Status CopyEquipmentTransitionOutcome(ClientToken, RequestId, EquipmentTransitionOutcome* outOutcome);
 
 }
 ```
@@ -457,6 +463,8 @@ Status BindEquipmentSlotSet(ClientToken, const EquipmentSlotBinding*, SlotSetId*
 
 ### Zones
 
+A bag or scabbard may supply its slots only while equipped. Its access volume can follow a dedicated opening node, including movement produced by FSMP, while saved customization stays local to that anchor. Body Slots observes the resulting pose; the accessory physics owner continues to drive it. Sampling must have explicit post-physics timing/freshness, and deformation of a skinned mesh is not automatically one rigid anchor. Ordinary sway is not anchor replacement and does not rewrite saved placement. Geometric entry alone never authorizes an action; a started transfer remains tied to its slot/item despite small motion, while removal or replacement requires explicit invalidation. Holding the accessory with a HIGGS hand needs an agreed physical bridge rather than two simultaneous drivers.
+
 A zone is an anchored spatial region with an explicit probe. Slot access normally uses the VRIK virtual hand; the HIGGS resolved palm, controller, item anchor and weapon tip are separate sources. Body Slots computes world placement, tests containment and reports entry, exit and hover. Geometry remains observable independently of slot occupancy, visibility or reservation; zone transitions and available actions are separate events. QueryZones also serves clients subscribing after entry.
 
 A Body Slots access capsule is a logical interaction region, distinct from a PPB anatomical collision capsule. Shared math or an optional surface anchor does not transfer zone ownership to PPB, nor make PPB a requirement for ordinary slots.
@@ -642,6 +650,10 @@ This could make several visible additions practical: independently displayed pou
 The simpler mod could ship slot definitions authored offline, register its content rules with Body Slots and executors with the interaction services, publish Body Slots previews, and react to confirmed results. Request correlation and invalidation would still exist, but their shared implementation would replace private reconstructions in each consumer. These are proposed changes; they do not describe additional features already shipped in Body Pouches 0.2.0.
 
 ## Shields and 2H Weapons Unlocked with the shared services
+
+Ordinary native VRIK one-handed cross-hand drawing already handles an item that remained equipped to the other hand, subject to its hand permissions and swap settings. The proxy adaptation limitations below concern that experimental path, not a general inability of VRIK to change the drawing hand. Exact-instance identity and confirmed compound equipment outcomes remain separate requirements.
+
+[Dynamic Two-Handed](https://www.nexusmods.com/skyrimspecialedition/mods/170549) supplies another approach: its [public implementation](https://github.com/vinymayan/Dynamic-Grip-NPC/blob/97db41fb02ffb7900be3a5bd95a7df27b55d1acf/src/Hooks.cpp#L334) temporarily changes the original weapon's equip slot around the engine operation and restores the form, instead of creating a one-handed proxy for that operation. A qualified VR equipment executor could use this approach behind the shared request/result contract. The request must specify effective equipment mode separately from original item type and physical grip; HIGGS reserves every affected player hand, Body Slots owns the sheath, and the executor confirms old/new equipment locations and exact item properties. This is a research direction, not delivered VR support or proof that every proxy use can be removed. Shared-form mutation, reentrant calls, duplicate copies, skill/damage/block behavior and restoration need separate qualification.
 
 [Shields and 2H Weapons Unlocked — VR](https://www.nexusmods.com/skyrimspecialedition/mods/184001), by TheMachinaGod, allows shields and two-handed weapons in either hand. Its unconventional equipment uses substitute items, or proxies, and its own shoulder holsters. In the [original implementation](https://github.com/SamuelJohnBrown/Weapons-shields-unlocked-skyrim-VR-framework-/blob/7518a1879a78ca494e77cd4d60c76ca5cba77172/main.cpp), those holsters replace VRIK's two shoulder slots by disabling their item permissions; this disabling is skipped when FalseEdgeVR is present. The conflict concerns the shoulder holsters, not every VRIK slot.
 

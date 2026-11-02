@@ -2,7 +2,15 @@
 
 Updated: 2 November 2026. This ledger accompanies the [English concept](concept-en.md) and [Russian concept](concept-ru.md). Published source, native builds, consumer adoption and game acceptance are separate evidence levels. The bounded services below are delivered; the complete cooperation concept is not yet implemented.
 
-## Current delivery — 2 November 2026
+## Saved continuation — 2 November 2026
+
+**Paused at the owner's request.** The [checkpoint](checkpoint-2026-11-02.md) records published source, full native builds, scoped reviews and tomorrow's next steps. HIGGS `37417309`, PLANCK `28eb8a7f` and Body Slots `909c0c32` add context handoff, atomic hand-use transitions, bilateral cosmetic contact evidence, safe equipment refusal and Body Slots context invalidation. Body Slots remains private; its public conversion was explicitly deferred. The complete concept and consumer migrations remain unfinished.
+
+All three native DLLs built with matching source pins; HIGGS/PLANCK bindings and four Body Slots CTest targets passed. [Per-artifact hashes](checkpoint-2026-11-02.json) distinguish them from the earlier same-day builds below. No game or author outreach occurred. Existing VRIK one-handed cross-hand drawing is now documented separately from the experimental proxy limitation; original-shield-right behavior remains unproved.
+
+The following earlier same-day delivery retains its original source/build evidence and is superseded by the checkpoint where the source changed.
+
+## Earlier delivery — 2 November 2026
 
 | Component | Published source checkpoint | Delivered boundary |
 |---|---|---|
