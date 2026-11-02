@@ -4,8 +4,31 @@ Research checkpoint: 2 November 2026, public PPB source at [`e26b4eb`](https://g
 
 The intended benefit is to let other mods ask **which anatomical surface was touched, by what, and with what evidence**, without recreating PPB's fitting or inspecting Havok objects. PPB would retain anatomical fitting, region classification, touch interpretation and its gameplay features. HIGGS and PLANCK would provide the physical publication and actuation services that PPB could choose to use.
 
+Russian: [предложения на русском](ppb-author-requests-ru.md).
+
+## Division of responsibility
+
+**We ask PPB to own anatomical meaning and fitting data. We must provide physical execution through HIGGS and PLANCK.** The proposal is a division of work, not a request for telord to implement those providers or maintain another copy of their mechanics.
+
+| Owner | Responsibility we expect it to retain/provide | What PPB obtains from it |
+|---|---|---|
+| **PPB** | Anatomical regions and identifiers, fitting to meshes/skeletons, desired surface/hand-part geometry, interpretation of contact/proximity/dwell, and its own gameplay rules. Publish coherent anatomical observations and submit fitting proposals | PPB is the anatomy service used by other mods. It publishes applied surfaces using physical-owner results, with an explicit distinction from a desired fit |
+| **HIGGS** | Controller input, the fixed hand-state/use model, permissions, physical palm/finger bodies, their movement, collision policies, haptics and lifetime. Apply hand-part proposals and report actual results | Register/update fitted hand parts; obtain applied part geometry/pose, canonical physical-hand/part identity and contact evidence; request scoped hand effects and hand use |
+| **PLANCK** | NPC body/ragdoll lifetime, physical animation, safe NPC shape publication, scoped actor drive/reaction policies, and its physical-hit decisions/results. Apply NPC fitting proposals | Read current physical bodies/shape children; submit revision-checked capsule edits; request actor-scoped physics policies; receive applied geometry, invalidation and hit evidence |
+
+VRIK remains the provider of the player's body and virtual-hand pose. Body Slots remains the owner of interaction zones, persistence and slot behavior; PPB can supply an optional anatomical anchor where coverage exists. A touch never itself grants hand control or commits damage.
+
+The intended data flows are:
+
+1. PPB computes fitted finger-part data → HIGGS creates/updates the physical parts → HIGGS returns applied state and contacts → PPB adds anatomical interpretation.
+2. PPB computes fitted NPC capsules → PLANCK validates and applies them under its graph/world ownership → PLANCK returns applied geometry and revisions → PPB publishes the corresponding anatomical surfaces.
+3. A consumer reads a PPB touch → asks HIGGS for a conflicting hand action or PLANCK for an NPC physics operation where needed → the responsible executor reports the actual outcome. PPB's own gameplay features can use exactly this path.
+
+Adoption depends on the physical services being available and qualified. Existing PPB actuation can remain the backend for released dependencies until a supported shared backend is ready; each selected backend must have one physical writer.
+
 ## Contents
 
+- [Division of responsibility](#division-of-responsibility)
 - [First: a small, independently useful public API extension](#first-a-small-independently-useful-public-api-extension)
 - [Then: integration when the physical owners can support it](#then-integration-when-the-physical-owners-can-support-it)
 - [Optional extensions to discuss separately](#optional-extensions-to-discuss-separately)
