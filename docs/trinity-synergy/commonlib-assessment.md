@@ -1,6 +1,23 @@
 # CommonLib assessment for synergy implementation
 
-Updated: 25 October 2026. Scope: the second level of the [synergy concept](concept-en.md), moving engine addresses and repeated technical operations behind verified CommonLib interfaces. This is a maintained analysis, not a library implementation task. The technical binding audit below remains pinned to its 11 October source; later sections classify delivered provider policy and the current wearable-lookup candidate. Further HIGGS/PLANCK implementation goals are deferred by the owner pending author feedback.
+Updated: 2 November 2026. Scope: the second level of the [synergy concept](concept-en.md), moving engine addresses and shared technical operations behind verified CommonLib interfaces. The owner resumed HIGGS/PLANCK API and Body Slots implementation; CommonLib extension/migration remains a later stage. Earlier binding audits below retain their stated versions and qualification limits.
+
+## New API/runtime checkpoint — 2 November 2026
+
+Body Slots now consumes existing CommonLibSSE-NG v3.7.0 (`c4ab853d095e81e3390b282d7ba01ab2f24ebf25`) in its independent native adapter. This is a separate build pin from the9.1.0 fork assessment below. Its linked DLL uses player/body lookup, named nodes, worn armor and biped part clones, transform inversion/composition, model demand/deep cloning, reference-counted nodes and scene attachment/update. No CommonLib source is modified. A successful link checks declarations/linkage, not their game-phase or asset behavior.
+
+| New work | Existing technical reuse | Extension or further qualification |
+|---|---|---|
+| Body Slots body/equipment binding | `PlayerCharacter`, `Get3D`, `GetWornArmor`, `GetBiped`, `BIPOBJECT::partClone`, named-node lookup and `NiPointer` | Qualify the virtual-hand node and update phase against released VRIK; retain model/anchor generations in Body Slots. A generic node helper cannot certify inverse-kinematics semantics |
+| Independent holder/preview presentation | `BSModelDB::Demand`, `NiObject::CreateDeepCopy`, `NiNode::Create`, attach/detach, transform math and scene update | Qualify cloning, collision removal and render/resource lifetime in Skyrim. Content versions/stock and provider ownership remain outside CommonLib |
+| HIGGS hand broker and Body Slots runtime/save state | Standard fixed PODs, synchronization, pure validation and portable codecs | No engine address or necessary CommonLib extension. Shared hand-use permission and slot policy remain with their providers |
+| HIGGS static support/hand actuator requests | Existing HIGGS SDK wrappers, ray queries, retained reference/body checks, hand keyframe and motor/haptic paths | Audit actual SDK types/calls and VR mappings before replacing low-level work with current CommonLib helpers. New wrapper availability would not itself qualify the support primitive |
+| PLANCK copied body endpoints and hit gates | Existing graph/world ownership and native hit paths | Provider generations, policy composition, callback timing and final hit outcomes remain PLANCK responsibilities; technical traversal/locking may later reuse verified library wrappers |
+| PLANCK physical geometry adoption | No safe delivered mutation path; capability cleared after lifetime review | Establish an engine-owned lifetime transaction, exact shape ownership/refcount, safe mutation phase and broadphase refresh before choosing reusable wrappers or verified extensions |
+
+The HIGGS/PLANCK complete-build blocker is their external compatible Havok declaration tree and authored SDK project layout. Public SKSE sources/toolchain exist; available CommonLib-modeled Havok types are not a complete drop-in replacement for their current includes and direct field/method use. Resolving it has two distinct routes: supply the expected compatible development declarations, or port the required low-level accesses to verified CommonLib types/wrappers. The latter belongs to this second stage and may require library extensions. Neither can be claimed complete by compiling only the portable API cores. No extra Havok SDK installation is implied for end users.
+
+The earlier type/address inventory below remains evidence for that port, rather than an assertion that every item has been freshly audited against a newer CommonLib revision. No library extension, engine-address migration or measured performance claim accompanies the new API work.
 
 Inspected fork: [Vhodnoylogin/CommonLibSSE-NG](https://github.com/Vhodnoylogin/CommonLibSSE-NG), `ng` at `a898f469851c464d05137bb74b069dd234897643` (9.1.0). Local and remote `ng` matched when inspected. Presence of a declaration establishes an available building block; it does not establish equivalent timing, lifetime or cross-runtime behavior for a proposed use.
 
