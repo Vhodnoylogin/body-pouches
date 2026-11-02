@@ -8,6 +8,7 @@ language versions:
 - [Implementation status](implementation-status.md): delivered code, verification and remaining gaps.
 - [CommonLib assessment](commonlib-assessment.md): current technical reuse and extension candidates for the second stage.
 - [Consumer requirements](consumer-contract-matrix.md): an illustrative set of VR interactions used to assess API expressiveness.
+- [Open upstream issues and PRs](upstream-open-work-2026-11-02.md): the 2 November review of existing proposals, fixes and additional API requirements.
 - [PPB provider audit](ppb-provider-audit.md) and [proposals for telord](ppb-author-requests.md) ([русская версия](ppb-author-requests-ru.md)): source-backed integration requirements, explicit provider responsibilities and a separate, unsent discussion agenda.
 
 Body Pouches intends to migrate to this architecture. The proposal is hosted
