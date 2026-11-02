@@ -1,0 +1,387 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-11-02",
+  "scope": "Illustrative diverse consumer sample, NOT an allowlist. Goal is general fixed common hand/slot/body primitives plus domain executors for any Skyrim VR mod.",
+  "method": "Read-only local archive member/config/PSC inspection and primary public source clones. No closed DLL decompilation, DLL strings, install or game run.",
+  "versionPolicy": "Archive inputs are latest matching local inputs, not guaranteed latest author releases; source HEADs are not asserted binary-identical to archives.",
+  "consumers": [
+    {
+      "id": "stop-trigger",
+      "name": "Stop Trigger Unsheathing For VR",
+      "nexusModId": 55962,
+      "evidenceKind": "Current public C++ source; no matching downloaded archive found",
+      "requirements": [
+        "Action-specific default-input policy: suppress unsheathe while preserving intended other game/HIGGS trigger uses; owned lifetime and user control"
+      ],
+      "source": {
+        "url": "https://github.com/adamhynek/stuf_vr",
+        "commit": "92814e7a59ce58dff923b7bd3eae35b788b111b7"
+      }
+    },
+    {
+      "id": "instant-equip",
+      "name": "Instant Equip VR",
+      "nexusModId": 44571,
+      "evidenceKind": "Current public C++ source + local 1.2.0 config",
+      "requirements": [
+        "Equipment request/observed completion signals; independent animation/equip executor extension if requested"
+      ],
+      "source": {
+        "url": "https://github.com/adamhynek/instant_equip_vr",
+        "commit": "be27c4139c6b83796555bf8125fb62367b6495bb"
+      },
+      "archive": {
+        "file": "Instant Equip VR 1.2.0-44571-1-2-0-1765671316.zip",
+        "sha256": "943a05901c77a05a1b524c8358c9b9fd71c718b4bc2261c25a5235d7ae33c4f3"
+      }
+    },
+    {
+      "id": "sdhr",
+      "name": "Swap Drop and Hold Redux - VR",
+      "nexusModId": 185816,
+      "evidenceKind": "Local 3.0.1 installer/config; native C++ source not included in reviewed archive",
+      "requirements": [
+        "Equipment/world-held identity and instance data",
+        "Correlated swap/drop/equip receipts",
+        "Press/hold/release/gesture conflict control",
+        "Temporary/persistent grip offsets with correct physical actor"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "SwapDropAndHoldRedux 3.0.1 185816 3.0.1 2026-10-26T18-26Z L5WQbqL5D.zip",
+        "sha256": "06376cf97fe56c14754c395495c723904af66f53c97063bccc20a3ab115b419b"
+      }
+    },
+    {
+      "id": "interactive-torches",
+      "name": "Interactive Torches - VR",
+      "nexusModId": 140404,
+      "evidenceKind": "Local Nexus140404 2.0 config and primary identity confirmation",
+      "requirements": [
+        "Coherent hand/equipped-object/item-anchor observations",
+        "Continuous contact-initiated hand sessions where conflicting",
+        "Observed equipment/visual transition receipts"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "Interactive Torch Lighting VR 140404 2.0 2026-07-29T03-04Z L5WQbq2bA.zip",
+        "sha256": "6ed7b5193d97522965ad8080ca6e5495e3c12b946f2e0fb578fba440131db7f4"
+      }
+    },
+    {
+      "id": "harvesting",
+      "name": "Immersive Harvesting",
+      "nexusModId": 186754,
+      "evidenceKind": "Local 1.5.23 README/config; old climbing public source corroborates conflicts",
+      "requirements": [
+        "Single input/default-action authority",
+        "One/two-hand sessions with handoff and renewed haptics",
+        "Held-object/kinematic interaction primitives",
+        "Confirmed harvest inventory award -> exact held-item transfer",
+        "Scoped collision/second-grab restrictions"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "Immersive Harvesting 1.5.23 186754 1.5.23 2026-09-19T16-19Z n0oTCmHMT.zip",
+        "sha256": "60826e09b75cc63e384430dc0e490a481a03aebbcaf35b407dc8c6f6fe1c433a"
+      }
+    },
+    {
+      "id": "pickpocket",
+      "name": "Immersive Pickpocketing VR",
+      "nexusModId": 189538,
+      "evidenceKind": "Local 1.1 README/config; native C++ source not inspected",
+      "requirements": [
+        "NPC body/surface anchors (PLANCK/PPB)",
+        "Coherent hand pose and continuous dwell observation",
+        "Input/session arbitration and haptics",
+        "NPC inventory-item identity + stolen/world-held transfer receipts"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "1_Immersive Pickpocketing VR 189538 1.1 2026-09-03T16-37Z JrECN2WqU.zip",
+        "sha256": "f93b32364626650a4d1aaeda96b2423ce05789c1ae12ff2d872e6f64fe752a2b"
+      }
+    },
+    {
+      "id": "skinning",
+      "name": "Interactive Animal Skinning VR",
+      "nexusModId": 188121,
+      "evidenceKind": "Local 1.0 config; native C++ source not inspected",
+      "requirements": [
+        "NPC/corpse body observation and lifecycle",
+        "Exactly-once physical hit outcome + anatomical context",
+        "Inventory/world result transfer receipts"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "Interactive Animal Skinning VR 188121 1 2026-08-12T07-04Z QRde31wGS.zip",
+        "sha256": "35ace3bef11b89380ebaaccf8a5dd91cde10223e59453ea42395086a83515a30"
+      }
+    },
+    {
+      "id": "pickup-only",
+      "name": "Immersive Pickup Only",
+      "nexusModId": 70913,
+      "evidenceKind": "Local 1.1 PSC source",
+      "requirements": [
+        "Optional narrow default pickup policy; no required dependency"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "Immersive Pickup Only.7z-70913-1-1-0-1658087405.7z",
+        "sha256": "a05ee334f30f14dd89fd0340d2d4fc00959eb96f26d0e745a9e914741e89fde4"
+      }
+    },
+    {
+      "id": "immersive-equip",
+      "name": "Immersive Equip VR",
+      "nexusModId": 186897,
+      "evidenceKind": "Local 2.0 INI; native C++ source not inspected",
+      "requirements": [
+        "Body/equipment slot regions and per-state behaviors",
+        "Grip hold/context lifecycle",
+        "Biped equipment identities and ownership",
+        "Paired equip/unequip/swap receipts preserving instance properties"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "Immersive Equip VR 186897 2.0.0 2026-08-12T06-27Z s6Og0d9LM.zip",
+        "sha256": "e33948058f02b8d06d1cffc79484f7f7a7c338c77c964eb84a69e3b041150970"
+      }
+    },
+    {
+      "id": "ppb",
+      "name": "Precision Physic Bodies",
+      "nexusModId": 186100,
+      "evidenceKind": "Current public C++ source + local 2.2.1 config/Papyrus",
+      "requirements": [
+        "Generation-aware anatomical surface/fitting/contact observations",
+        "Owner-applied NPC/hand geometry proposal results",
+        "HIGGS hand-actuator requests",
+        "PLANCK scoped NPC reaction policies"
+      ],
+      "source": {
+        "url": "https://github.com/Telord72612/Precision-Physic-Bodies",
+        "commit": "e26b4ebc8061e8736b344e4f3e9216dea9254747"
+      },
+      "archive": {
+        "file": "Precision Physic Bodies 2.2.1 186100 2.2.1 2026-09-18T02-41Z UK35XnjNl.zip",
+        "sha256": "8902791e6f95ec35320716b93d5a5f6bc7bc62b808481b0e9cb11419c251ed1c"
+      }
+    },
+    {
+      "id": "shields-unlocked",
+      "name": "Shields and 2H Weapons Unlocked - VR",
+      "nexusModId": 184001,
+      "evidenceKind": "Local Nexus184001 1.2 INI; separate original source known in owner project but not re-audited here",
+      "requirements": [
+        "Proxy/original item identity association",
+        "Equipment-to-held/holstered transfer and presentation receipts",
+        "Body Slots custom accepted content and actions",
+        "Coherent weapon pose/velocity",
+        "Scoped physical-hit policy"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "Shields And Swords Unlocked VR 184001 1.2 2026-07-22T11-30Z OyYrPub9A.zip",
+        "sha256": "9e4b7a0387015ffea78787dd82042213919132ebccfd4d7fd24ad903036a9c09"
+      }
+    },
+    {
+      "id": "weapon-throw",
+      "name": "Weapon Throw VR",
+      "nexusModId": 31374,
+      "evidenceKind": "Local 1.4.0 INI + native interface PSC/MCM; native C++ source not inspected",
+      "requirements": [
+        "Confirmed equipped/held -> projectile/world -> return/equip identity",
+        "Velocity/angular velocity/body-frame observations",
+        "Launch/release/recall receipts with terminal failures",
+        "NPC hit/attachment endpoint coupling for embedded items"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "Weapon Throw VR 31374 1.4.0 2026-08-09T21-09Z 9LMpgbzyP.rar",
+        "sha256": "c353113399a7411c21f05305df9aca92eaabe67ce101cf904af8d79f509a42bf"
+      }
+    },
+    {
+      "id": "dual-wield-block",
+      "name": "Dual Wield Block VR",
+      "nexusModId": 28456,
+      "evidenceKind": "Current public C++ source + local 1.7 INI",
+      "requirements": [
+        "Coherent pose/motion observations",
+        "Continuous non-button hand-use session/policy",
+        "Scoped game block executor if shared"
+      ],
+      "source": {
+        "url": "https://github.com/adamhynek/dual_wield_block_vr",
+        "commit": "5a3f583961d96465cd46abb6055868d51e80f365"
+      },
+      "archive": {
+        "file": "Dual Wield Block VR 1.7.0-28456-1-7-0-1663724839.zip",
+        "sha256": "0e5480ce4f804ff2f12d0886efd71db406a069cfdd4794b3502859edc4650218"
+      }
+    },
+    {
+      "id": "archery",
+      "name": "Simple Realistic Archery VR",
+      "nexusModId": 28524,
+      "evidenceKind": "Local 1.26 PSC source",
+      "requirements": [
+        "Body Slots quiver zones and mutable placement",
+        "General controller inputs/gestures beyond grip+trigger",
+        "Ammo assignment/equip domain executor + exact outcome",
+        "Coherent body/hand probes"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "Simple Realistic Archery VR-28524-1-26-1617578073.7z",
+        "sha256": "f4c0ad93d32ec3e992a8a9913c35f0786deeb5412f2be732eb4b008503fe0117"
+      }
+    },
+    {
+      "id": "pull-arrows",
+      "name": "Pull Arrows VR - Immersive Extraction",
+      "nexusModId": 169833,
+      "evidenceKind": "Local 2.0 archive has no text/source; primary Nexus description/changelog only",
+      "requirements": [
+        "Generation-bound NPC/body and embedded-attachment endpoints",
+        "Constraint/resistance/release mechanics under HIGGS",
+        "WTVR/arrow identity and exact-once extraction receipts",
+        "Anatomical touch/haptics"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "Pull Arrows VR 169833 2.0.0 2026-07-12T12-24Z Ae46W7BnM.zip",
+        "sha256": "c5fc8a5db0d3739e11c1ac9749943717908c4857a2247104d9ad2a369f0cf02a"
+      }
+    },
+    {
+      "id": "smithing",
+      "name": "Immersive Smithing",
+      "nexusModId": 72298,
+      "evidenceKind": "Local 1.0.5 PSC source",
+      "requirements": [
+        "Owned hand/held-object grab-mode policy",
+        "Coherent hand/node/contact observations",
+        "Tool/world support and haptic primitives",
+        "Confirmed item/recipe transfer domain executor"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "1_Immersive Smithing 1.0.5-72298-1-0-5-1723108922.zip",
+        "sha256": "142c3b245329e7b259e4a9dc58c0f3b7bd31215e936d8fa2520135e1c3e6eafb"
+      }
+    },
+    {
+      "id": "body-pouches",
+      "name": "Body Pouches VR",
+      "nexusModId": 194796,
+      "evidenceKind": "Local 0.2.0 archive + owner canonical public source separately known",
+      "requirements": [
+        "Dynamic equipment-supplied Body Slots templates/instances/config/visuals",
+        "Confirmed held potion and inventory assignment receipts",
+        "HIGGS input/session routing",
+        "Saved instance identities"
+      ],
+      "source": {
+        "url": "https://github.com/Vhodnoylogin/body-pouches/tree/0.2.0",
+        "status": "Author-owned release baseline; earlier detailed audit is in the implementation ledger"
+      },
+      "archive": {
+        "file": "Body Pouches 0.2.0 194796 0.2.0 2026-10-10T21-50Z uhRBKsNO4.7z",
+        "sha256": "3835c5dc9c8424056ee139633fd0253227409fd1a3b783241ccfc5406876647e"
+      }
+    },
+    {
+      "id": "lockpicking",
+      "name": "VR Physical Lockpicking",
+      "nexusModId": 196953,
+      "evidenceKind": "Local 1.0.1 README/config + current public source; Nexuscurrent1.1.0 separately noted",
+      "requirements": [
+        "Two-hand session begun by game activation, not fake button",
+        "Full input/cancel controls + post-session held-button drain",
+        "Hand presentation/visibility lease",
+        "Coherent unpaused/paused hand pose",
+        "Owned haptic streaming",
+        "Tool/endpoint constraint goals"
+      ],
+      "source": {
+        "url": "https://github.com/Stanislavsonder/SkyrimVR-PhysicalLockpicking",
+        "commit": "880a3a02f5e2a7dbb8ffc533e618712225bb29e7"
+      },
+      "archive": {
+        "file": "VR Physical Lockpicking 196953 1.0.1 2026-10-27T02-57Z 4t2yDc4SQ.zip",
+        "sha256": "fecdbafb3d30744877648e2ade76061e1d94b9e66348cc4ddd8d50b626687e15"
+      }
+    },
+    {
+      "id": "truewield",
+      "name": "TrueWieldVR",
+      "nexusModId": 191123,
+      "evidenceKind": "Local 1.2.0 richly documented INI/installer; native C++ unavailable",
+      "requirements": [
+        "Coherent item physical mass/inertia/COM/grip range and measured motion",
+        "Declarative per-hand motor/impedance/gravity goals",
+        "Independent secondary grip transform under shared two-hand use",
+        "Temporary/persistent grip overrides with observed commitment",
+        "General multi-tap/hold input",
+        "Precommit numeric melee damage scaling or domain damage executor"
+      ],
+      "source": {
+        "status": "Native C++ source not inspected; supplied Papyrus/readme/configuration or primary author description only"
+      },
+      "archive": {
+        "file": "TrueWieldVR 1.2.0 191123 1.2.0 2026-10-03T00-50Z XnIqaC6ha.zip",
+        "sha256": "eaa8f1c61a90ba1bba0bd30ce0dcff3808b9d2253f96e79fc796c391d6515521"
+      }
+    },
+    {
+      "id": "climbing",
+      "name": "VR Climbing - Aelove Ver.",
+      "nexusModId": 170321,
+      "evidenceKind": "Local 0.11.3 INI + prior public C++ snapshot",
+      "requirements": [
+        "Owned world support and continuous one/two-hand sessions",
+        "Grant-composed scoped admission/secondary-grab policies",
+        "Hand target/physical support observations",
+        "Generation-bound moving/NPC support if enabled",
+        "Haptics and cancellation"
+      ],
+      "source": {
+        "url": "https://github.com/AeloveRim/vr-climbing",
+        "status": "Retained earlier source snapshot, not asserted identical to local 0.11.3"
+      },
+      "archive": {
+        "file": "VR Climbing - Aelove Version 170321 0.11.3 2026-09-19T22-42Z vlGiB9you.7z",
+        "sha256": "d767ee3b630160780ae248c05794c59c6cf90ded9078480a50c81cf2a771ce88"
+      }
+    }
+  ]
+}

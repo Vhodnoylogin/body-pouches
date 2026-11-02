@@ -604,6 +604,8 @@ A climbing support point belongs to the climbing action and reserves the named h
 
 These published mods were used as concrete requirements for ABI expressiveness. They remain external consumers; their gameplay does not become framework logic. PPB now has its own provider role above, so its geometry/contact layer is part of the proposed foundation rather than merely another consumer.
 
+The sample is illustrative, not an allowlist: the shared contracts target any Skyrim VR mod within their declared capabilities. The [expanded consumer contract review](consumer-contract-matrix.md) examines twenty varied mods, including cases where no direct integration is needed, and separates evidence, required capabilities and consumer-owned gameplay.
+
 | Consumer | Requirement on the shared foundation |
 |---|---|
 | [Body Pouches VR](https://www.nexusmods.com/skyrimspecialedition/mods/194796) | Inventory-backed potion selection, persistent configurable slots and wearable bags, coherent release/zone observations, confirmed handover and independent slot previews |

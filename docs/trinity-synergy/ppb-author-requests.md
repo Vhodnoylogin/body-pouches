@@ -1,0 +1,46 @@
+# PPB: proposals for discussion with telord
+
+Research checkpoint: 2 November 2026, public PPB source at [`e26b4eb`](https://github.com/Telord72612/Precision-Physic-Bodies/tree/e26b4ebc8061e8736b344e4f3e9216dea9254747). These are discussion points, not a message sent to the author, an agreed migration or a claim that the supporting HIGGS/PLANCK services are ready in game. The [provider audit](ppb-provider-audit.md) records the evidence and limits. The [maintained concept](concept-en.md) defines the shared responsibilities.
+
+The intended benefit is to let other mods ask **which anatomical surface was touched, by what, and with what evidence**, without recreating PPB's fitting or inspecting Havok objects. PPB would retain anatomical fitting, region classification, touch interpretation and its gameplay features. HIGGS and PLANCK would provide the physical publication and actuation services that PPB could choose to use.
+
+## Contents
+
+- [First: a small, independently useful public API extension](#first-a-small-independently-useful-public-api-extension)
+- [Then: integration when the physical owners can support it](#then-integration-when-the-physical-owners-can-support-it)
+- [Optional extensions to discuss separately](#optional-extensions-to-discuss-separately)
+- [What we should prepare on our side](#what-we-should-prepare-on-our-side)
+
+## First: a small, independently useful public API extension
+
+1. **Removable, owned touch subscriptions.** Could a new API revision return a subscription token and provide nonblocking removal with a clear drainage contract? After drainage, PPB must no longer call the callback or access its context. Please define callback phase/thread, permitted reentrancy and teardown/reset behavior. The current `AddTouchCallback` has no matching public removal. This would make existing touch observations safer for consumers even without the wider synergy.
+
+2. **One coherent copied geometry view.** Could consumers copy an actor's supported anatomical regions and all their child shapes from one published revision, with a required-capacity result? Include world/actor-model/body/shape-child identity or generations, geometry revision, sampling phase/time, coordinate space and units. Avoid requiring a consumer to join a live `ChildCount` with separately resolved `ReadCapsule` calls during actor/model replacement. Identifiers may be opaque provider tokens; consumers do not need raw engine pointers. The requested snapshot should describe geometry actually applied to physics, with any proposed but unapplied fit identified separately.
+
+3. **Correlated contact and lifecycle evidence.** Could copied touch records identify the geometry revision, source hand/part generation and target region/child, and expose explicit endings when an actor, model, world or source is replaced? Please preserve the distinction between an engine contact and a geometric proximity fallback, and between raw contacts and dwell/grouped digest events. Where PLANCK can supply a shared hit identifier, optional correlation would help a consumer join anatomy to a physical hit without treating every touch as damage.
+
+4. **Explicit capabilities and coverage.** Could API negotiation identify supported shapes, source kinds and target classes, including NPCs, inactive corpses and the player's own body separately? Document whether a roster omission means unsupported, unavailable, filtered out or simply no current touch. We have not established player-self target coverage from the current NPC API, and would not ask Body Slots to rely on it without an explicit supported path.
+
+These can be additive tables or a new negotiated revision. Existing clients should keep their current ABI and touch/digest semantics. The implementation approach is for discussion; these requests describe the contract rather than prescribe class structure.
+
+## Then: integration when the physical owners can support it
+
+5. **Let PPB describe hand parts while HIGGS applies them.** Would you be open to an optional backend in which PPB submits its fitted, articulated hand-part data to HIGGS? The current geometry includes four independently tracked finger boxes per hand in addition to HIGGS's palm. HIGGS would need to support that actual topology, canonical part attribution, sample timing, collision policy, world changes and applied results. PPB should not have to replace those eight boxes with one whole-hand box or lose its fitting. This is a service we must provide in HIGGS before proposing removal of PPB's current actuator.
+
+6. **Let PPB fit NPC surfaces while PLANCK publishes the changes.** Would you consider submitting bounded geometry proposals for the existing body/list children to PLANCK, with an expected revision and an applied/rejected result? PLANCK would own safe application under its graph/world phase, private shape copies, aggregate bounds, disabled-child state and cleanup. PPB would retain the anatomical map and fitting calculations. Most current PPB capsules are children of compound list shapes: a direct-capsule-only endpoint is insufficient. We must complete and qualify that service on the PLANCK side first.
+
+7. **Replace overlapping hooks and global settings with scoped requests.** Which precise pose, pivot and controller operations does PPB need from PLANCK, and which grab/finger/collision policies does it need from HIGGS? We would like to replace temporary global setting changes and competing drive hooks with actor/hand-scoped requests and copied observations. The current bounded PLANCK gain/weight/pivot API is only part of that requirement; it does not reproduce PPB's full pose-conforming pipeline. PPB's push, walking, scene and equipment rules can remain its own consumers of those services.
+
+Adoption should be capability-negotiated and incremental. A backend must have exactly one physical writer for each registered actor/body/hand part, and must not silently run both the legacy and shared actuator. There is no request to drop support for current released HIGGS or PLANCK before an adequate replacement exists.
+
+## Optional extensions to discuss separately
+
+- **Player-body anatomical anchors.** Would a read-only, generation-aware player-body surface view be useful and feasible? It could let Body Slots anchor a zone to an anatomical region. Body Slots would still own the zone, persistence, customization and interaction events. This is a new capability question, not a claim that current NPC fitting already supplies it.
+- **Finger and non-capsule surface topology.** If PPB intends to expose more body parts or shapes, a shape-kind capability and stable part/child identifiers would let consumers opt in without hardcoding the current layout or capsule count.
+- **Minimal examples and fixtures.** A small copied-data consumer and documented reset/unsubscribe example would make the ABI easier to adopt. Fixtures can distinguish touch, proximity and damage and demonstrate a model replacement without stale anatomical references.
+
+## What we should prepare on our side
+
+We can offer AI-assisted source analysis, draft additive API changes, example consumers and regression fixtures for the author's review. The next useful concrete exchange is a short contract review: which requests match PPB's intended scope, which are already available through a path we missed, and what should change before implementation.
+
+Our responsibilities are to supply the missing HIGGS articulated-part and scoped-policy services, PLANCK compound-geometry and needed drive contracts, and actual native/game qualification before claiming a PPB migration. We should bring a small working consumer and a reviewable diff, rather than ask telord to implement our providers. No CommonLib migration, PPB asset reuse or private VRIK source is required for this API discussion.
