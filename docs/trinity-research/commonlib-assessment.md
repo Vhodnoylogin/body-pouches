@@ -1,6 +1,8 @@
 # CommonLib assessment for synergy implementation
 
-Updated: 2 November 2026. Scope: the second level of the [synergy concept](../trinity-synergy/concept-en.md), moving engine addresses and shared technical operations behind verified CommonLib interfaces. The owner resumed HIGGS/PLANCK API and Body Slots implementation; CommonLib extension/migration remains a later stage. Earlier binding audits below retain their stated versions and qualification limits.
+Updated: 3 November 2026. Scope: the second level of the [synergy concept](../trinity-synergy/concept-en.md), moving engine addresses and shared technical operations behind verified CommonLib interfaces. The owner resumed HIGGS/PLANCK API and Body Slots implementation; CommonLib extension/migration remains a later stage. Earlier binding audits below retain their stated versions and qualification limits.
+
+The arbitrary-region action continuation adds no engine address or missing CommonLib call. HIGGS's one-shot authorized-dispatch fence and Body Slots's source-aware spatial eligibility, callback drainage and provider action binding are service responsibilities. They use existing copied hand observations, the existing safe update boundary, standard synchronization and the shared pure geometry kernel. Numerical/transform helpers remain possible stage-two audit candidates; input ownership, source freshness policy, dwell and action-outcome semantics do not become CommonLib policy. No library implementation or address mapping changes in this continuation.
 
 ## Current delivered runtime assessment — 2 November 2026
 
