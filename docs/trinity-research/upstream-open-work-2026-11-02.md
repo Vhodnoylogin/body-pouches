@@ -17,7 +17,7 @@ Both forks have issue tracking disabled. Empty fork queues do not establish abse
 
 The input/handover intent overlaps the current [HIGGS hand contracts](https://github.com/Vhodnoylogin/higgs/blob/e716f8bb9a7c2f7a5d4740866362e5edcb37715a/include/higgshandapi.h), sessions, haptics and typed receipts. Its proposed ownership is outdated: zone/content registration belongs to **Body Slots**, while HIGGS owns hand state/use, input and physical possession; VRIK owns body/virtual poses, PLANCK NPC physics and PPB anatomy. Reading posed game nodes after VRIK is useful, but is not itself a VRIK virtual-pose contract or permission for another skeletal driver.
 
-**Recommendation:** retain it as a requirements discussion. Any separately authorized follow-up should present the [current role split](concept-en.md#responsibilities) and copied lifecycle contracts, rather than adding another zone registry or raw-pointer API to HIGGS. Do not close it as implemented upstream; the [implementation ledger](implementation-status.md) distinguishes delivered source from remaining work and acceptance.
+**Recommendation:** retain it as a requirements discussion. Any separately authorized follow-up should present the [current role split](../trinity-synergy/concept-en.md#responsibilities) and copied lifecycle contracts, rather than adding another zone registry or raw-pointer API to HIGGS. Do not close it as implemented upstream; the [implementation ledger](../trinity-synergy/implementation-status.md) distinguishes delivered source from remaining work and acceptance.
 
 ## HIGGS PR6: CustomMenu compatibility
 
@@ -43,4 +43,4 @@ No outreach, merge, patch application, installation or game test was performed. 
 
 ## Saved development continuation
 
-The later [checkpoint](checkpoint-2026-11-02.md) implements context-aware input handoff rather than merely including PR6, and adds a HIGGS-owned bilateral cosmetic-evidence service with PLANCK forwarding. The original upstream review above retains its date/scope. No upstream item was changed; no feedback consumer or game-qualified issue2 fix is claimed.
+The later [checkpoint](https://github.com/Vhodnoylogin/body-pouches/blob/6f03300baa74141c3cd8d5052e5d273c73ae237d/docs/trinity-synergy/checkpoint-2026-11-02.md) implements context-aware input handoff rather than merely including PR6, and adds a HIGGS-owned bilateral cosmetic-evidence service with PLANCK forwarding. The original upstream review above retains its date/scope. No upstream item was changed; no feedback consumer or game-qualified issue2 fix is claimed.

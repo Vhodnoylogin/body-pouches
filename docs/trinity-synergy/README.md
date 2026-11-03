@@ -1,34 +1,15 @@
-# HIGGS VRIK PLANCK PPB and Body Slots synergy concept
+# VR interaction synergy
 
-This directory is the single source of the cooperation concept and its two
-language versions:
+The single maintained concept of cooperation between HIGGS, VRIK, PLANCK, PPB and Body Slots lives here in two aligned language versions:
 
 - [English concept](concept-en.md)
 - [Русская концепция](concept-ru.md)
-- [Development checkpoint — 3 November 2026](checkpoint-2026-11-03.md): current source, native/offline checks and region research.
-- [Paused checkpoint — 2 November 2026](checkpoint-2026-11-02.md): saved source, native evidence and next steps.
-- [Области взаимодействия и стандартизация слотов](interaction-regions-review-ru.md): исследование всех20модов, различия геометрии/действий и предложение общего контракта.
-- [Implementation status](implementation-status.md): delivered code, verification and remaining gaps.
-- [CommonLib assessment](commonlib-assessment.md): current technical reuse and extension candidates for the second stage.
-- [Consumer requirements](consumer-contract-matrix.md): an illustrative set of VR interactions used to assess API expressiveness.
-- [Практическая проверка API на 20 модах](consumer-api-review-ru.md): what each consumer can simplify and which contracts still prevent migration.
-- [Wearable physics and equipment modes](wearables-and-equipment-modes.md): moving bags/scabbards, original VRIK cross-hand behavior and the original-weapon/original-shield research boundary.
-- [Open upstream issues and PRs](upstream-open-work-2026-11-02.md): the 2 November review of existing proposals, fixes and additional API requirements.
-- [PPB provider audit](ppb-provider-audit.md) and [proposals for telord](ppb-author-requests.md) ([русская версия](ppb-author-requests-ru.md)): source-backed integration requirements, explicit provider responsibilities and a separate, unsent discussion agenda.
+- [Implementation status](implementation-status.md): delivered source, verification limits and remaining work.
 
-Body Pouches intends to migrate to this architecture. The proposal is hosted
-here because Body Pouches is maintained by its owner independently of the
-framework repositories. Hosting the concept does not mean the new services are
-implemented or agreed with the framework authors.
+Body Pouches hosts the concept because its author independently maintains this mod and intends to adopt the shared services. The concept describes the target architecture; hosting it does not imply agreement from other mod authors or completed implementation.
 
-[Body Pouches 0.2.0 is released on Nexus](https://www.nexusmods.com/skyrimspecialedition/mods/194796).
-Both concepts now describe how shared services could simplify its integration
-and support persistent configurable slots, independent previews and wearable
-bags. Those extensions are proposals, not features of the released mod.
+HIGGS owns hand use, input and grants; Body Slots owns logical interaction regions and slot mechanics; VRIK supplies the body and virtual-hand poses; PPB supplies anatomical geometry and fitting; PLANCK owns live NPC physics, physical contacts and hits. Consumer mods retain their gameplay rules. A slot is a named interaction region with offered actions; content, visuals and persistence are optional.
 
-Edit the full concept only here and keep both languages aligned. Framework
-repositories contain short summaries and their own architectural requirements,
-with links to this directory; they do not maintain copies of the full concept.
-The function and event declarations are illustrative pseudo-ABI, not a released SDK.
+The concept's declarations are illustrative pseudo-ABI. Implemented, negotiated contracts are documented in each provider's source repository. Framework repositories link here and do not maintain copies of the full concept.
 
-PPB supplies anatomical geometry, body fitting and touch evidence in the proposed architecture. HIGGS owns hand use, PLANCK live NPC physics, VRIK body pose and Body Slots all slot mechanics. The public PPB API already provides NPC capsule/contact observations; player-body surfaces and coordinated physical publication remain proposed extensions.
+Source-backed [research and consumer assessments](../trinity-research/README.md), including PPB proposals and the CommonLib stage-two inventory, are kept separately. Superseded checkpoints and the earlier VRIK integration presentation remain available in Git history; they are not competing descriptions of the current concept.

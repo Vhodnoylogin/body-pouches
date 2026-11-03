@@ -2,7 +2,7 @@
 
 Research checkpoint: 2 November 2026. A read-only fetch of the author's [public repository](https://github.com/Telord72612/Precision-Physic-Bodies) left `main` at `e26b4ebc8061e8736b344e4f3e9216dea9254747`. Source is MIT; native dependencies and third-party assets remain separate. No PPB source change, closed-code decompilation, installation, author outreach or game test was performed.
 
-This audit supports the [maintained concept](concept-en.md), the [consumer requirements](consumer-contract-matrix.md) and the [proposals for telord](ppb-author-requests.md). It is not an implementation-status claim. Exact source hashes and published native bindings are recorded in [the provenance dataset](ppb-source-and-bindings.json).
+This audit supports the [maintained concept](../trinity-synergy/concept-en.md), the [consumer requirements](consumer-contract-matrix.md) and the [proposals for telord](ppb-author-requests.md). It is not an implementation-status claim. Exact source hashes and published native bindings are recorded in [the provenance dataset](ppb-source-and-bindings.json).
 
 ## Contents
 

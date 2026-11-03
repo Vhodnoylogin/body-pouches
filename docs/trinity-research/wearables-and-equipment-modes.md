@@ -1,6 +1,6 @@
 # Wearable physics and effective equipment modes
 
-Research checkpoint: 2 November 2026. These additional consumer cases extend the [twenty-mod review](consumer-contract-matrix.md). They assess mechanisms and required contracts, not compatibility or a port of the referenced releases. No game experiment was performed. The maintained concept remains [English](concept-en.md) / [Russian](concept-ru.md).
+Research checkpoint: 2 November 2026. These additional consumer cases extend the [twenty-mod review](consumer-contract-matrix.md). They assess mechanisms and required contracts, not compatibility or a port of the referenced releases. No game experiment was performed. The maintained concept remains [English](../trinity-synergy/concept-en.md) / [Russian](../trinity-synergy/concept-ru.md).
 
 ## Moving bags and scabbards
 

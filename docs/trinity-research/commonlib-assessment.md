@@ -1,10 +1,10 @@
 # CommonLib assessment for synergy implementation
 
-Updated: 2 November 2026. Scope: the second level of the [synergy concept](concept-en.md), moving engine addresses and shared technical operations behind verified CommonLib interfaces. The owner resumed HIGGS/PLANCK API and Body Slots implementation; CommonLib extension/migration remains a later stage. Earlier binding audits below retain their stated versions and qualification limits.
+Updated: 2 November 2026. Scope: the second level of the [synergy concept](../trinity-synergy/concept-en.md), moving engine addresses and shared technical operations behind verified CommonLib interfaces. The owner resumed HIGGS/PLANCK API and Body Slots implementation; CommonLib extension/migration remains a later stage. Earlier binding audits below retain their stated versions and qualification limits.
 
 ## Current delivered runtime assessment — 2 November 2026
 
-HIGGS `374173095fa72d8005924b2fc6c6d2db381db04d`, PLANCK `28eb8a7f7247a5639a9f2cfcaa02147f61f8e1b5` and Body Slots `909c0c328ae6781baece39690c3db8fb51519e88` now have published source and complete source-pinned native builds; see the [implementation ledger](implementation-status.md). This resolves the external SDK/linkage blocker. It does not migrate HIGGS/PLANCK to CommonLib, qualify running-game behavior or implement the complete concept.
+HIGGS `374173095fa72d8005924b2fc6c6d2db381db04d`, PLANCK `28eb8a7f7247a5639a9f2cfcaa02147f61f8e1b5` and Body Slots `909c0c328ae6781baece39690c3db8fb51519e88` now have published source and complete source-pinned native builds; see the [implementation ledger](../trinity-synergy/implementation-status.md). This resolves the external SDK/linkage blocker. It does not migrate HIGGS/PLANCK to CommonLib, qualify running-game behavior or implement the complete concept.
 
 Body Slots already consumes CommonLibSSE-NG v3.7.0 (`c4ab853d095e81e3390b282d7ba01ab2f24ebf25`) in its independent adapter. That build pin is distinct from the 9.1.0 fork inspected below. The refreshed address inventory names the final published provider inputs and preserves the same 700 declarations/537 addresses, including 158 shared addresses: 126 existing-wrapper candidates, nine metadata-only matches and 565 extension-or-further-audit entries. Those last entries are not a count of missing CommonLib methods.
 
@@ -144,7 +144,7 @@ Current priorities are the standalone Body Slots author foundation, concept-firs
 
 ## Upstream changes reviewed on 26 October
 
-VRIK 0.8.8 adds controller/input cases and adjusts externally supplied finger ranges without adding an engine-access requirement to the standalone Body Slots registry. Current PLANCK Git fixes graph/world cleanup and two lock-order inversions. These reinforce the second-stage candidates for verified scene/physics wrappers and consistent graph/world lock ordering. PLANCK's actor-indexed ragdoll map, its tracking lifecycle and VRIK's input/body policy remain mod responsibilities. The review does not establish that a new CommonLib API is required; existing wrappers should be checked first when migration is undertaken. No CommonLib method, address binding, dependency or implementation was changed. See the [update assessment](upstream-update-2026-10-26.md) for exact scope and unqualified runtime boundaries.
+VRIK 0.8.8 adds controller/input cases and adjusts externally supplied finger ranges without adding an engine-access requirement to the standalone Body Slots registry. Current PLANCK Git fixes graph/world cleanup and two lock-order inversions. These reinforce the second-stage candidates for verified scene/physics wrappers and consistent graph/world lock ordering. PLANCK's actor-indexed ragdoll map, its tracking lifecycle and VRIK's input/body policy remain mod responsibilities. The review does not establish that a new CommonLib API is required; existing wrappers should be checked first when migration is undertaken. No CommonLib method, address binding, dependency or implementation was changed. See the [update assessment](https://github.com/Vhodnoylogin/body-pouches/blob/6f03300baa74141c3cd8d5052e5d273c73ae237d/docs/trinity-synergy/upstream-update-2026-10-26.md) for exact scope and unqualified runtime boundaries.
 
 
 ## Interaction-region review — 3 November 2026
@@ -152,3 +152,9 @@ VRIK 0.8.8 adds controller/input cases and adjusts externally supplied finger ra
 The [region/slot proposal](interaction-regions-review-ru.md) adds a stage-two audit candidate: reusable pure point/shape distance, finite-cylinder and interval-crossing calculations, with explicit units and coordinate frames, plus the existing typed node/transform/physics query wrappers. Check what the current CommonLib already supplies before proposing an extension. Region registration, provider lifetimes, dwell/action policy, grants, user priorities and consumer gameplay remain service responsibilities. No CommonLib implementation changes in this review.
 
 HIGGS source `befa09a9e2e1457f00fc1054e4bad6809c8524ce` adds only the engine-independent nonbutton priority contract and its native build/project wiring relative to the prior address inventory. It introduces no new engine relocation or address. The700record address classification therefore remains unchanged; its source head is refreshed separately from any future geometry-library audit.
+
+## Accepted interaction-region standard — 3 November 2026
+
+The canonical bilingual concept now adopts the region/slot standard. Body Slots begins the implementation with one shared, engine-independent signed-distance function for sphere/capsule/box/finite-cylinder point tests, reused by existing slot containment and the new region hysteresis/dwell evaluator. This adds no engine address or relocation. The registry remains the source of client-lease existence and save generation; the region service observes these through narrow private getters rather than owning another save scope.
+
+For stage two, audit existing CommonLib geometry and transform facilities before extracting any missing pure distance helper. Region definitions, observed-pair history, dwell thresholds, user customization, grants and gameplay do not move into CommonLib. PPB anatomy/fitting and HIGGS/PLANCK physical ownership remain unchanged. No CommonLib method, source, address binding or dependency was modified.

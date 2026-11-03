@@ -2,7 +2,7 @@
 
 This review uses twenty different mods to test the expressiveness of the cooperation concept. They are examples, not an allowlist: any Skyrim VR mod should be able to use the shared services within their advertised capabilities. Passing this sample would not establish universal compatibility.
 
-This is a requirements review, not a claim that the APIs or consumer migrations are complete. The [English concept](concept-en.md), [Russian concept](concept-ru.md) and [implementation ledger](implementation-status.md) retain their separate purposes. Provider source, actual consumer ports, native builds and game acceptance must be reported independently.
+This is a requirements review, not a claim that the APIs or consumer migrations are complete. The [English concept](../trinity-synergy/concept-en.md), [Russian concept](../trinity-synergy/concept-ru.md) and [implementation ledger](../trinity-synergy/implementation-status.md) retain their separate purposes. Provider source, actual consumer ports, native builds and game acceptance must be reported independently.
 
 ## Contents
 
@@ -58,7 +58,7 @@ The strongest counterexamples are composition and missing physical/domain author
 - Full trigger masking cannot substitute for Stop Trigger's narrow weapon-draw policy. Fresh UI controls, pre-boundary held-button drainage, post-UI drainage and gameplay action admission require one coherent context boundary. CustomMenu detection alone does not provide it.
 - Own weapon/shield contact requires exact bilateral ownership and relative velocity at one contact point, including angular motion. Audio/haptic admission is independent of solver collision and hit/damage policy. A copied touch notification is not proof that a clang reached the device.
 
-These findings guide the next ABI changes. Published source, consumer ports, native builds and live acceptance remain separately recorded in the [implementation ledger](implementation-status.md).
+These findings guide the next ABI changes. Published source, consumer ports, native builds and live acceptance remain separately recorded in the [implementation ledger](../trinity-synergy/implementation-status.md).
 
 ## Requirements shared across consumers
 
@@ -75,4 +75,4 @@ These findings guide the next ABI changes. Published source, consumer ports, nat
 
 Describe its hand resources, input or non-input start, observations, requested physical/equipment operations and domain executor. Map each to a negotiated capability with a lifetime, phase, coordinate space and terminal outcome. Exercise the combination against a competing consumer, replacement/load invalidation and partial failure; independent successful demonstrations do not prove composition.
 
-If a required shared operation is absent, record the gap and extend the responsible provider's versioned contract. If it is specific gameplay, keep it in a domain executor. A new consumer does not justify another hidden hand driver, a magic unknown-state detector or a growing list of consumer-specific hand states. Report implementation and qualification in the [implementation ledger](implementation-status.md), rather than infer compatibility from this matrix.
+If a required shared operation is absent, record the gap and extend the responsible provider's versioned contract. If it is specific gameplay, keep it in a domain executor. A new consumer does not justify another hidden hand driver, a magic unknown-state detector or a growing list of consumer-specific hand states. Report implementation and qualification in the [implementation ledger](../trinity-synergy/implementation-status.md), rather than infer compatibility from this matrix.
