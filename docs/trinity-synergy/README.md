@@ -5,6 +5,7 @@ language versions:
 
 - [English concept](concept-en.md)
 - [Русская концепция](concept-ru.md)
+- [Development checkpoint — 3 November 2026](checkpoint-2026-11-03.md): current source, native/offline checks and region research.
 - [Paused checkpoint — 2 November 2026](checkpoint-2026-11-02.md): saved source, native evidence and next steps.
 - [Области взаимодействия и стандартизация слотов](interaction-regions-review-ru.md): исследование всех20модов, различия геометрии/действий и предложение общего контракта.
 - [Implementation status](implementation-status.md): delivered code, verification and remaining gaps.
