@@ -145,3 +145,10 @@ Current priorities are the standalone Body Slots author foundation, concept-firs
 ## Upstream changes reviewed on 26 October
 
 VRIK 0.8.8 adds controller/input cases and adjusts externally supplied finger ranges without adding an engine-access requirement to the standalone Body Slots registry. Current PLANCK Git fixes graph/world cleanup and two lock-order inversions. These reinforce the second-stage candidates for verified scene/physics wrappers and consistent graph/world lock ordering. PLANCK's actor-indexed ragdoll map, its tracking lifecycle and VRIK's input/body policy remain mod responsibilities. The review does not establish that a new CommonLib API is required; existing wrappers should be checked first when migration is undertaken. No CommonLib method, address binding, dependency or implementation was changed. See the [update assessment](upstream-update-2026-10-26.md) for exact scope and unqualified runtime boundaries.
+
+
+## Interaction-region review — 3 November 2026
+
+The [region/slot proposal](interaction-regions-review-ru.md) adds a stage-two audit candidate: reusable pure point/shape distance, finite-cylinder and interval-crossing calculations, with explicit units and coordinate frames, plus the existing typed node/transform/physics query wrappers. Check what the current CommonLib already supplies before proposing an extension. Region registration, provider lifetimes, dwell/action policy, grants, user priorities and consumer gameplay remain service responsibilities. No CommonLib implementation changes in this review.
+
+HIGGS source `befa09a9e2e1457f00fc1054e4bad6809c8524ce` adds only the engine-independent nonbutton priority contract and its native build/project wiring relative to the prior address inventory. It introduces no new engine relocation or address. The700record address classification therefore remains unchanged; its source head is refreshed separately from any future geometry-library audit.

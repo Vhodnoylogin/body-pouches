@@ -121,7 +121,7 @@
       },
       "apiReview": {
         "simplification": "Shared hand arbitration and live footprint transitions remove climbing-specific reservation patches.",
-        "remainingBoundary": "Native harvest awards, staged visuals and nonbutton priority rounds are separate.",
+        "remainingBoundary": "Nonbutton priority rounds and live footprint transitions are implemented in HIGGS; native harvest awards, staged visuals, scoped collision and actual consumer adoption remain.",
         "compositionScenario": "Catch an insect one-handed, add then release its second pinch while another consumer wants that hand.",
         "consumerMigratedByThisReview": false,
         "scenarioGameQualified": false
@@ -517,12 +517,13 @@
       },
       "apiReview": {
         "simplification": "Owned supports and hand-footprint transitions replace global HIGGS reserve/restore.",
-        "remainingBoundary": "Locomotion/fall/stamina, rendered targets and nonbutton proposal priority remain consumer/integration work.",
+        "remainingBoundary": "Nonbutton proposal priority and live footprint transitions are implemented in HIGGS; locomotion/fall/stamina, rendered targets and actual consumer adoption remain.",
         "compositionScenario": "Add second wall grip while harvesting wants it, then lose moving/NPC endpoint without losing first authority.",
         "consumerMigratedByThisReview": false,
         "scenarioGameQualified": false
       }
     }
   ],
-  "assessmentPolicy": "Consumer-driven source/API criticism, not a port or game compatibility result. Proposed scenarios are acceptance targets, not recorded passes. See implementation-status.md for published source and evidence."
+  "assessmentPolicy": "Consumer-driven source/API criticism, not a port or game compatibility result. Proposed scenarios are acceptance targets, not recorded passes. See implementation-status.md for published source and evidence.",
+  "implementationUpdateDate": "2026-11-03"
 }

@@ -6,6 +6,7 @@ language versions:
 - [English concept](concept-en.md)
 - [Русская концепция](concept-ru.md)
 - [Paused checkpoint — 2 November 2026](checkpoint-2026-11-02.md): saved source, native evidence and next steps.
+- [Области взаимодействия и стандартизация слотов](interaction-regions-review-ru.md): исследование всех20модов, различия геометрии/действий и предложение общего контракта.
 - [Implementation status](implementation-status.md): delivered code, verification and remaining gaps.
 - [CommonLib assessment](commonlib-assessment.md): current technical reuse and extension candidates for the second stage.
 - [Consumer requirements](consumer-contract-matrix.md): an illustrative set of VR interactions used to assess API expressiveness.

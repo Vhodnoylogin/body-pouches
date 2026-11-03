@@ -1,6 +1,18 @@
 # Synergy implementation status
 
-Updated: 2 November 2026. This ledger accompanies the [English concept](concept-en.md) and [Russian concept](concept-ru.md). Published source, native builds, consumer adoption and game acceptance are separate evidence levels. The bounded services below are delivered; the complete cooperation concept is not yet implemented.
+Updated: 3 November 2026. This ledger accompanies the [English concept](concept-en.md) and [Russian concept](concept-ru.md). Published source, native builds, consumer adoption and game acceptance are separate evidence levels. The bounded services below are delivered; the complete cooperation concept is not yet implemented.
+
+## Continuation — 3 November 2026
+
+The owner resumed the saved work. Body Slots is now [public development source](https://github.com/Vhodnoylogin/body-slots): main5619bda is a current landing page and feature75be908 contains the independent implementation/provenance note. A bounded all-history review classified the seven shared API headers as Body Slots contracts copied into its optional private VRIK consumer; no reconstructed VRIK implementation was identified. VRIK reconstruction remains private. Source visibility is separate from a runtime release and licensing.
+
+HIGGS development `befa09a9e2e1457f00fc1054e4bad6809c8524ce` adds [nonbutton HandUse proposal rounds](https://github.com/Vhodnoylogin/higgs/blob/befa09a9e2e1457f00fc1054e4bad6809c8524ce/docs/hand-use-proposals.md): user-priority/disjoint-hand selection, pending-no-authority, one-shot lifecycle and once-only main-phase notification. Independent review found and fixed expired notification after a slow preceding callback; the original/fixed reproduction and destructive-reentry checks are preserved. Full native build and binding/numerical checks pass with matching source pins. DLL1653248bytes, SHA256 `563a9cf663719c4f5cd2e03d06bd7023e7e12e9e06ddf63aaf21a112f2c14c49`. Official001 and existing negotiated tables retain their layouts.
+
+The independent equipment safety review completed328cases and expected-failure guard-removal controls. It does not implement compound cross-hand equipment transfer. PLANCK remains at28eb8a7f with no source changes today.
+
+The [interaction-region review](interaction-regions-review-ru.md) covers all20sample consumers and proposes a common spatial contract with optional slot content, NPC/world/transient regions, provider-owned surfaces and separate action authority. This adjacent research proposal does not replace the canonical bilingual concept or claim its generic region extensions are implemented. The [evidence index](interaction-regions-evidence.json) records source distinctions and unknown closed-DLL geometry.
+
+Body Slots content-observation and optional fresh-release storage work is being checked locally. Preliminary full native/5CTest/DLL checks passed, but independent review found reservation loss on local cancellation and bounded-history eviction. Those defects must be resolved before publishing that source/build as delivered. Body Pouches itself has not been ported. No game installation/start, consumer game qualification, CommonLib implementation or author outreach occurred.
 
 ## Saved continuation — 2 November 2026
 

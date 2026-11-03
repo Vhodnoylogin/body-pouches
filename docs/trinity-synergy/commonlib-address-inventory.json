@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "purpose": "CommonLib stage2 preparation only; no library implementation",
   "sources": {
-    "HIGGS": "374173095fa72d8005924b2fc6c6d2db381db04d",
+    "HIGGS": "befa09a9e2e1457f00fc1054e4bad6809c8524ce",
     "PLANCK": "28eb8a7f7247a5639a9f2cfcaa02147f61f8e1b5",
     "CommonLib": "a898f469851c464d05137bb74b069dd234897643",
     "AddressLibrary": "57568d0966d6fa09e04155367efa6eca58df7054"
@@ -18977,5 +18977,6 @@
       "dirty": false,
       "workingTreeChanges": []
     }
-  }
+  },
+  "sourceRefreshNote": "3November2026: nonbutton priority service adds no engine relocation; existing700records unchanged. Region math remains a future CommonLib audit, not implemented."
 }
