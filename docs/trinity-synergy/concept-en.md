@@ -280,8 +280,8 @@ Tracked controller, HIGGS resolved palm/grip and VRIK virtual hand are distinct 
 ```cpp
 // Optional VRIK pose service, acquired after SKSE PostLoad.
 struct IVrikPose001 {
-    virtual PoseStatus CopyFinalPose(const AnchorKey* keys, uint32_t count,
-        PoseStamp* stamp, WorldPose* poses) = 0;
+    virtual bool CopyFinalPose(const AnchorKey* keys, uint32_t count,
+        PoseStamp* stamp, WorldPose* poses) const = 0;
 };
 ```
 
@@ -289,7 +289,7 @@ A belt pouch needs the belt anchor and the reaching wrist from the same complete
 
 Keep the familiar SKSE message to the VRIK recipient and its pointer-returning discovery pattern. Give pose discovery its own message type and require an explicit supported reply before calling the single virtual method. An older provider can ignore the message. Existing clients can continue to request IVrikInterface001. A pouch can poll from its existing post-pose callback. This first interface needs no client registration or new subscriptions.
 
-This is a proposed observation contract, not a claim that released VRIK provides these methods. The inspected public 001 interface has no general GetHandPose method. An independent Body Slots adapter can observe available game nodes updated by VRIK, validating phase, coordinates, calibration and freshness; insufficient data makes the observation unavailable. New slots are designed without requiring VRIK changes or reconstructed code. Qualification of that adapter against a particular VRIK release remains separate work.
+The VRIK 0.8.8 game download and its separately published 0.8.7 interface archive expose different kinds of information. The native 001 header has 28 methods. Papyrus also exposes hand coordinates. Neither interface identifies an update in which the visible wrist orientation and the belt transform were both finalized. An independent Body Slots adapter can already read named skeleton nodes after the HIGGS post-VRIK update and withdraw the slot when a node is unavailable. Features requiring VRIK-certified pose timing can use a documented sampling point if the maintainer confirms one, or negotiate the optional query above. A simulated pouch needs the transform of its equipped mesh after simulation. Its observation has its own time and validity. [Published VRIK files](https://www.nexusmods.com/skyrimspecialedition/mods/23416?tab=files)
 
 ## PLANCK NPC physics and hits
 
@@ -326,6 +326,8 @@ Status RequestActorPolicy(ClientToken, const ActorPolicy*, Lease* outPolicy, Req
 
 }
 ```
+
+A pocket anchored to a named NPC bone only needs a read of the current body transform, its observation time and an identity that changes when the body is replaced. A reader can then stop offering the pocket or bind it again. It can do this without acquiring an attachment or subscribing to hits. A pose copied on demand is dated at the read; an earlier physics step needs its own timestamp.
 
 ### Physical hits
 
@@ -369,7 +371,7 @@ Status CopyShapeProposal(ClientToken, const ShapeFitQuery*, ShapeProposal* outPr
 }
 ```
 
-The physical owner is identified per world and body. In PPB 2.9 beta, an NPC can have a private physics world stepped by PPB workers. PPB publishes completed samples and invalidation for bodies it owns there. PLANCK validates requests against its own ragdoll bodies. A consumer joining observations across worlds needs both source identities, generations, units and comparable capture times. A pending worker step cannot supply a completed hand contact or a PLANCK hit. [PPB beta release notes](https://github.com/Telord72612/Precision-Physic-Bodies/releases/tag/V2.9.0-beta)
+The physical owner is identified per world and body. In PPB 2.9 beta, an NPC can have a private physics world stepped by PPB workers. Under this proposal, PPB would publish completed samples for the bodies it owns there and identify when those samples expire. The safe sampling point for 2.9 still needs confirmation from its author. PLANCK validates requests against its own ragdoll bodies. A consumer joining observations across worlds needs both source identities, generations, units and comparable capture times. A pending worker step cannot supply a completed hand contact or a PLANCK hit. [PPB beta release notes](https://github.com/Telord72612/Precision-Physic-Bodies/releases/tag/V2.9.0-beta)
 
 PPB computes proposed shape changes as data. In the target architecture, PLANCK validates and applies geometry to the NPC bodies it manages at its safe mutation phase; HIGGS does so for its hand/finger bodies. Requests carry the required model/body generations and geometry revision; the physical owner reports whether and when the change took effect. Each physical body has one publication/lifetime owner. PPB can fit and read back the applied shapes without installing another hand actuator, replacing the same body independently or changing another provider's global settings. This is a proposed integration boundary: current PPB also creates hand colliders and chains physical updates itself.
 
@@ -402,6 +404,8 @@ PPB's existing `slot` field addresses an anatomical body group, not a Body Slots
 Its [current touch contract](https://github.com/Telord72612/Precision-Physic-Bodies/blob/e26b4ebc8061e8736b344e4f3e9216dea9254747/INTEGRATION.md#L545) covers player-to-NPC contact on supported bodies. It does not promise complete player-body target geometry, NPC-to-NPC touch, custom surface registration or a shared physics-owner handover. Digest and raw reports are grouped and dwell-filtered; neither is a complete instantaneous per-capsule overlap set. Digest depth summarizes the visit, and callbacks follow the configured reporting rate. A new immediate observation/lifecycle contract must not silently replace those existing semantics. Coherent generations, subscription removal/reset, actor-specific surface identities and coordinated physical publication are extension candidates, not delivered services.
 
 PPB has a distinct role in the synergy, but a mod requires it only when it needs its anatomy or contact data. Body Slots keeps its own access volumes and does not require skin contact: a pouch opening may lie in front of the body. An optional anatomical anchor or body-fit adjustment can use PPB only where coverage is verified; player-body support must be added and qualified separately. Losing PPB invalidates dependent observations, not unrelated node-anchored slots. Morphbench can author and compare capsule geometry alongside slot placement; it does not become the in-game geometry or interaction owner.
+
+Two reads illustrate the boundary for PPB. A fitted capsule tells a mod where a surface lies, even when that capsule is disabled for collision at the current level of detail. A numbered touch scan tells it whether another observation has been published since the last poll. A contact flag retained from an earlier scan cannot establish which child shape was hit in a particular physics step. PPB can expose what it knows about anatomy and timing while HIGGS arbitrates a hand action and PLANCK interprets its own physical hits.
 
 ## Body Slots all slot mechanics
 

@@ -1,5 +1,7 @@
 # PPB: предложения для обсуждения с telord
 
+11 ноября автору переданы два предложения о чтении капсулы и завершённого сканирования. Ниже сохранены исследовательские вопросы от 2 ноября. [PR №3](https://github.com/Telord72612/Precision-Physic-Bodies/pull/3) · [Issue №4](https://github.com/Telord72612/Precision-Physic-Bodies/issues/4)
+
 Исследование от 2 ноября 2026 года основано на публичном исходном коде PPB [`e26b4eb`](https://github.com/Telord72612/Precision-Physic-Bodies/tree/e26b4ebc8061e8736b344e4f3e9216dea9254747). Это список для обсуждения, ещё не отправленный автору. Он не означает согласованного перехода или подтверждённой в игре совместимости. [Английская версия](ppb-author-requests.md), [исследование](ppb-provider-audit.md), [общая концепция](../trinity-synergy/concept-ru.md).
 
 ## Разделение ответственности

@@ -1,5 +1,7 @@
 # PPB: proposals for discussion with telord
 
+On 11 November the two proposed reads were submitted in [PR #3](https://github.com/Telord72612/Precision-Physic-Bodies/pull/3) and [issue #4](https://github.com/Telord72612/Precision-Physic-Bodies/issues/4). The list below records the broader research questions from 2 November.
+
 Research checkpoint: 2 November 2026, public PPB source at [`e26b4eb`](https://github.com/Telord72612/Precision-Physic-Bodies/tree/e26b4ebc8061e8736b344e4f3e9216dea9254747). These are discussion points, not a message sent to the author, an agreed migration or a claim that the supporting HIGGS/PLANCK services are ready in game. The [provider audit](ppb-provider-audit.md) records the evidence and limits. The [maintained concept](../trinity-synergy/concept-en.md) defines the shared responsibilities.
 
 The intended benefit is to let other mods ask **which anatomical surface was touched, by what, and with what evidence**, without recreating PPB's fitting or inspecting Havok objects. PPB would retain anatomical fitting, region classification, touch interpretation and its gameplay features. HIGGS and PLANCK would provide the physical publication and actuation services that PPB could choose to use.
