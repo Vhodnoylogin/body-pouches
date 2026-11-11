@@ -2,6 +2,14 @@
 
 Updated: 11 November 2026. This ledger accompanies the [English concept](concept-en.md) and [Russian concept](concept-ru.md). The concept describes the target architecture; source implementation, native linking, consumer adoption and running-game acceptance are separate evidence levels.
 
+## Contract completeness review, resumed 11 November 2026
+
+The earlier HIGGS and PLANCK pull requests were closed without merging after owner review. They implemented two partial examples. Their status and narrow scope are preserved below as historical evidence. New complete-provider proposals are being prepared locally against current author heads HIGGS `93bf67b` and PLANCK `aed524a`, verified through Git on this date. The PPB author source remains `e26b4eb`.
+
+The aligned concepts now specify native HIGGS actions in the same user priority, stable action identities, routing Up/Cancel to the originating winner, observation-only correlation identifiers, revision-checked second-hand transitions, per-location equipment results, semantic game-command capability, recovery after partial effects, safe passive callbacks and exact evidence for cross-provider contact attribution. Synchronous copied-only readers have no compulsory registration. Equipment slot instances are rebuilt under durable keys.
+
+An independent read-only review accepted the five normative acceptance cases in both language versions. The 28 pseudo-ABI declarations match across languages. This establishes the current design criteria. Source-level implementations, supported engine hooks and runtime behavior require their own verification. Trigger-draw command provenance, exact unconventional equipment layouts, PPB body-generation evidence and VRIK-certified final pose timing remain capability-dependent.
+
 ## Upstream review and responsibility audit, 11 November 2026
 
 The [HIGGS discussion](https://github.com/adamhynek/higgs/issues/7) links two small upstream proposals. Each demonstrates a complete provider operation. Both were prepared against the author's current master and retain interface 001. The broader services remain available for experiments in the forks.

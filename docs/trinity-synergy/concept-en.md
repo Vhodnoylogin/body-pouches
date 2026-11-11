@@ -70,6 +70,8 @@ HIGGS is the sole authority for the shared hand-state model and coordination of 
 
 Recognizers use one input stream and submit candidates before default actions execute. InputBinding declares context, action, recognition deadline and deferred-default behavior. ActionCandidate names the input sequence, required resources and registered executor. HIGGS selects an eligible action using the user's priority and reports the decision. Body Slots supplies slot spatial context; other recognizers use the same broker.
 
+Native HIGGS actions participate in the same choice when they are actually eligible. A candidate has a persistent provider key and action key, with a stable target key where multiple targets compete. Registration order and temporary handles do not break ties. With the order harvest → native grab → pocket, an unavailable harvest leaves native grab ahead of the pocket. Existing possession is checked before this choice. A native release continues its current hold and is never rerun as a new grab.
+
 **Pseudo-ABI**
 
 ```cpp
@@ -90,6 +92,8 @@ Status ProposeHandUse(ClientToken, const HandUseProposal*, RequestId* outRequest
 
 The broker exposes the effective priority and the reason for its decision. A consumer can inspect these without acquiring the right to consume the same input again. Haptic requests enter one coordinated schedule.
 
+Down, continuation, Up and Cancel identify the original press, selected action and executor. The original owner can receive the terminal notification after its short-lived grant has ended. This notification conveys no new mutation permission. Observers receive correlation identifiers only. Mutation entry points validate a separately issued, client-owned authorization. A release can finish the selected action once and cannot select a competing region action.
+
 Region dwell, release or another observed condition can also initiate an action without a new button edge. Such candidates enter an explicit HIGGS proposal round with named hand/resources, coherent source observations and the same eligibility and priority rules. They do not fabricate input or bypass grants. A release retains its original sequence and decision: the release of an already consumed draw press cannot become a fresh storage action.
 
 **Pseudo-ABI**
@@ -100,6 +104,8 @@ namespace HIGGS {
 Status CopyEffectiveInputPriority(ClientToken, const InputContext*, InputPriority*);
 
 Status CopyInputDecision(ClientToken, uint64_t sequenceId, InputDecision*);
+
+Status CopyInputContinuation(ClientToken, uint64_t pressSequenceId, InputContinuation*);
 
 Status RequestHaptic(ClientToken, const HapticRequest*, RequestId* outRequest);
 
@@ -186,6 +192,8 @@ The HIGGS ABI version fixes the catalogue of shared operations: object grab, rel
 
 A climbing mod requests HIGGS's standard world-support grip and moves the player after confirmation. HIGGS owns physical support, hand use and release. Multi-hand operations are coordinated together. The engine or an equipment mod may execute equipment changes, but the shared hand model and operation grant belong to HIGGS.
 
+A revision-checked transition can add or relinquish the second hand of an existing use. A failed acquisition leaves the first grip and its physical support intact. Relinquishing one hand drains only its dependent effects before releasing that resource. The request names the complete resulting resource footprint and any equipment or support identities that must remain valid.
+
 **Pseudo-ABI**
 
 ```cpp
@@ -194,6 +202,8 @@ namespace HIGGS {
 Status RequestHandUse(ClientToken, const HandUseRequest*, Lease* outUse, RequestId* outRequest);
 
 Status RequestEndHandUse(ClientToken, Lease use, RequestId* outRequest);
+
+Status RequestHandUseTransition(ClientToken, Lease use, uint64_t expectedRevision, const HandUseTransition*, RequestId* outRequest);
 
 // HandUseRequest names a supported operation kind; no custom physical driver.
 // Events: HandUseChanged.
@@ -225,6 +235,8 @@ Status RequestTransfer(ClientToken, const TransferRequest*, RequestId* outReques
 
 Grip, drive and constraint changes apply at the documented safe phase and have receipts. Temporary effects name their owner, hand/item and lifetime. Suppression limits named features without releasing an item; release is a separate request. Ending a climb removes only its owner's effects, leaving another consumer's restrictions intact.
 
+A game-command policy names both the command and its verified origin. Preventing trigger-driven weapon drawing requires a boundary that identifies that command without swallowing other trigger uses. The provider advertises that precise capability only when it can enforce it. An unsupported command or unproved origin returns Unsupported before changing input or game state.
+
 **Pseudo-ABI**
 
 ```cpp
@@ -242,6 +254,8 @@ Status RequestConstraint(ClientToken, const ConstraintRequest*, Lease* outConstr
 
 Status RequestSuppression(ClientToken, const SuppressionRequest*, Lease* outLease, RequestId* outRequest);
 
+Status RequestGameCommandPolicy(ClientToken, const GameCommandPolicy*, Lease* outPolicy, RequestId* outRequest);
+
 // Events: ConstraintChanged.
 
 }
@@ -250,6 +264,8 @@ Status RequestSuppression(ClientToken, const SuppressionRequest*, Lease* outLeas
 ### Domain executors
 
 Consumers register an execution route; recognition and eligibility callbacks do not mutate inventory. A result is accepted only from the assigned executor, with matching request provider and epoch. Duplicate reports are ignored and a committed stage cannot regress. HIGGS forwards the receipt while preserving that executor's authority over the operation.
+
+An equipment transition declares every affected game location and physical hand, exact item instance when known, original/proxy/display identity, expected before-state and requested after-state. Its receipt reports each location and physical binding separately. A form match alone cannot confirm an exact instance or the pair greatsword-left/shield-right. Executors advertise supported layouts and instance precision, reject unsupported layouts before mutation, and retain partial results if only one change succeeded. A consumer can supply a qualified equipment executor through this same route.
 
 **Pseudo-ABI**
 
@@ -263,6 +279,8 @@ Status ReportExecutionResult(ClientToken, const ExecutionResult*);
 Status RequestEquipmentTransition(ClientToken, const EquipmentTransitionRequest*, RequestId* outRequest);
 
 Status CopyEquipmentTransitionOutcome(ClientToken, RequestId, EquipmentTransitionOutcome* outOutcome);
+
+Status ReconcileExecution(ClientToken, const ExecutionRecoveryRequest*, RequestId* outRequest);
 
 }
 ```
@@ -331,7 +349,7 @@ A pocket anchored to a named NPC bone only needs a read of the current body tran
 
 ### Physical hits
 
-PLANCK owns interpretation and commitment of its physical hits. A bounded hit-policy callback runs before the relevant commitment without writing live engine objects; HitCommitted reports the outcome. Observing HitCandidateObserved alone is not a writable damage hook. Policy conflicts follow declared rules and user-visible priorities where alternatives are selectable.
+PLANCK owns interpretation and commitment of its physical hits. A contact record names its actual stage, such as a potential contact before filtering or a confirmed solver observation when available. Hit candidate, policy decision, native hit-handler invocation and independently observed damage are separate results. A handler invocation does not certify health loss. Read-only contact/hit observation cannot veto an event or change physics, including when the observer queue is full. A bounded policy runs only at a declared precommit boundary and modifies a copied decision rather than live engine objects.
 
 **Pseudo-ABI**
 
@@ -342,10 +360,15 @@ Status RegisterHitPolicy(ClientToken, uint64_t scope, HitPolicyCallback, void* u
 
 Status CopyHitSnapshot(ClientToken, uint64_t hitId, HitSnapshot* outSnapshot);
 
-// Events: HitCandidateObserved, HitCommitted.
+Status CopyContactSnapshot(ClientToken, const ContactQuery*, ContactSnapshot* outSnapshot);
+
+// Events: ContactObserved, HitCandidateObserved, HitDecisionMade, NativeHitInvoked.
+// DamageObserved is a separately negotiated, evidence-backed capability.
 
 }
 ```
+
+Numeric damage adjustment is separately negotiated for a verified hook and declared fields. Alternative adjustment providers are selected by user priority and stable identity. Vetoes and upper limits compose by an order-independent rule. The receipt names the selected policy and applied fields. A hook that only accepts or vetoes a hit cannot claim numeric control. Passive lifecycle notifications are delivered after leaving external physics locks. Immediate precommit policies declare their thread and restricted calls explicitly.
 
 ## PPB anatomical surfaces and touch
 
@@ -394,6 +417,8 @@ Status SubscribeTouches(ClientToken, const TouchSubscription*, TouchCallback, vo
 ```
 
 A contact may enable a gameplay candidate. HIGGS selects conflicting hand actions; PLANCK interprets and commits its physical hits. PPB adds anatomical detail to the corresponding observation without committing a second hit. PPB geometric proximity or overlap is not evidence of a Havok contact, impulse or damage event; an engine-confirmed contact retains its actual physics source. PPB's existing push and equipment features can remain gameplay providers: they retain reaction thresholds and clothing rules, while requesting hand operations from HIGGS, NPC policies/reactions from PLANCK and equipment changes from the assigned executor. Observing a touch never independently authorizes all listeners to act.
+
+PPB scan IDs, HIGGS contact IDs and PLANCK hit IDs belong to separate namespaces. Joining them requires an explicit witness from the physical owner or a qualified bridge for the specific event, source worlds, body generations, applied geometry revision and child shape where known. Matching actor, weapon and frame is insufficient when two contacts occur in one step. An uncertain join remains unclassified and preserves the original hit result. A PPB private-world overlap cannot certify a contact in the PLANCK world.
 
 ### Existing API and the proposed extension
 
@@ -467,7 +492,7 @@ Status EvaluateSlotEligibility(ClientToken, const SlotEligibilityQuery*, SlotEli
 
 ### Slots supplied by equipment
 
-An equipment mod supplies records, assets and a declared slot set authored on its reference model. Body Slots creates and persists the instances and follows their anchors on the actual wearable model. The key combines the provider definition, particular equipment instance and slot within it, so identical bags keep separate assignments. The equipment provider validates durable save-scoped instance keys and declares stack split/merge, cloning and ownership-transfer rules. Rebinding restores one set; missing equipment, providers or unresolved identity leave it unavailable without attaching it to another item. Body Slots saves placement/visual overrides; content providers save their own rules under the same key.
+An equipment mod supplies records, assets and a declared slot set authored on its reference model. Body Slots reconstructs runtime instances from durable keys, preserves their declared customization and follows their anchors on the actual wearable model. The key combines the provider definition, particular equipment instance and slot within it, so identical bags keep separate assignments. The equipment provider validates durable save-scoped instance keys and declares stack split/merge, cloning and ownership-transfer rules. Rebinding restores one set; missing equipment, providers or unresolved identity leave it unavailable without attaching it to another item. Body Slots saves placement/visual overrides; content providers save their own rules under the same key.
 
 **Pseudo-ABI**
 
@@ -636,7 +661,7 @@ Each state has one authoritative writer: HIGGS for hand state/use and physical h
 2. Domain providers evaluate eligibility and offer actions from that immutable context. A button sequence or explicit no-button proposal round identifies the trigger; spatial dwell remains separate from HIGGS hold recognition and domain debounce. A hold or multi-tap recognizer reserves the sequence with a decision deadline.
 3. HIGGS selects one eligible consuming action under declared contexts, bindings and user-selected priority, then grants the required resources. `Inside` and `Eligible` alone confer no grant. Observers remain able to read the input and region snapshot, but cannot independently act on them.
 4. Body Slots activates the selected region/slot action; the assigned executor revalidates observations, generations and grant, then performs the operation at its legal phase. HIGGS executes supported hand/physical operations; the consumer retains its domain rules.
-5. Results distinguish accepted, committed, completed, rejected and cancelled. They carry request/transaction IDs, the request issuer and its epoch, and the selected executor; an event forwarder remains a separate identity.
+5. Results distinguish accepted, partially committed, committed, completed, rejected, cancelled, unknown outcome, reconciliation and confirmed compensation. They carry request/transaction IDs, the request issuer and its epoch, and the selected executor. Proven effects remain recorded through recovery. An event forwarder remains a separate identity.
 
 Acceptance is not successful completion. Cancellation and deferred default input have declared behavior; synthetic gameplay requests never masquerade as physical button edges. Menus, missing tracking, load and provider shutdown invalidate pending work safely.
 
@@ -742,9 +767,11 @@ HIGGS's native mouth and shoulder inventory-stash detection can use named Body S
 
 Body Slots creates and services new slots without requiring VRIK extensions or reconstructed code. VRIK's public 001 can operate native holsters but does not become a new-slot creation API. The pose adapter must validate available game nodes, phases and coordinate spaces against the supported release; insufficient observations produce a defined refusal. Native holsters and their APIs remain available. Compatibility with the original fourteen is validated separately: do not resize old arrays or change Papyrus names or saved assignments; settings are imported or changed only through a supported available route. Full transition disables corresponding native interaction/presentation before enabling Body Slots counterparts. Without verified mappings and control of competing input, the mod does not claim automatic replacement. HIGGS's closed model likewise does not automatically govern legacy DLLs outside the new contract.
 
-Requests, reservations and subscriptions identify their owner. One consumer cannot release another's suppression or reservation. Unloading requires stopping new callbacks and draining in-flight calls. Snapshots use copied, size-tagged records with explicit units, spaces, hand mapping and world/body generations; new boundaries do not transfer STL objects or ownership of allocated memory.
+Requests, reservations and subscriptions identify their owner. One consumer cannot release another's suppression or reservation. Unloading requires stopping new callbacks and draining in-flight calls. Snapshots use copied, size-tagged records with explicit units, spaces, hand mapping and world/body generations. New boundaries use caller-owned storage and fixed-layout records.
 
-The interface examples are embedded in each provider section. Each provider exposes the same lifecycle operations:
+Each feature negotiates required capabilities, usable current data and the provider's supported scope independently. DLL discovery alone cannot establish readiness. At action start it fixes one detector and one executor. Losing a provider invalidates dependent offers and requests. A fallback can serve a later action after revalidation, while the original action retains its known effects and recovery state. Passive callbacks run at a documented safe phase outside registry and external physics locks. Observation queues expose sequence gaps and invalidation explicitly. A gap cannot imply no contact, normal exit or successful completion.
+
+The interface examples are embedded in each provider section. Lifecycle operations apply to services that allocate client-owned requests, registrations or resources. A synchronous copied-only pose reader needs no registration, lease or unsubscribe. Each negotiated service advertises only the lifecycle operations it actually supports.
 
 **Pseudo-ABI**
 
@@ -752,7 +779,8 @@ The interface examples are embedded in each provider section. Each provider expo
 enum class PhysicalHand : uint32_t { Left, Right };
 enum class PoseSource : uint32_t { TrackedController, ResolvedPalm, RenderedIK };
 enum class RequestStage : uint32_t {
-    Accepted, Committed, Completed, Rejected, Cancelled
+    Accepted, PartiallyCommitted, Committed, Completed,
+    Rejected, Cancelled, OutcomeUnknown, Reconciling, Compensated
 };
 
 // Slot definitions/configuration have persistent keys and explicit save/profile scopes.
@@ -760,6 +788,8 @@ enum class RequestStage : uint32_t {
 ```
 
 RegisterClient establishes ownership of requests and resources; ReleaseClient ends that client lifetime.
+
+A transaction records proven effects separately from its current recovery state. After a partial commit, a timeout, cancellation or disappearing executor cannot assert that nothing happened. The broker retains disputed resource claims and a queryable receipt until an authorized executor proves the final disposition or compensation. Repetition with the same operation key returns the recorded result. A new key cannot bypass an unsettled claim. A recovery executor must be explicitly delegated or reattached under the same durable provider identity, reconcile actual inventory/held state and report evidence before any further mutation. If recovery remains impossible, the outcome stays unknown and the dispute is exposed to the consumer and user. Lease expiry alone cannot erase it. Save/load discards runtime permissions and forces reconciliation from save-scoped records where a feature persists transactions.
 
 **Pseudo-ABI**
 
@@ -801,6 +831,18 @@ Status CopyEventPayload(ClientToken, SnapshotId, void* callerBuffer, uint32_t bu
 ```
 
 Body Slots persists definitions and user customization under stable keys where their declared scope requires it. Runtime instances, actor/equipment/world anchors, previews and bindings are rebuilt and validated after loading; readiness is reported before dependent actions resume. Session/operation regions expire with their owner and are not restored as saved slots. Content providers retain their own saved gameplay state under the same durable keys. Provider removal, region unavailability and explicit deletion of saved customization have different meanings and must not silently erase each other's data.
+
+The revised contract is checked with the same acceptance scenarios for every provider and consumer.
+
+| Scenario | Required result |
+|---|---|
+| Harvest > native grab > pocket | Unavailable harvest leaves native first, regardless of registration order. Up returns to the original selected action once. |
+| Item removed, receipt lost | No second removal or invented rollback. Proven effects and disputed resources remain visible until factual reconciliation. |
+| Add or release a second hand | Rejected acquisition preserves the first grip. Release drains only dependent effects. |
+| Two sword contacts in one physics step | Only an exact event witness permits anatomical attribution. Unknown attribution preserves the original hit. |
+| Optional provider absent, old, unavailable or lost during execution | Unrelated features continue. One detector/executor is fixed per action. Provider recovery never replays effects. |
+
+Every feature also tests supported and unsupported targets, stale/replaced sources, duplicate requests, callback removal during dispatch and bounded queue exhaustion. These are contract criteria. The implementation ledger records which have passed for a pinned source version and which still require engine observations. The illustrative consumer list supplies test cases and does not establish compatibility with every future Skyrim VR mod.
 
 ## CommonLib as the second level of synergy
 
