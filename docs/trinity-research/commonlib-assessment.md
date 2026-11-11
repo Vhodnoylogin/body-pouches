@@ -1,6 +1,19 @@
 # CommonLib assessment for synergy implementation
 
-Updated: 3 November 2026. Scope: the second level of the [synergy concept](../trinity-synergy/concept-en.md), moving engine addresses and shared technical operations behind verified CommonLib interfaces. The owner resumed HIGGS/PLANCK API and Body Slots implementation; CommonLib extension/migration remains a later stage. Earlier binding audits below retain their stated versions and qualification limits.
+Updated 11 November 2026. Scope covers the second level of the [synergy concept](../trinity-synergy/concept-en.md), moving engine addresses and shared technical operations behind verified CommonLib interfaces. CommonLib extension/migration remains a later stage. Earlier binding audits retain their stated versions and qualification limits.
+
+## Complete-contract review on 11 November 2026
+
+The new provider contract work keeps input sequence ownership, observed correlation identifiers, executor permissions, equipment recovery, action priority and contact-to-hit causality in HIGGS and PLANCK. Body Slots owns source bindings, logical geometry and activation. PPB owns anatomy and fitting. Those responsibilities remain provider work when technical engine access later moves to CommonLib.
+
+| New use | Available technical route | Remaining library qualification |
+|---|---|---|
+| Body Slots PLANCK pose conversion | Existing CommonLib VR world-scale accessor, Address Library ID 230692 / Skyrim VR RVA 0x15ADFE8, matched to PLANCK's scale source | Retain the exact library and game pins when moving the adapter. This adds no new address mapping. |
+| PLANCK contact evidence | Existing Havok event/body transforms, shape-key access and same-point motion calculations | Reuse qualified typed wrappers. A general contact-point velocity helper must cover angular motion and both actual motion types. Provider world/body generations and hit identity remain outside the helper. |
+| PPB batched live capsule reads | Existing capsule readers and SKSE main-task dispatch | A future shared capsule read can encapsulate retained world/body/shape access and coordinate conversion. A main-thread read interval alone cannot establish body lifetime or a completed solver tick. |
+| Trigger-originated weapon draw | Author STUF source identifies four game call sites | Three source patches supply a constant return without enough original instruction data for a reversible policy. The installed executable's protected on-disk text cannot qualify those bytes. A signature, original instruction sequence and verified semantic origin remain necessary before a library wrapper or dynamic policy is claimed. |
+
+A source scan against the author baselines found the same 247 unique literal relocations in HIGGS and 440 in PLANCK, with no added or removed relocation addresses in the current contract changes. This covers direct RelocAddr/RelocPtr declarations and leaves virtual calls, layouts and externally staged SDK bindings under their separate qualification. No CommonLib source, address database or live installation is changed. The detailed address inventory preserves its original source pins. The trigger-draw call-site evidence comes from the [author’s STUF source](https://github.com/adamhynek/stuf_vr/blob/92814e7a59ce58dff923b7bd3eae35b788b111b7/src/main.cpp).
 
 The arbitrary-region action continuation adds no engine address or missing CommonLib call. HIGGS's one-shot authorized-dispatch fence and Body Slots's source-aware spatial eligibility, callback drainage and provider action binding are service responsibilities. They use existing copied hand observations, the existing safe update boundary, standard synchronization and the shared pure geometry kernel. Numerical/transform helpers remain possible stage-two audit candidates; input ownership, source freshness policy, dwell and action-outcome semantics do not become CommonLib policy. No library implementation or address mapping changes in this continuation.
 

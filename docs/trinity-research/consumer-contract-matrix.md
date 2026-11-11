@@ -8,6 +8,7 @@ This is a requirements review, not a claim that the APIs or consumer migrations 
 
 - [Evidence and versions](#evidence-and-versions)
 - [Consumer matrix](#consumer-matrix)
+- [Source proposal coverage after the complete contract review](#source-proposal-coverage-after-the-complete-contract-review)
 - [Implementation-aware criticism](#implementation-aware-criticism)
 - [Requirements shared across consumers](#requirements-shared-across-consumers)
 - [Assessing another consumer](#assessing-another-consumer)
@@ -42,6 +43,35 @@ Versions identify the local inputs examined, not a promise of the latest upstrea
 | [VR Physical Lockpicking](https://www.nexusmods.com/skyrimspecialedition/mods/196953). Local 1.0.1 README/config + current public source; Nexuscurrent1.1.0 separately noted; [primary source](https://github.com/Stanislavsonder/SkyrimVR-PhysicalLockpicking/tree/880a3a02f5e2a7dbb8ffc533e618712225bb29e7). Lock activation starts dual-tool session; hides hands/controllers, reads raw VR inputs/masks untilrelease, haptic thread, tools/keyhole constraints and vanilla skill/crime rules. | Two-hand session begun by game activation, not fake button; Full input/cancel controls + post-session held-button drain; Hand presentation/visibility lease; Coherent unpaused/paused hand pose; Owned haptic streaming; Tool/endpoint constraint goals. Could replace: Private input filtering, hand-node hiding and continuous haptic driver. | Lock minigame mathematics, sweet spot/perks/XP/crime, target/model markup, pause preference. Current source uses a frame-hook fallback/controller callback and own rendering; plain trigger/grip arbitration cannot replace entire session. Locks are world/object anchors, not inherently body slots; specialized rendering remains consumer. |
 | [TrueWieldVR](https://www.nexusmods.com/skyrimspecialedition/mods/191123). Local 1.2.0 richly documented INI/installer; native C++ unavailable. PCVR weight driver with grip-centred mass/inertia, force/torque and classspring/damping, gravity/stamina response, main/offhand slide, room-relative motion and momentumdamage. | Coherent item physical mass/inertia/COM/grip range and measured motion; Declarative per-hand motor/impedance/gravity goals; Independent secondary grip transform under shared two-hand use; Temporary/persistent grip overrides with observed commitment; General multi-tap/hold input; Precommit numeric melee damage scaling or domain damage executor. Could replace: PCVR-private driver/twin interfaces and competing hand/grip writers. | Weight feel curves, stamina/gamebalance, grip selection/persistence and momentum formula. One generic motor cap or mainhand transform is not all these services. PLANCK melee veto only cannot preserve momentum scaling. No claim that source/config audit proves actual native implementation. |
 | [VR Climbing - Aelove Ver.](https://www.nexusmods.com/skyrimspecialedition/mods/170321). Local 0.11.3 INI + prior public C++ snapshot. Public HiggsCompatManager changes global gravity gloves, two-hand grabbing, weapon two-handing and EnableGrip then restores; climbing support/motion/stamina/fall and contact detection. | Owned world support and continuous one/two-hand sessions; Grant-composed scoped admission/secondary-grab policies; Hand target/physical support observations; Generation-bound moving/NPC support if enabled; Haptics and cancellation. Could replace: Global HIGGS reserve/restore and cross-mod patching. | Player locomotion, stamina, launch/fall/race/armor rules and climbable surfaces. Static-only support is a declared subset; moving objects/NPC/hand-support and locomotion dependencies must be separately negotiated. Body Slots/PLANCK not mandatory for ordinary static climbing. |
+
+## Source proposal coverage after the complete contract review
+
+The following checks apply the consumer requirements to the full provider proposals prepared on November 11. They describe the source proposal and its explicit capability limits. Each consumer keeps its domain rules and must port to these interfaces before benefiting from them.
+
+| Example consumer | Shared service it can use | Remaining domain or capability boundary |
+|---|---|---|
+| Stop Trigger Unsheathing For VR | HIGGS semantic command-policy route | Coverage is zero without a qualified trigger-draw provider. Suppressing the whole trigger cannot satisfy this feature. |
+| Instant Equip VR | Optional equipment execution/outcome observations | Animation acceleration stays in the consumer. A mandatory synergy dependency adds little. |
+| Swap Drop and Hold Redux VR | Shared input selection and originating release, exact affected-place equipment requests and held-item transfers | Unconventional layout/proxy execution needs a capable domain executor. A form match does not prove an exact instance. |
+| Interactive Torches VR | Named world/item regions, coherent held/equipped probes and owned hand-use effects | Fire discovery, ignition, light replacement and heat remain consumer rules. |
+| Immersive Harvesting | Native/harvest/climb priority, retained hand uses and revision-checked second-hand transitions | Yield, depletion, live insect/fish models and the actual harvest award stay with the consumer/executor. |
+| Immersive Pickpocketing VR | Body Slots logical NPC region with a PLANCK-owned body anchor, shared input and haptics | Crime and AttemptPickpocket require the actual game executor and its receipt. PPB is needed only for an anatomical requirement. |
+| Interactive Animal Skinning VR | Distinct PLANCK contact, admitted-hit and native-handler evidence | Loot, timing and required cuts stay in the consumer. Unsupported inactive bodies remain unavailable. |
+| Immersive Pickup Only | Optional command-policy integration | Its existing perk toggle can remain independent. |
+| Immersive Equip VR | Logical access regions, shared held-item observations and affected-place equipment dispatch | Biped/occupied-slot rules and a capable equipment executor remain necessary. |
+| Precision Physic Bodies | PLANCK fitted-capsule application and HIGGS hand-part operations, alongside PPB copied anatomical observations | Generation-aware PPB surfaces, physical-backend adoption and private-world 2.9 publication require further author integration. |
+| Shields and 2H Weapons Unlocked VR | Shared input, original/proxy/display identities and complete multi-place outcomes | The unconventional equipment implementation stays in its domain adapter. Native layouts are advertised separately. |
+| Weapon Throw VR | Authoritative hand motion, release identity, constraints and transfer receipts | Projectile flight, recall, weapon state and hit rules require its own executor. |
+| Dual Wield Block VR | Copied motion and scoped owned hand/drive policies | Posture thresholds and game blocking policy remain in the consumer. |
+| Simple Realistic Archery VR | Coordinated bow/arrow hand use and equipment/held-object identity | Nocking, ammo and archery-specific rules remain in the consumer. |
+| Pull Arrows VR | PLANCK-owned attachment endpoints and HIGGS constraints/transfer | Embedded-arrow identity and extraction success remain in the consumer. |
+| Immersive Smithing | Shared tool motion, contact evidence and temporary logical work regions | Crafting, recipes, heat and stage outcomes remain in the consumer. |
+| Body Pouches VR | Slot definitions/instances, source-aware activation, original release routing and ordinary inventory helper | Potion selection remains in Body Pouches. The released 0.2.0 has not automatically adopted the proposed interfaces. |
+| VR Physical Lockpicking | Finite cylinder regions, copied probes and shared hand use | Lock mathematics stay in the consumer. Advanced sweep/relative-pose queries need advertised spatial support. |
+| TrueWieldVR | Single HIGGS actuator with scoped drive, support and hand-goal requests | Weight/control rules stay in the consumer. Unsupported drive fields require a capability extension. |
+| VR Climbing Aelove | HIGGS world-support operation, scoped hand use and common action selection | Player locomotion and fall rules remain in the consumer. |
+
+The review found concrete regressions that ordinary table negotiation would miss. A native trigger grab must participate in priority just like a native grip grab. A late native grab in the existing input-leeway window must keep its originating release. Narrowing delegated hand access must revoke delayed recognitions before they can submit. An equipment backend reporting an intermediate old layout must not close an operation that is still pending. These cases belong in the provider regressions because they test the external contract itself.
 
 ## Implementation-aware criticism
 

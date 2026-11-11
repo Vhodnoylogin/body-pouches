@@ -1,6 +1,6 @@
 # PPB: proposals for discussion with telord
 
-On 11 November the two proposed reads were submitted in [PR #3](https://github.com/Telord72612/Precision-Physic-Bodies/pull/3) and [issue #4](https://github.com/Telord72612/Precision-Physic-Bodies/issues/4). The list below records the broader research questions from 2 November.
+The November 11 source proposal now includes copied anatomy batches and owned removable completed-scan subscriptions. It is based on public PPB 2.2.0, with production translation-unit compilation and offline lifecycle/queue checks. Body/model generation and the safe publication point for the private worlds in 2.9 remain requests for author review. The broader November 2 questions below retain their original research scope. [PR #3](https://github.com/Telord72612/Precision-Physic-Bodies/pull/3) · [Issue #4](https://github.com/Telord72612/Precision-Physic-Bodies/issues/4)
 
 Research checkpoint: 2 November 2026, public PPB source at [`e26b4eb`](https://github.com/Telord72612/Precision-Physic-Bodies/tree/e26b4ebc8061e8736b344e4f3e9216dea9254747). These are discussion points, not a message sent to the author, an agreed migration or a claim that the supporting HIGGS/PLANCK services are ready in game. The [provider audit](ppb-provider-audit.md) records the evidence and limits. The [maintained concept](../trinity-synergy/concept-en.md) defines the shared responsibilities.
 
