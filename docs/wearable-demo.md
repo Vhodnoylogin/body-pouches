@@ -6,7 +6,9 @@ This branch is a demonstration for discussion with VRIK's maintainer. It is base
 
 One new inventory item, **Potion Bag (Body Slots Demo)**, occupies equipment slot 60. Body Pouches observes the player's actual equipped armor and creates one logical Body Slots instance. Equipping requests activation; removing the bag requests deactivation. Missing interfaces, templates, equipment observations or current revisions prevent new pouch actions.
 
-Released VRIK still supplies native slot **13**, its calibrated placement, hand reach, holster callback and Art presentation. HIGGS still handles the physical potion. The existing pouch selection, drawing, drinking, returning and assignment persistence are reused. The bag remains visible when empty; it replaces the old potion preview in this private build.
+Released VRIK supplies the calibrated position and Art for native slot **13**, and its holster callback still starts the existing draw gesture. When the player releases a potion, HIGGS reports the dropped reference. With the Body Slots region service, Body Pouches samples the attached bag Art and the releasing wrists after VRIK updates. Body Slots checks the configured sphere of the wearable instance at the bag model. A release inside it follows the existing potion assignment or return path exactly once. Another VRIK holster under that hand retains priority. The bag remains visible when empty.
+
+VRIK's native13 hover determines returns until Body Slots provides a live region scope. This preserves returns on older builds that expose wearable instances or an earlier region table without a working scope on stock HIGGS. Each drop uses one detector chosen when HIGGS reports it. Once a live region scope has been observed, missing Art, missing wrist or an unavailable region leaves the potion in the world. A changed bag model, save/world scope, equipment token or an observation more than 150 ms old cancels the pending return. Released HIGGS 001 and the compact grip proposal supply the same drop callback here. Drawing and drinking retain their existing controls.
 
 The visual reference supplied by the owner was Immersive Equipment Displays (Nexus 62001). Its Coin Pouch profile refers to Skyrim's own `CoinPurseLarge`, whose model is `Plants\CoinBagLarge.nif`. The demo references that installed base-game model. It contains no IED binary, copied game mesh or reconstructed VRIK DLL. The inventory/world model and VRIK Art use the same model; no separate armor-addon renderer is introduced.
 
@@ -14,12 +16,14 @@ The visual reference supplied by the owner was Immersive Equipment Displays (Nex
 
 - One unique bag form and one logical equipment key. Several identical physical copies are not independent containers or independent persistent identities.
 - Native13 remains dedicated for the session, including while the bag is removed. The demo prevents its pouch actions and removes its Art; it does not attempt to clear another mod's unowned legacy VRIK suspension flag.
-- Move native13 in VRIK to position the bag. The authored Body Slots template supplies identity and eligibility; its independent placement geometry does not reposition released VRIK in this bridge.
+- Move native13 in VRIK to position the bag. The Body Slots instance supplies its configured sphere center and radius for returns. The demo uses a spherical mouth and the attached Art as its origin. The VRIK draw gesture still uses native13.
 - Potions remain in the player's normal inventory. Removing the bag preserves its potion assignment, and a potion already delivered to the hand remains an ordinary held item. No potion is refunded, deleted or force-dropped by bag removal.
 - Deferred draw/return work keeps the original equipment epoch and Body Slots scope/view/instance revisions. Removing and reequipping the bag does not authorize an old queued action.
 - Configuration uses a single exclusive pouch and permits enabling native13 in VRIK memory for this demo. It is not an installation intended to share native13 with a weapon or another pouch mod.
 
 ## Build and stage
+
+The demo uses the Body Slots SDK pinned in CMake. For an offline build set `FETCHCONTENT_SOURCE_DIR_BODY_SLOTS_SDK` to that source checkout. The `bag_return_regions` CTest drives the consumer through the actual Body Slots registry and region API with a simulated game scope.
 
 Configure an external build directory with `BODYPOUCHES_WEARABLE_DEMO=ON`, `BODYPOUCHES_BUILD_TESTS=ON` and, for observation, `BODYPOUCHES_WITH_DEVBENCH=ON`. Build Release normally. `tools/make-wearable-demo.py` writes a **new** demo ESP and refuses to replace an existing file; do not use the ordinary release staging script for this build.
 

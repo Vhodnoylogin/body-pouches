@@ -42,9 +42,9 @@ namespace BodyPouches::Game
 				return RE::BSContainer::ForEachResult::kContinue;
 			}
 			++matches;
-			if (const auto* node = effect.Get3D(); node && node->parent &&
+			if (auto* node = effect.Get3D(); node && node->parent &&
 				effect.flags.any(RE::ModelReferenceEffect::Flags::kAttached)) {
-				geometry = Geometry{ reinterpret_cast<std::uintptr_t>(node),
+				geometry = Geometry{ RE::NiPointer<RE::NiAVObject>{node},
 					node->parent && node->parent->name.c_str() ? node->parent->name.c_str() : "none",
 					node->local, node->world, node->previousWorld, node->worldBound };
 			}

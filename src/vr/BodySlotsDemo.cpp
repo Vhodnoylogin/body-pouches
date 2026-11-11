@@ -316,6 +316,13 @@ void BodySlotsDemo::Reset() noexcept {
     Commit(next);
 }
 BodySlotsDemo::CopiedState BodySlotsDemo::Copy() const noexcept { return owner_->copy; }
+bool BodySlotsDemo::CopyReturnSphere(float (&center)[3], float& radius) const noexcept {
+    if (!owner_->copy.available) return false;
+    const auto& definition = owner_->row.instance.effective;
+    std::memcpy(center, definition.regionCenter, sizeof(center));
+    radius = definition.radius;
+    return true;
+}
 BodySlotsDemo::Token BodySlotsDemo::CurrentToken() const noexcept { return owner_->copy.available ? owner_->copy.token : Token{}; }
 bool BodySlotsDemo::Allows(bool isLeft, const Token* captured) noexcept {
     if (!owner_->copy.available || owner_->copy.exhausted || (captured && (!captured->Valid() || *captured != owner_->copy.token))) return false;

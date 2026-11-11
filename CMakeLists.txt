@@ -44,6 +44,7 @@ endif()
 # else, so -DBODYPOUCHES_BUILD_PLUGIN=OFF gives a configure that fetches nothing
 # from the network and builds in seconds on a machine with no Skyrim on it.
 if(BODYPOUCHES_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
+    enable_testing()
     add_subdirectory(tests)
 endif()
 
@@ -125,6 +126,26 @@ add_library(BodyPouches SHARED
 )
 if(BODYPOUCHES_WEARABLE_DEMO)
     target_compile_definitions(BodyPouches PRIVATE BODYPOUCHES_WEARABLE_DEMO=1)
+    # Only public ABI headers are needed. Do not configure or link the provider plugin.
+    FetchContent_Declare(body_slots_sdk
+        GIT_REPOSITORY https://github.com/Vhodnoylogin/body-slots.git
+        GIT_TAG 9e3273938725cb35edca04b9283dc9bd45363c5a
+        SOURCE_SUBDIR include)
+    FetchContent_MakeAvailable(body_slots_sdk)
+    target_include_directories(BodyPouches BEFORE PRIVATE "${body_slots_sdk_SOURCE_DIR}/include")
+    if(BODYPOUCHES_BUILD_TESTS)
+        add_executable(bodypouches_bag_return_tests tests/bag_return_region_consumer.cpp src/vr/BagReturnRegion.cpp)
+        # Link the region/registry core used by the provider's native fixtures.
+        foreach(unit IN ITEMS registry instances instance_configuration validation configuration_serialization
+                native_placement native_policy package runtime runtime_saved zone_geometry manipulation
+                content_policy main/interaction_regions)
+            target_sources(bodypouches_bag_return_tests PRIVATE "${body_slots_sdk_SOURCE_DIR}/src/${unit}.cpp")
+        endforeach()
+        target_compile_definitions(bodypouches_bag_return_tests PRIVATE BODYPOUCHES_WEARABLE_DEMO=1 NOMINMAX WIN32_LEAN_AND_MEAN)
+        target_include_directories(bodypouches_bag_return_tests PRIVATE src "${body_slots_sdk_SOURCE_DIR}/include" "${body_slots_sdk_SOURCE_DIR}/src")
+        target_link_options(bodypouches_bag_return_tests PRIVATE /STACK:8388608)
+        add_test(NAME bag_return_regions COMMAND bodypouches_bag_return_tests)
+    endif()
 endif()
 if(BODYPOUCHES_WITH_DEVBENCH)
     target_sources(BodyPouches PRIVATE contract/DevBenchAPI.cpp)

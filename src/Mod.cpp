@@ -156,6 +156,7 @@ namespace BodyPouches
 			_demoBag = data->LookupForm<RE::TESObjectARMO>(0x803, "BodyPouches.esp");
 		}
 		_demoSlots.Connect();
+		_returnRegion.Connect();
 		if (auto* events = RE::ScriptEventSourceHolder::GetSingleton()) {
 			events->AddEventSink<RE::TESEquipEvent>(&_demoEquipment);
 		}
@@ -416,11 +417,76 @@ namespace BodyPouches
 #endif
 	}
 
-	int Mod::PouchAt(bool a_isLeft, int a_nativeSlot)
+	Mod::ReturnAnchor Mod::CurrentReturnAnchor()
+	{
+		ReturnAnchor out{};
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		const auto scope = _returnRegion.CurrentScope();
+		out.required = _returnRegion.Selected();
+		if (out.required) {
+			out.at = Now();
+			out.epoch = scope.epoch;
+			out.save = scope.save;
+			if (scope.epoch && scope.save && _demoActive && _vrik.IsDisplayed(13)) {
+				if (auto geometry = _picture.ReadGeometry()) {
+					out.root = std::move(geometry->root);
+					out.world = geometry->world;
+				}
+			}
+		}
+#endif
+		return out;
+	}
+
+	bool Mod::SameReturnAnchor(const ReturnAnchor& original, const ReturnAnchor& current)
+	{
+		if (!original.required || !current.required) return original.required == current.required;
+		return original.epoch && current.epoch == original.epoch && original.save && current.save == original.save &&
+			original.root && current.root == original.root && current.at >= original.at && current.at - original.at <= 150;
+	}
+
+	Mod::ReturnSample Mod::SampleReturnZone()
+	{
+		ReturnSample out{};
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		out.anchor = CurrentReturnAnchor();
+		if (!out.anchor.required) return out;
+		out.inside = 0;
+		const auto& anchor = out.anchor;
+		const auto token = _demoSlots.CurrentToken();
+		float center[3]{}, radius{};
+		if (!anchor.root || !token.Valid() || token.saveGeneration != anchor.save ||
+			!_demoSlots.CopyReturnSphere(center, radius)) return out;
+		body_slots::RuntimeTransform transform{};
+		transform.position[0] = anchor.world.translate.x;
+		transform.position[1] = anchor.world.translate.y;
+		transform.position[2] = anchor.world.translate.z;
+		transform.scale = anchor.world.scale;
+		for (unsigned r = 0; r != 3; ++r)
+			for (unsigned c = 0; c != 3; ++c) transform.rotation[3*r+c] = anchor.world.rotate.entry[r][c];
+		VR::BagReturnRegion::Wrists wrists{};
+		for (unsigned i = 0; i != wrists.size(); ++i) {
+			RE::NiPoint3 wrist;
+			if (_pendingReleases[i].event.Active() && ReachHandPosition(i == 0, wrist))
+				wrists[i] = VR::BagReturnRegion::Point{wrist.x, wrist.y, wrist.z};
+		}
+		out.inside = _returnRegion.Inside({anchor.epoch, anchor.save}, token.instanceHandle, _higgsUpdate,
+			double(anchor.at) / 1000, center, radius, transform, wrists);
+#endif
+		return out;
+	}
+
+	int Mod::PouchAt(bool a_isLeft, int a_nativeSlot, std::optional<std::uint32_t> a_inside)
 	{
 #ifdef BODYPOUCHES_WEARABLE_DEMO
+		if (a_inside) {
+			if (a_nativeSlot && a_nativeSlot != 13) return 0;
+			const auto hand = a_isLeft ? 1u : 2u;
+			return (*a_inside & hand) && DemoAllows(13, a_isLeft) ? 13 : 0;
+		}
 		return a_nativeSlot == 13 && DemoAllows(13, a_isLeft) ? 13 : 0;
 #else
+		(void)a_inside;
 		const int slot = a_nativeSlot;
 		constexpr auto phase = "post_vrik_same_update";
 		if (slot == 0) {
@@ -469,6 +535,8 @@ namespace BodyPouches
 
 	void Mod::ResolvePendingReleases()
 	{
+		if (!_pendingReleases[0].event.Active() && !_pendingReleases[1].event.Active()) return;
+		const auto sample = SampleReturnZone();
 		for (const bool isLeft : { true, false }) {
 			auto& stored = _pendingReleases[isLeft ? 0 : 1];
 			if (!stored.event.Active()) { continue; }
@@ -481,19 +549,21 @@ namespace BodyPouches
 				_queuedDrops.erase(pending);
 				continue;
 			}
-			// Resolve every release from this update's VRIK hover, including exclusive
-			// pouches. HIGGS's dropped callback precedes VRIK's update and its hover
-			// can still describe the previous hand pose. It must not decide a pickup.
-			// A different native holster keeps priority over the shared spatial path.
+			// Resolve the release after VRIK in its original HIGGS update. A different
+			// native holster keeps priority over the wearable region.
 			const int native = _vrik.SlotInReach(IsSecondaryHand(isLeft));
-			int slot = PouchAt(isLeft, native);
+			// Pin the detector at the original drop. A newly available provider may
+			// handle the next release, never replay one captured by the legacy path.
+			int slot = 0;
+			if (!release.origin.required) slot = PouchAt(isLeft, native);
+			else if (SameReturnAnchor(release.origin, sample.anchor)) slot = PouchAt(isLeft, native, sample.inside.value_or(0));
 			if (slot && !DemoAllows(slot, isLeft, &release.bagToken)) { slot = 0; }
 			const auto object = release.handle.get();
 			NoteDropGeometry(isLeft, object.get(), "post_vrik_same_update", release.serial);
 			Loc::Info(Keys::kDropResolved, HandName(isLeft), release.handle.native_handle(),
 				_higgsUpdate, _worldGeneration, slot);
 			if (slot != 0) {
-				QueueStowDropped(slot, isLeft, release.handle, release.serial, release.bagToken);
+				QueueStowDropped(slot, isLeft, release.handle, release.serial, release.bagToken, release.origin);
 			} else {
 				const auto remaining = _queuedDrops.find(release.handle.native_handle());
 				if (remaining != _queuedDrops.end() && remaining->second == release.serial) { _queuedDrops.erase(remaining); }
@@ -503,11 +573,11 @@ namespace BodyPouches
 	}
 
 	void Mod::QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial,
-		VR::BodySlotsDemo::Token bagToken)
+		VR::BodySlotsDemo::Token bagToken, ReturnAnchor a_origin)
 	{
 		if (auto* tasks = SKSE::GetTaskInterface(); tasks != nullptr) {
 			Trace(Diagnostics::Event::StowQueued, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, _worldGeneration);
-			tasks->AddTask([a_slot, a_isLeft, a_handle, a_serial, bagToken, generation = _worldGeneration]() {
+			tasks->AddTask([a_slot, a_isLeft, a_handle, a_serial, bagToken, a_origin, generation = _worldGeneration]() {
 				auto& current = GetSingleton();
 				current.Trace(Diagnostics::Event::StowTask, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
 				if (!current._loadState.Blocked() && generation == current._worldGeneration) {
@@ -518,7 +588,7 @@ namespace BodyPouches
 					}
 					current._queuedDrops.erase(pending);
 					const auto object = a_handle.get();
-					current.StowDropped(a_slot, a_isLeft, object.get(), a_serial, bagToken);
+					current.StowDropped(a_slot, a_isLeft, object.get(), a_serial, bagToken, &a_origin);
 				} else {
 					current.Trace(Diagnostics::Event::StowWorldCancelled, a_isLeft ? 0 : 1, a_slot, a_handle.native_handle(), 0, a_serial, generation);
 				}
@@ -934,7 +1004,7 @@ namespace BodyPouches
 				if (geometry) {
 					const auto root = Game::Body::ToSlot(*bone, geometry->previousWorld.translate) - _vrik.SlotPosition(setting.slot);
 					const auto bound = Game::Body::ToSlot(*bone, geometry->bound.center) - _vrik.SlotPosition(setting.slot);
-					Loc::Info(Keys::kArtGeometry, setting.slot, _higgsUpdate, _worldGeneration, geometry->root,
+					Loc::Info(Keys::kArtGeometry, setting.slot, _higgsUpdate, _worldGeneration, reinterpret_cast<std::uintptr_t>(geometry->root.get()),
 						geometry->parentName, root.x, root.y, root.z, bound.x, bound.y, bound.z,
 						geometry->bound.radius, geometry->world.translate.x, geometry->world.translate.y,
 						geometry->world.translate.z, geometry->previousWorld.translate.x, geometry->previousWorld.translate.y,
@@ -1139,7 +1209,7 @@ namespace BodyPouches
 	}
 
 	void Mod::StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial,
-		const VR::BodySlotsDemo::Token& a_bagToken)
+		const VR::BodySlotsDemo::Token& a_bagToken, const ReturnAnchor* a_origin)
 	{
 		if (!DemoAllows(a_slot, a_isLeft, &a_bagToken)) { return; }
 		if (_loadState.Blocked() || _restorePending || a_object == nullptr || a_object->IsDeleted() || a_object->IsDisabled() ||
@@ -1178,6 +1248,7 @@ namespace BodyPouches
 		// Equipment/provider reads may invalidate the original event. Commit no
 		// assignment until that same token is freshly admitted, outside the lock.
 		if (!DemoAllows(a_slot, a_isLeft, &a_bagToken)) { return; }
+		if (a_origin && a_origin->required && !SameReturnAnchor(*a_origin, CurrentReturnAnchor())) { return; }
 		bool taken = false;
 		{
 			std::scoped_lock guard(_lock);
@@ -1204,7 +1275,6 @@ namespace BodyPouches
 		// as one and the other four were deleted: the mod took the player's potions away.
 		// PickUpObject counts, keeps whatever else the reference carried, and makes the
 		// sound the game makes when anything else is picked up.
-		if (!DemoAllows(a_slot, a_isLeft, &a_bagToken)) { return; }
 		Trace(Diagnostics::Event::PickupRequested, a_isLeft ? 0 : 1, a_slot, a_object->GetHandle().native_handle(), 0, a_serial, 0, count);
 		player->PickUpObject(a_object, count, false, true);
 		Trace(Diagnostics::Event::PickupReturned, a_isLeft ? 0 : 1, a_slot, 0, 0, a_serial, 0, count);
@@ -1479,6 +1549,7 @@ namespace BodyPouches
 			release.handle = reinterpret_cast<RE::TESObjectREFR*>(a_refr)->GetHandle();
 			release.serial = ++mod._dropSerial;
 			release.bagToken = bagToken;
+			release.origin = mod.CurrentReturnAnchor();
 			mod.NoteDropGeometry(a_isLeft, object, "pre_vrik_observation_only", release.serial);
 			release.event.Arm(mod._worldGeneration, mod._higgsUpdate);
 			mod._queuedDrops[release.handle.native_handle()] = release.serial;

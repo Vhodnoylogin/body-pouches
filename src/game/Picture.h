@@ -34,7 +34,7 @@ namespace BodyPouches::Game
 		[[nodiscard]] int               Slot() const noexcept { return _slot; }
 		struct Geometry
 		{
-			std::uintptr_t root{};
+			RE::NiPointer<RE::NiAVObject> root;
 			std::string parentName;
 			RE::NiTransform local, world, previousWorld;
 			RE::NiBound bound;

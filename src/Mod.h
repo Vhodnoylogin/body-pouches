@@ -13,6 +13,7 @@
 #include "vr/HiggsLink.h"
 #include "vr/VrikLink.h"
 #include "vr/BodySlotsDemo.h"
+#include "vr/BagReturnRegion.h"
 #include "diagnostics/State.h"
 
 #include <cstdint>
@@ -109,18 +110,30 @@ namespace BodyPouches
 			int a_quantity = 0, std::int64_t a_now = -1,
 			const Core::PendingGrab* a_pendingBefore = nullptr);
 		// A hand let go of something inside a pouch: take it in, or set the pouch up with it.
+		struct ReturnAnchor;
 		void StowDropped(int a_slot, bool a_isLeft, RE::TESObjectREFR* a_object, std::uint64_t a_serial,
-			const VR::BodySlotsDemo::Token& a_bagToken = {});
+			const VR::BodySlotsDemo::Token& a_bagToken = {}, const ReturnAnchor* a_origin = nullptr);
 
 		// Called only after VRIK in the release's own update. Native reach owns
 		// arbitration; the shared spatial path applies only when native reach is zero.
-		[[nodiscard]] int PouchAt(bool a_isLeft, int a_nativeSlot);
+		struct ReturnAnchor {
+			bool required{};
+			std::uint64_t epoch{}, save{};
+			std::int64_t at{};
+			RE::NiPointer<RE::NiAVObject> root;
+			RE::NiTransform world;
+		};
+		struct ReturnSample { ReturnAnchor anchor; std::optional<std::uint32_t> inside; };
+		[[nodiscard]] ReturnAnchor CurrentReturnAnchor();
+		[[nodiscard]] static bool SameReturnAnchor(const ReturnAnchor&, const ReturnAnchor&);
+		[[nodiscard]] ReturnSample SampleReturnZone();
+		[[nodiscard]] int PouchAt(bool a_isLeft, int a_nativeSlot, std::optional<std::uint32_t> a_inside = {});
 		static void OnBeforeFrame();
 		void ResolvePendingReleases();
 		void CancelPendingRelease(bool a_isLeft);
 		void SettleOutsideDrop(bool a_isLeft);
 		void QueueStowDropped(int a_slot, bool a_isLeft, RE::ObjectRefHandle a_handle, std::uint64_t a_serial,
-			VR::BodySlotsDemo::Token a_bagToken);
+			VR::BodySlotsDemo::Token a_bagToken, ReturnAnchor a_origin);
 		[[nodiscard]] bool SharedWorldReady(std::string_view* a_reason = nullptr);
 		[[nodiscard]] std::optional<double> SharedDistance(int a_slot, bool a_isLeft, std::string_view* a_reason = nullptr);
 		[[nodiscard]] double SharedRadius();
@@ -212,6 +225,7 @@ namespace BodyPouches
 			RE::ObjectRefHandle handle;
 			std::uint64_t serial{};
 			VR::BodySlotsDemo::Token bagToken;
+			ReturnAnchor origin;
 		};
 		PendingRelease _pendingReleases[2]; // physical left/right; no stored reach
 		std::uint64_t _higgsUpdate{}; // public before/post callback pair, not engine frame
@@ -232,6 +246,9 @@ namespace BodyPouches
 		VR::VrikLink     _vrik;
 		VR::HiggsLink    _higgs;
 		VR::BodySlotsDemo _demoSlots;
+#ifdef BODYPOUCHES_WEARABLE_DEMO
+		VR::BagReturnRegion _returnRegion;
+#endif
 		RE::TESObjectARMO* _demoBag{ nullptr };
 		DemoEquipment _demoEquipment;
 		std::atomic<bool> _demoEquipmentDirty{ true };

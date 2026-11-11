@@ -51,6 +51,7 @@ public:
     void Reset() noexcept; // Local fence; provider resets/reconciliation retire runtime state.
     [[nodiscard]] CopiedState Copy() const noexcept;
     [[nodiscard]] Token CurrentToken() const noexcept;
+    [[nodiscard]] bool CopyReturnSphere(float (&center)[3], float& radius) const noexcept;
     // Fresh configured copy + exact scope/view eligibility; never cached permission.
     bool Allows(bool isLeft, const Token* captured = nullptr) noexcept;
     [[nodiscard]] static const char* ReasonName(Reason) noexcept;

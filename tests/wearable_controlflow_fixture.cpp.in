@@ -174,7 +174,13 @@ public:
     std::uint64_t _pendingDrawIds[2]{},_traceDrawSerial{},_worldGeneration=1,_higgsUpdate=1,_dropSerial{};
     bool _inHiggsUpdate=true;
     std::int64_t _displayAt=99;
-    struct PendingRelease {Core::CurrentUpdateRelease event;RE::ObjectRefHandle handle;std::uint64_t serial{};VR::BodySlotsDemo::Token bagToken;};
+    struct ReturnAnchor {bool required{};std::uint64_t epoch{},save{};std::int64_t at{};std::uintptr_t root{};};
+    struct ReturnSample {ReturnAnchor anchor;std::optional<std::uint32_t> inside;};
+    ReturnSample spatial;
+    ReturnAnchor CurrentReturnAnchor(){return spatial.anchor;}
+    ReturnSample SampleReturnZone(){return spatial;}
+    static bool SameReturnAnchor(const ReturnAnchor&,const ReturnAnchor&);
+    struct PendingRelease {Core::CurrentUpdateRelease event;RE::ObjectRefHandle handle;std::uint64_t serial{};VR::BodySlotsDemo::Token bagToken;ReturnAnchor origin;};
     PendingRelease _pendingReleases[2];
     std::unordered_map<std::uint32_t,std::uint64_t> _queuedDrops;
     std::function<void(std::string_view)> onGeometry;
@@ -188,14 +194,14 @@ public:
     class DemoEquipment {public:RE::BSEventNotifyControl ProcessEvent(const RE::TESEquipEvent*,RE::BSTEventSource<RE::TESEquipEvent>*);};
     void RefreshDemoEquipment();
     bool DemoAllows(int,bool,const VR::BodySlotsDemo::Token* =nullptr);
-    int PouchAt(bool,int);
+    int PouchAt(bool,int,std::optional<std::uint32_t> = {});
     void CancelPendingRelease(bool);
     void SettleOutsideDrop(bool);
     void ResolvePendingReleases();
-    void QueueStowDropped(int,bool,RE::ObjectRefHandle,std::uint64_t,VR::BodySlotsDemo::Token);
+    void QueueStowDropped(int,bool,RE::ObjectRefHandle,std::uint64_t,VR::BodySlotsDemo::Token,ReturnAnchor);
     void InvalidateWorld();
     bool Draw(int,bool,const Core::FormKey&,std::uint64_t,const VR::BodySlotsDemo::Token&);
-    void StowDropped(int,bool,RE::TESObjectREFR*,std::uint64_t,const VR::BodySlotsDemo::Token&);
+    void StowDropped(int,bool,RE::TESObjectREFR*,std::uint64_t,const VR::BodySlotsDemo::Token&,const ReturnAnchor* = nullptr);
     bool HandleHolsterAttempt(int,bool,bool);
     static void OnDropped(bool,::TESObjectREFR*);
     static void OnGrabbed(bool,::TESObjectREFR*);
@@ -301,11 +307,33 @@ void Run(std::string_view test){
     }else if(test=="unavailable"){
         World w;Mod::OnDropped(true,&w.bottle);w.mod._demoSlots.provider=false;w.mod.ResolvePendingReleases();SKSE::tasks.Drain();CHECK(w.player.pickupCalls==0);
         CHECK(!w.mod.DemoAllows(13,true));CHECK(!w.mod._demoActive);
+    }else if(test=="bag_region"){
+        for(bool left:{true,false}) {
+            World w(false); w.mod.spatial={{true,1,1,100,55},left?1u:2u}; w.mod._vrik.native=0;
+            Mod::OnDropped(left,&w.bottle); w.mod.ResolvePendingReleases(); w.mod.ResolvePendingReleases();
+            SKSE::tasks.Drain(); CHECK(w.player.pickupCalls==1); CHECK(w.mod._pouches.Find(13)->IsAssigned());
+        }
+        for(int scenario=0;scenario<8;++scenario) {
+            World w(false); w.mod.spatial={{true,1,1,100,55},1}; Mod::OnDropped(true,&w.bottle);
+            if(scenario==0)w.mod.spatial.inside=0; // Native13 cannot be a second detector.
+            if(scenario==1)w.mod.spatial.anchor.root=92;
+            if(scenario==2)w.mod.spatial.anchor.epoch++;
+            if(scenario==3)w.mod.spatial.anchor.at+=151;
+            if(scenario==4)w.mod._vrik.native=12;
+            if(scenario==5)w.mod.spatial.inside=2; // Only the other wrist is inside.
+            w.mod.ResolvePendingReleases();
+            if(scenario==6)w.mod.spatial.anchor.root=92; // Replacement after selecting the return.
+            if(scenario==7)BodyPouches::Game::onDescribe=[&]{w.mod.spatial.anchor.root=92;};
+            SKSE::tasks.Drain(); CHECK(w.player.pickupCalls==0); CHECK(!w.mod._pouches.Find(13)->IsAssigned());
+        }
+        World w(false); Mod::OnDropped(true,&w.bottle); // A legacy release keeps its original detector.
+        w.mod.spatial={{true,1,1,100,55},0}; w.mod.ResolvePendingReleases(); SKSE::tasks.Drain();
+        CHECK(w.player.pickupCalls==1);
     }else throw std::runtime_error("unknown case");
 }
 }
 int main(int argc,char** argv){
     if(argc==2)Run(argv[1]);
-    else for(auto test:{"original_draw_capture","unassigned_stow_fence","normal_return","off_on_before_resolve","original_event_capture","queue_no_recapture","queued_return_epoch","draw_queue_epoch","draw_last_guard","stow_last_guard","removed_survives","reset_before_callbacks","queued_world_reset","native13_only","event_dirty_only","map_revalidation","unavailable"})Run(test);
+    else for(auto test:{"original_draw_capture","unassigned_stow_fence","normal_return","off_on_before_resolve","original_event_capture","queue_no_recapture","queued_return_epoch","draw_queue_epoch","draw_last_guard","stow_last_guard","removed_survives","reset_before_callbacks","queued_world_reset","native13_only","event_dirty_only","map_revalidation","unavailable","bag_region"})Run(test);
     std::cout<<"checks="<<checks<<" failures="<<failures<<"\n";return failures?1:0;
 }

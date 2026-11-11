@@ -70,7 +70,7 @@ def main():
     adapter = adapter_path.read_text(encoding='utf-8-sig')
     names = ['DemoEquipment::ProcessEvent', 'RefreshDemoEquipment', 'DemoAllows', 'PouchAt', 'CancelPendingRelease',
              'SettleOutsideDrop', 'ResolvePendingReleases', 'QueueStowDropped', 'InvalidateWorld', 'Draw',
-             'StowDropped', 'HandleHolsterAttempt', 'OnDropped', 'OnGrabbed']
+             'StowDropped', 'HandleHolsterAttempt', 'OnDropped', 'OnGrabbed', 'SameReturnAnchor']
     methods = {}; ranges = {}
     for name in names:
         methods[name], ranges[name] = extract(source, 'Mod::' + name + '(', source_path)
