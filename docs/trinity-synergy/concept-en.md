@@ -96,6 +96,8 @@ Down, continuation, Up and Cancel identify the original press, selected action a
 
 Region dwell, release or another observed condition can also initiate an action without a new button edge. Such candidates enter an explicit HIGGS proposal round with named hand/resources, coherent source observations and the same eligibility and priority rules. They do not fabricate input or bypass grants. A release retains its original sequence and decision: the release of an already consumed draw press cannot become a fresh storage action.
 
+Competing new button, nonbutton and native actions need a declared common decision window and stable provider/action/target keys. Candidates collected for that window are ranked before any winner starts changing state. An immediate first-come reservation cannot implement this priority guarantee. Once an action has legitimately started, a later window does not preempt its possession. A provider supporting only separate admission paths must expose that narrower scope explicitly.
+
 **Pseudo-ABI**
 
 ```cpp
