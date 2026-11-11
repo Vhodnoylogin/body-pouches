@@ -1,6 +1,24 @@
 # Synergy implementation status
 
-Updated: 3 November 2026. This ledger accompanies the [English concept](concept-en.md) and [Russian concept](concept-ru.md). The concept describes the target architecture; source implementation, native linking, consumer adoption and running-game acceptance are separate evidence levels.
+Updated: 11 November 2026. This ledger accompanies the [English concept](concept-en.md) and [Russian concept](concept-ru.md). The concept describes the target architecture; source implementation, native linking, consumer adoption and running-game acceptance are separate evidence levels.
+
+## Upstream review and responsibility audit, 11 November 2026
+
+The [HIGGS discussion](https://github.com/adamhynek/higgs/issues/7) now describes the division between hand arbitration and region detection. Three draft pull requests present working code for author review.
+
+| Provider | Implemented proposal | Verification and limit |
+|---|---|---|
+| [HIGGS #8](https://github.com/adamhynek/higgs/pull/8) | Consumers propose hand actions. HIGGS selects a winner, authorizes one deferred dispatch and retains ownership of physical operations. The original mouth/stash executor can use an external detector. | Three CTest programs, an independent C consumer and a full x64 DLL build. The official 001 header is identical to upstream. The complete proposal exposes 23 optional tables and touches nine existing C++ implementation files. A consumer of immediate zone actions needs only hand, routing and dispatch plus the existing phase callback. The separate native-region hook is for the built-in detector. |
+| [PLANCK #8](https://github.com/adamhynek/activeragdoll/pull/8) | Clients can query ragdoll bodies and attachment points, observe hits and request scoped physics changes. A size- and capability-checked method returns the original monotonic capture time for an exact actor sample. | Full DLL build, C ABI and offline registry/adapter tests. A body position in metres and a plugin-relative clock could otherwise be mistaken for a Skyrim position and a fresh palm sample. Conversion requires the actual scale, a matched capture time and the correct body generation. |
+| [PPB #3](https://github.com/Telord72612/Precision-Physic-Bodies/pull/3) | Two optional reads expose a specific NPC capsule and a numbered, save-scoped touch frame. Consumers can distinguish a fresh empty scan from an unavailable observation. | Production translation unit compiled against CommonLibVR and tested with synthetic observations. The patch targets published 2.2.0 source. The private physics worlds described in the author's 2.9 beta require a port against that version. |
+
+The [Russian external ABI audit](../trinity-research/abi-boundary-audit-2026-11-11-ru.md) traces the published interfaces against the consumer cases. The proposed hand-decision tie rule, delegated authority for zone actions, action continuation and generation-stamped anatomical anchors still need agreement. The full HIGGS and PLANCK drafts have not passed a minimal-contract acceptance review. A pose reader must not veto a hit when observation history is exhausted. In an offline check of the submitted PLANCK registry with a single policy-free client, after 256 unresolved hits the next hit was cancelled. This reproduces the protocol outcome without establishing its frequency in Skyrim.
+
+[Body Slots candidate source](https://github.com/Vhodnoylogin/body-slots/tree/b4db42ab1d2eb96ab0c7286ba06ad08601729cbd) includes the MIT license for its own code and SDK. The unpublished 0.2.0-rc.1 runtime retains the November 3 DLL. Both candidate archives reproduced byte-for-byte and the extracted SDK examples compiled. An optional consumer example reads the exact PLANCK sample time and invalidates its logical anchor on replacement or stale input. The runtime was also rebuilt against the HIGGS upstream proposal, passing all ten existing CTest targets and native-DLL discovery offline. The candidate has no in-game qualification.
+
+**Audit result.** A pouch opening is a logical region even when no physical body exists there. A PPB capsule can be touched when no mod offers an action. A PLANCK hit can occur without a new grip press. These cases justify three independent observations. A grant from HIGGS authorizes an attempt, while the mod that changes inventory must confirm the actual transfer. Inferring transfer from a callback return would let a potion disappear or be credited twice on failure. A feature that only reads a pose or contact has no need to register an input executor. Grouping every optional operation into a mandatory first handshake would impose costs on unrelated consumers. Upstream acceptance and live gameplay verification remain open.
+
+The VRIK proposal in both concepts now uses one read of multiple named anchors from the same final pose. This design uses the existing SKSE discovery pattern and keeps the published 001 interface intact. It is an independent design proposal with no new VRIK build or author agreement.
 
 ## Interaction regions and slots
 

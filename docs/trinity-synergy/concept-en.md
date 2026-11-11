@@ -2,7 +2,7 @@
 
 Russian: [Русская версия](concept-ru.md).
 
-This proposal describes a shared architecture for HIGGS, VRIK, PLANCK, PPB, Body Slots and their consumers. HIGGS owns all hand states and ways of using hands, Body Slots owns all logical interaction-region and slot mechanics, VRIK owns the body and virtual hand poses, PLANCK owns NPC physics, contacts and physical hits, and PPB supplies anatomical surfaces, fitting and query evidence. Each exposes the observations and requests the others need. This is the target architecture, not a claim of completed implementation or agreement with the authors; the [implementation ledger](implementation-status.md) records delivered code and verification limits. All interface blocks below are illustrative pseudo-ABI: supporting records are abbreviated, and names, layouts, numeric values, calling convention and transport require separate agreement.
+This proposal describes a shared architecture for HIGGS, VRIK, PLANCK, PPB, Body Slots and their consumers. HIGGS owns all hand states and ways of using hands, Body Slots owns all logical interaction-region and slot mechanics, VRIK owns the body and virtual hand poses, PLANCK owns its NPC ragdoll bodies, their contacts and physical hits, and PPB supplies anatomical surfaces, fitting and query evidence. Each exposes the observations and requests the others need. This is the target architecture, not a claim of completed implementation or agreement with the authors; the [implementation ledger](implementation-status.md) records delivered code and verification limits. All interface blocks below are illustrative pseudo-ABI: supporting records are abbreviated, and names, layouts, numeric values, calling convention and transport require separate agreement.
 
 The intended benefit is concrete: a mod author can ask for a named interaction region, a physical handover or an NPC attachment without recreating another framework's internals. An interaction region describes a spatial condition. A slot is a registered, named region with offered actions and activation rules; storage, presentation and persistence are optional capabilities. A mouth, an NPC pocket and a wearable pouch can share this contract while keeping different gameplay rules. A bare anatomical or physical surface is not automatically a slot. A single interaction has identifiable participants and a confirmed result.
 
@@ -57,6 +57,10 @@ The intended benefit is concrete: a mod author can ask for a named interaction r
 | CommonLib | Engine addresses and types, reusable technical operations and verified wrappers | A common implementation of engine access, geometry, scene and physics operations for the cooperating frameworks and external mods |
 
 HIGGS supplies the common input stream, hand model and control of every hand-use mechanism. Providers may recognize gameplay gestures and propose actions, but use HIGGS's closed set of shared operations. Body Slots recognizes logical spatial conditions and activates selected slot actions; VRIK supplies pose without selecting them. Body Slots neither creates physical colliders nor writes physics bodies, constraints or hand targets. Referencing PPB anatomy or HIGGS/PLANCK surfaces does not duplicate their physical ownership. A recognizer does not gain permission to create a second physical actuator or bypass HIGGS arbitration. Forwarding an action result does not transfer pouch, food, crime, harvest or damage rules to HIGGS; the result identifies the actual executor.
+
+**Minimum contract for one action.** A consumer observing a pouch needs a current target pose and a hand probe in compatible coordinates and time. Body Slots answers whether the hand is in that region. For an action on grip, HIGGS must additionally identify the input, arbitrate all participating offers including the native action, and authorize at most one handler. A delayed handler rechecks the target and hand before changing anything. The inventory owner reports the actual result. A read-only observer can drop an observation when its buffer is full. Registering that observer must never veto a native hit, alter tracking, or start unrelated physics work. A mod requesting a drive or a change of collider geometry negotiates that capability separately. When every optional client is absent, the providers must preserve their original gameplay paths.
+
+A consumer can negotiate an immediate grip edge independently of the extended controller-axis stream. A capability is justified by an interaction that fails without it. For example, opening a pocket on an NPC needs a stable, current anchor even with zero skin contact. Using the player's grip needs HIGGS arbitration even when no NPC is present. Subscribing to the outcome of a hit requires neither input ownership nor the right to modify damage. A hand-use mode outside the shared contract can be reported as unknown only if the provider has evidence of uncertainty. An invisible third-party input hook cannot be detected reliably through another mod's ABI.
 
 ## HIGGS input possession and physical requests
 
@@ -274,16 +278,16 @@ Tracked controller, HIGGS resolved palm/grip and VRIK virtual hand are distinct 
 **Pseudo-ABI**
 
 ```cpp
-namespace VRIK {
-
-Status CopyHandPose(ClientToken, PhysicalHand, HandPose* outPose);
-
-Status CopyBodyAnchor(ClientToken, const BodyAnchorQuery*, BodyAnchorSnapshot* outAnchor);
-
-// Events: PoseAvailable, BodyAnchorInvalidated.
-
-}
+// Optional VRIK pose service, acquired after SKSE PostLoad.
+struct IVrikPose001 {
+    virtual PoseStatus CopyFinalPose(const AnchorKey* keys, uint32_t count,
+        PoseStamp* stamp, WorldPose* poses) = 0;
+};
 ```
+
+A belt pouch needs the belt anchor and the reaching wrist from the same completed avatar update. One main-thread call copies both into caller-owned buffers. Keys identify the physical left or right virtual wrist, or an exact named player skeleton node. Each output has a validity bit and a world transform in Skyrim units. All valid entries share a stamp with the pose sequence, skeleton/calibration generation and monotonic capture time. A missing node invalidates its entry. A load or recalibration invalidates the old stamp until VRIK publishes another final pose. Repeated reads of a completed pose return its original stamp.
+
+Keep the familiar SKSE message to the VRIK recipient and its pointer-returning discovery pattern. Give pose discovery its own message type and require an explicit supported reply before calling the single virtual method. An older provider can ignore the message. Existing clients can continue to request IVrikInterface001. A pouch can poll from its existing post-pose callback. This first interface needs no client registration or new subscriptions.
 
 This is a proposed observation contract, not a claim that released VRIK provides these methods. The inspected public 001 interface has no general GetHandPose method. An independent Body Slots adapter can observe available game nodes updated by VRIK, validating phase, coordinates, calibration and freshness; insufficient data makes the observation unavailable. New slots are designed without requiring VRIK changes or reconstructed code. Qualification of that adapter against a particular VRIK release remains separate work.
 
@@ -291,7 +295,7 @@ This is a proposed observation contract, not a claim that released VRIK provides
 
 ### Actor bodies and attachment points
 
-PLANCK owns NPC physical animation, ragdoll transitions and body lifetime. It supplies actor/bone/body metadata and validated attachment endpoints. PPB supplies anatomical surface geometry and fitting proposals; PLANCK remains the NPC physical-body publication owner and validates those proposals without creating a competing ragdoll. A penetration mod owns wound and extraction rules; PLANCK validates the target body and HIGGS applies the weapon constraint.
+PLANCK owns NPC physical animation, ragdoll transitions and body lifetime. It supplies actor/bone/body metadata and validated attachment endpoints. PPB supplies anatomical surface geometry and fitting proposals; PLANCK remains the publication owner for bodies in its ragdoll and validates those proposals without creating a competing ragdoll. A penetration mod owns wound and extraction rules; PLANCK validates the target body and HIGGS applies the weapon constraint.
 
 **Pseudo-ABI**
 
@@ -365,7 +369,9 @@ Status CopyShapeProposal(ClientToken, const ShapeFitQuery*, ShapeProposal* outPr
 }
 ```
 
-PPB computes proposed shape changes as data. In the target architecture, PLANCK validates and applies NPC physical geometry at its safe mutation phase; HIGGS does so for its hand/finger bodies. Requests carry the required model/body generations and geometry revision; the physical owner reports whether and when the change took effect. Each physical body has one publication/lifetime owner. PPB can fit and read back the applied shapes without installing another hand actuator, replacing the same body independently or changing another provider's global settings. This is a proposed integration boundary: current PPB also creates hand colliders and chains physical updates itself.
+The physical owner is identified per world and body. In PPB 2.9 beta, an NPC can have a private physics world stepped by PPB workers. PPB publishes completed samples and invalidation for bodies it owns there. PLANCK validates requests against its own ragdoll bodies. A consumer joining observations across worlds needs both source identities, generations, units and comparable capture times. A pending worker step cannot supply a completed hand contact or a PLANCK hit. [PPB beta release notes](https://github.com/Telord72612/Precision-Physic-Bodies/releases/tag/V2.9.0-beta)
+
+PPB computes proposed shape changes as data. In the target architecture, PLANCK validates and applies geometry to the NPC bodies it manages at its safe mutation phase; HIGGS does so for its hand/finger bodies. Requests carry the required model/body generations and geometry revision; the physical owner reports whether and when the change took effect. Each physical body has one publication/lifetime owner. PPB can fit and read back the applied shapes without installing another hand actuator, replacing the same body independently or changing another provider's global settings. This is a proposed integration boundary: current PPB also creates hand colliders and chains physical updates itself.
 
 ### Touch evidence and action authority
 
@@ -800,7 +806,7 @@ This includes function/data address definitions and resolution, typed object acc
 
 Start with the capabilities of the current CommonLib build. When an operation is missing, extend the library with a verified method: establish its signature, data layout, address for the supported game version and call behavior. A common operation should serve both the cooperating frameworks and external mods, with an interface that encapsulates engine access details.
 
-On this foundation, HIGGS manages all hand states and ways of using hands, VRIK manages the body and virtual hand poses, Body Slots manages all slot mechanics, PLANCK manages NPC physics, and PPB supplies anatomical geometry and touch evidence. CommonLib provides their shared technical tools; decisions about pouch contents, climbing, harvesting and hits belong to the owners of those mechanics. The two levels complement each other: common engine code in the library and coordinated gameplay interaction through the mods' APIs/ABIs.
+On this foundation, HIGGS manages all hand states and ways of using hands, VRIK manages the body and virtual hand poses, Body Slots manages all slot mechanics, PLANCK manages its NPC ragdoll bodies, and PPB supplies anatomical geometry and touch evidence. CommonLib provides their shared technical tools; decisions about pouch contents, climbing, harvesting and hits belong to the owners of those mechanics. The two levels complement each other: common engine code in the library and coordinated gameplay interaction through the mods' APIs/ABIs.
 
 For PPB, candidate shared technical work includes capsule-distance math, coordinate conversion and verified shape/scene access. Reuse existing CommonLib methods where qualified; missing safe helpers are second-stage library proposals. Region registration, spatial sessions/dwell, user priorities, anatomical fitting, contact meaning and per-provider mutation authority remain with the services described above; crime, food and harvest rules remain with their consumers. This revision implements no CommonLib change.
 
