@@ -11,7 +11,7 @@ import subprocess
 
 SOURCE = Path(__file__).resolve().parent
 ROOT = SOURCE.parents[2]
-FRAMEWORK_COMMIT = "209674ef0bb882c5d70f6f9078fcf6951f8aeb2e"
+FRAMEWORK_COMMIT = "8618ccee8d3f327062164ca7045221805ebe3cad"
 HIGGS_COMMIT = "0e9053fe4beb657ef51c7bf2e2bc031091d815cc"
 HIGGS_HEADERS = ("higgsinterface001.h", "higgsabitypes.h", "higgshandapi.h", "higgsinput.h",
                  "higgstransactions.h", "higgsphysics.h", "higgsobservations.h", "higgsnativeinterop.h")
