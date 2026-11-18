@@ -25,6 +25,8 @@ The complete native build uses HIGGS `fd226f6`, PLANCK `bcfa8f8`, PPB `4496302`,
 
 Locally assembled runtime ZIP361,653bytes has SHA256 `28c026c8c57674e449fb1ea2438832ec41bfe7b415bffc8c0f99983d564de315`; SDK ZIP170,858bytes has SHA256 `03886f31193b6bde79b0ba6629233c3ea60e8b5a700b97693a7c7edaa424d1c9`. These artifacts have not been uploaded or released. Runtime and SDK remain separate and retain MIT/third-party notices and copied provenance.
 
+An independent artifact review passes605 checks: all164 input pins, exact runtime/SDK payload and provenance hashes, all9notice files in each archive and the DLL byte identity. All4C++ examples from the extracted SDK compile with MSVC x64 `/W4 /WX`, using only the extracted SDK/provider include directories. This verifies the delivered SDK's source closure; it does not execute the examples in Skyrim.
+
 Before a generally usable runtime release, qualify SKSE loading, one consumer interaction, matching release, save/load and NPC source loss in Skyrim VR; provide the exact installable cooperation-provider builds and update the unpublished Nexus draft. Author acceptance is not a technical dependency when exact compatible fork builds are supplied. Released HIGGS alone lacks the new action services. Unqualified semantic command/equipment backends and original VRIK holsters remain outside the supported shared path.
 
 ## Minimality and shared region actions — 18 November 2026
