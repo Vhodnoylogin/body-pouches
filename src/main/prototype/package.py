@@ -8,6 +8,7 @@ import subprocess
 import zipfile
 
 import make_plugin
+from build import DEPENDENCY_COMMITS
 
 SOURCE = Path(__file__).resolve().parent
 ROOT = SOURCE.parents[2]
@@ -34,7 +35,11 @@ def main():
         parser.error("commit source changes, then build that clean revision before packaging")
     if receipt.get("sourceDirtyAtEnd") or receipt.get("testsRun") or receipt.get("dllLoaded") or receipt.get("gameStarts"):
         parser.error("expected a clean build-only receipt for this no-testing prototype")
-    for state in receipt["sourceStates"].values():
+    dependency_states = receipt.get("dependencyStates", {})
+    if dependency_states.keys() != DEPENDENCY_COMMITS.keys() or any(
+            dependency_states[name]["revision"] != revision for name, revision in DEPENDENCY_COMMITS.items()):
+        parser.error("expected the complete pinned dependency-source evidence")
+    for state in (*receipt["sourceStates"].values(), *dependency_states.values()):
         root=Path(state["root"])
         if state["status"] or subprocess.check_output(["git","-C",str(root),"status","--porcelain"],text=True).strip() or \
                 subprocess.check_output(["git","-C",str(root),"rev-parse","HEAD"],text=True).strip()!=state["revision"]:
@@ -71,7 +76,9 @@ def main():
         "requiredFrameworkSource": receipt["frameworkCommit"], "requiredHiggsSource": receipt["higgsCommit"],
         "gameAssets": "References Skyrim.esm and Plants\\CoinBagLarge.nif from the installed game; no game assets copied.",
         "testsRun": False, "gameStarts": 0, "dllLoaded": False, "publication": "local prototype only",
-        "sourceStates": receipt["sourceStates"],
+        "sourceStates": {name: {"revision": state["revision"], "clean": not state["status"]}
+                         for name, state in receipt["sourceStates"].items()},
+        "dependencyRevisions": DEPENDENCY_COMMITS,
         "buildManifestSha256": sha(args.build_manifest.read_bytes()),
         "files": {name: {"bytes": len(data), "sha256": sha(data)} for name, data in sorted(files.items())},
     }

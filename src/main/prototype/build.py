@@ -13,6 +13,12 @@ SOURCE = Path(__file__).resolve().parent
 ROOT = SOURCE.parents[2]
 FRAMEWORK_COMMIT = "8618ccee8d3f327062164ca7045221805ebe3cad"
 HIGGS_COMMIT = "0e9053fe4beb657ef51c7bf2e2bc031091d815cc"
+DEPENDENCY_COMMITS = {
+    "commonlibsse": "c4ab853d095e81e3390b282d7ba01ab2f24ebf25",
+    "fmt": "0c9fce2ffefecfdce794e1859584e25877b7b592",
+    "spdlog": "8e5613379f5140fefb0b60412fbf1f5406e7c7f8",
+    "rapidcsv": "68f57cc6c83d5e0992904398822453489d8dfac1",
+}
 HIGGS_HEADERS = ("higgsinterface001.h", "higgsabitypes.h", "higgshandapi.h", "higgsinput.h",
                  "higgstransactions.h", "higgsphysics.h", "higgsobservations.h", "higgsnativeinterop.h")
 
@@ -60,6 +66,12 @@ def main():
         installation = subprocess.check_output([str(vswhere), "-latest", "-products", "*", "-property", "installationPath"], text=True).strip()
         cmake = Path(installation) / "Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe"
     dependencies = dependency_sources(native)
+    if dependencies.keys() != DEPENDENCY_COMMITS.keys():
+        parser.error("RC4 cache must identify all four pinned dependency sources")
+    dependency_states = {name: source_state(path) for name, path in dependencies.items()}
+    for name, state in dependency_states.items():
+        if state["revision"] != DEPENDENCY_COMMITS[name] or state["status"]:
+            parser.error(f"{name} must be a clean checkout at {DEPENDENCY_COMMITS[name]}")
     json_root = (args.json_root or dependencies["commonlibsse"].parent / "nlohmann_json-src").resolve(strict=True)
     json_include = json_root / "single_include"
     if not (json_include / "nlohmann/json.hpp").is_file():
@@ -102,6 +114,8 @@ def main():
             raise RuntimeError(f"build input changed: {path}")
     if source_states != {name: source_state(root) for name, root in source_roots.items()}:
         raise RuntimeError("source revision or working-tree state changed during compilation")
+    if dependency_states != {name: source_state(dependencies[name]) for name in DEPENDENCY_COMMITS}:
+        raise RuntimeError("dependency source changed during compilation")
     dll = output / "native/Release/BodyPouches.dll"
     receipt = {
         "product": "Body Pouches 2", "version": "2.0.0-prototype.9",
@@ -111,6 +125,7 @@ def main():
         "higgsRoot": str(higgs), "higgsCommit": HIGGS_COMMIT,
         "dependencySources": {name: str(path) for name, path in dependencies.items()},
         "dependencyLicenses": {name: str(path) for name, path in licenses.items()},
+        "dependencyStates": dependency_states,
         "sourceSha256": pins, "commands": executions,
         "sourceStates": source_states,
         "dll": {"path": str(dll), "bytes": dll.stat().st_size, "sha256": sha(dll)},
