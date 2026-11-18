@@ -8,8 +8,8 @@ set(RC4_NATIVE "" CACHE PATH "Completed VR Interaction Framework RC4 native buil
 set(FRAMEWORK_ROOT "" CACHE PATH "Pinned public VR Interaction Framework source")
 set(HIGGS_ROOT "" CACHE PATH "Pinned public HIGGS API source")
 set(JSON_INCLUDE "" CACHE PATH "Optional directory containing nlohmann/json.hpp")
-set(FRAMEWORK_COMMIT "bf096583fa0bd1bf6a39d69d48c3fb3fc6e834d0")
-set(HIGGS_COMMIT "8e3d36434f1ff7791cab3ed5eaf9b00cf838629e")
+set(FRAMEWORK_COMMIT "cce1bd19a8d7e3079c4e30e8189f23e4a369474b")
+set(HIGGS_COMMIT "57223a729e47c5b7867eae0fe16b66d9c1befd4a")
 
 find_package(Git REQUIRED)
 foreach(dependency IN ITEMS FRAMEWORK HIGGS)
@@ -62,7 +62,7 @@ target_include_directories(BodyPouches2Prototype PRIVATE
 target_compile_definitions(BodyPouches2Prototype PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX
     ENABLE_SKYRIM_SE=1 ENABLE_SKYRIM_AE=1 ENABLE_SKYRIM_VR=1 HAS_SKYRIM_MULTI_TARGETING=1
     SPDLOG_COMPILED_LIB SPDLOG_FMT_EXTERNAL _CRT_SECURE_NO_WARNINGS
-    BODYPOUCHES_PROTO_VERSION="2.0.0-prototype.5")
+    BODYPOUCHES_PROTO_VERSION="2.0.0-prototype.6")
 target_compile_options(BodyPouches2Prototype PRIVATE
     /W4 /permissive- /EHsc /utf-8 /wd4200 /wd4201 /wd4324)
 target_link_libraries(BodyPouches2Prototype PRIVATE

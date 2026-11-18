@@ -81,7 +81,7 @@ private:
     sdk::InventoryProviderTables tables_;
     HIGGS_HapticsInterface haptics_{};
     sdk::OrdinaryInventoryProvider inventory_;
-    std::uint64_t writer_{}, higgsClient_{}, scope_{}, epoch_{}, operationScope_{}, processedTransfer_{}, processedEpoch_{};
+    std::uint64_t writer_{}, higgsClient_{}, scope_{}, epoch_{}, processedTransfer_{}, processedEpoch_{};
     std::uint64_t definitionRevision_{};
     bs::InstanceRecord instance_{};
     bs::InstanceView view_{};
@@ -138,9 +138,10 @@ void PouchApp::Connect() {
     game_ = Framework<bs::GameApi>("BodySlots_QueryGameInterface");
     tables_.behaviorOptions = Framework<bs::BehaviorApi2>("BodySlots_QueryBehaviorInterface", 2);
     tables_.gameServices = Framework<bs::GameApi2>("BodySlots_QueryGameInterface", 2);
+    tables_.frameObservations = Framework<bs::GameApi3>("BodySlots_QueryGameInterface", 3);
     content_ = Framework<bs::ContentObservationApi>("BodySlots_QueryContentObservationInterface");
     if (!registry_ || !instances_ || !equipment_ || !runtime_ || !behavior_ || !game_ || !content_ ||
-        !tables_.behaviorOptions || !tables_.gameServices ||
+        !tables_.behaviorOptions || !tables_.gameServices || !tables_.frameObservations ||
         !Higgs<HIGGS_QueryHandInterfaceFn>("HIGGS_QueryHandInterface", HIGGS_HAND_ABI_VERSION, tables_.hands) ||
         !Higgs<HIGGS_QueryHandRoutingInterfaceFn>("HIGGS_QueryHandRoutingInterface", HIGGS_HAND_ROUTING_ABI_VERSION, tables_.routing) ||
         !Higgs<HIGGS_QueryInputRoutesInterfaceFn>("HIGGS_QueryInputRoutesInterface", 1, tables_.routes) ||
@@ -272,13 +273,14 @@ bool PouchApp::Retire() {
     if (!attached_) return true;
     inventory_.Cancel();
     const auto progress = inventory_.Tick();
+    Completed(progress);
     if (inventory_.Detach() != bs::Status::Ok) {
         if (progress.stage == sdk::InventoryProviderStage::RecoveryRequired && !failStopped_)
             spdlog::error("unsettled operation retained across lifecycle; no new transfers or automatic refund");
         failStopped_ = progress.stage == sdk::InventoryProviderStage::RecoveryRequired;
         return false;
     }
-    attached_ = false; operationScope_ = 0; return true;
+    attached_ = false; failStopped_ = false; return true;
 }
 std::shared_ptr<PolicySnapshot> PouchApp::Observe(const HIGGS_HandSnapshot& hands,
     const bs::RuntimeRecord& runtime, const std::array<HIGGS_ItemIdentity, 2>& held) {
@@ -318,13 +320,21 @@ void PouchApp::Completed(const sdk::InventoryProviderProgress& progress) {
     }
     if (progress.stage != sdk::InventoryProviderStage::Completed || !progress.transfer ||
         (processedTransfer_ == progress.transfer && processedEpoch_ == progress.receipt.epoch)) return;
+    // A cell/world transition ends physical authority, not this save's logical
+    // assignment. Resume may also precede our cached scope refresh. Use only
+    // the captured logical save and a fresh Framework scope, never cached epoch.
+    if (loading_ || !progress.saveGeneration) return;
+    bs::RuntimeView current{}; current.structSize = sizeof(current); current.version = bs::kRuntimeApiVersion;
+    const auto copied = runtime_->CopyRuntime(writer_, nullptr, 0, &current);
+    if ((copied != bs::Status::Ok && copied != bs::Status::BufferTooSmall) ||
+        current.saveGeneration != progress.saveGeneration) return;
     processedTransfer_ = progress.transfer; processedEpoch_ = progress.receipt.epoch; refresh_ = true;
     if (progress.releaseStatus != HIGGS_HAND_OK)
         spdlog::warn("delivered transfer {} settled; original grip continuation unavailable ({})",
             progress.transfer, progress.releaseStatus);
     const auto& receipt = progress.receipt;
     constexpr auto required = HIGGS_TX_DOMAIN_ATTESTED | HIGGS_TX_NATIVE_RELEASE_CONFIRMED;
-    if (loading_ || operationScope_ != scope_ || receipt.epoch != epoch_ || receipt.stage != HIGGS_TX_COMPLETED ||
+    if (receipt.stage != HIGGS_TX_COMPLETED ||
         receipt.disposition != HIGGS_DISPOSITION_INVENTORY || (receipt.receiptFlags & required) != required ||
         (receipt.receiptFlags & (HIGGS_TX_COMPENSATION_CONFIRMED | HIGGS_TX_MUTATION_UNCERTAIN)) ||
         !(receipt.original.validFields & HIGGS_ITEM_BASE_KNOWN)) return;
@@ -344,7 +354,7 @@ void PouchApp::Tick() {
     if (!player || !player->Get3D(false) || tables_.hands.CopySnapshot(higgsClient_, &hands) != HIGGS_HAND_OK ||
         !hands.worldReady || game_->CopyIntegration(&game) != bs::Status::Ok || !game.connected || !ReadInstances()) {
         policy_.store(nullptr);
-        if (attached_) { inventory_.Cancel(); inventory_.Tick(); }
+        if (attached_) { inventory_.Cancel(); Completed(inventory_.Tick()); }
         return;
     }
     if (epoch_ != hands.epoch || scope_ != view_.saveGeneration) {
@@ -375,8 +385,6 @@ void PouchApp::Tick() {
     }
     if (!Attach()) return;
     feedbackInstance_.store(worn_ && settings_.entryHaptics ? instance_.instanceHandle : 0);
-    const auto before = inventory_.CopyProgress();
-    if (before.stage == sdk::InventoryProviderStage::Queued) operationScope_ = scope_;
     const auto progress = inventory_.Tick();
     Completed(progress);
     if (progress.stage == sdk::InventoryProviderStage::RecoveryRequired) { policy_.store(nullptr); return; }

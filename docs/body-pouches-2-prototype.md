@@ -70,6 +70,16 @@ An armed draw now survives another slot's content, binding or anchor changes. Fr
 
 HIGGS ends authority at the original deadline but retains exact admitted child receipts for factual settlement. A completed transfer can therefore be accounted after natural expiry, without another transfer or an extended grant. Original-grip continuation additionally requires the same original context and possession episode. If that continuation is no longer available, the helper reports `releaseStatus`, settles the already completed delivery and the consumer logs the limitation. It does not invent a press, drop, refund or second item. A child cancelled before completion remains subject to the existing compensation/recovery protocol. Tests, DLL loading and game runs remain disabled by the owner's instruction.
 
+## Scoped completion and freshness in prototype6
+
+The consumer now uses the operation's captured Framework save generation when applying a factual storage assignment. Loading another save cannot apply a previous receipt, even if local cached scope values have not caught up. A cell's physics-world change can retire HIGGS authority while remaining in the same logical save; it does not erase a valid stored-potion assignment. Retirement and temporarily unavailable-player paths consume successful progress before detaching, and a successfully drained lifecycle clears its temporary stop.
+
+Framework cancels and releases unstarted old-scope work after a positively observed save/epoch transition, without demanding a content mirror for a vanished source. Uncertain admitted transfers still require recovery. Exact observed terminal receipts are retained locally for cleanup retries; no new transfer or automatic refund is issued. Removing a slot in the same save permits only authenticated settlement of that exact pending history, never a replacement slot. Terminal completion must match the earlier committed projection.
+
+GameApi3 supplies the actual spatial observation-start time. Both storage and withdrawal revalidate source freshness immediately before admission through HIGGS's existing authorized-dispatch fence. Storage preserves the accepted release gesture: the hand need not stay inside the bag afterward, but a stale/invalidated source cannot start new work. The old first-seen-frame timer is removed. HIGGS changes remain limited to one private receipt-acknowledgement flag and retention/cleanup at existing lifecycle points; all its public table layouts and exports remain unchanged. Its parent, child and transaction history survive terminal reporting until the consumer's explicit `ReleaseGrant` acknowledgement.
+
+These are source changes under the owner's no-testing instruction. Compilation/linking is recorded separately and does not qualify actual loading, inventory, save behavior or ergonomics.
+
 ## Building
 
 Production sources are in `src/main/prototype/`. The separate CMake entry consumes only the public framework tables and its pinned SDK helper. It reuses existing pure Body Pouches potion rules and its form-description boundary, together with the completed RC4 build's CommonLib/fmt/spdlog libraries. It does not compile legacy input, VRIK holster or inventory-mutation code. Generated ESP/DLL/ZIP outputs stay outside Git.
