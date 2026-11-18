@@ -11,8 +11,8 @@ import subprocess
 
 SOURCE = Path(__file__).resolve().parent
 ROOT = SOURCE.parents[2]
-FRAMEWORK_COMMIT = "1c588c410e86aa73f6540fc16ab691f1eb0671ae"
-HIGGS_COMMIT = "8a359896e5379e73a78baa0ff8715e692eba6639"
+FRAMEWORK_COMMIT = "bf096583fa0bd1bf6a39d69d48c3fb3fc6e834d0"
+HIGGS_COMMIT = "f7d0bef6d5498729d2889462d770d0cb3819f662"
 HIGGS_HEADERS = ("higgsinterface001.h", "higgsabitypes.h", "higgshandapi.h", "higgsinput.h",
                  "higgstransactions.h", "higgsphysics.h", "higgsobservations.h", "higgsnativeinterop.h")
 
@@ -93,7 +93,7 @@ def main():
             raise RuntimeError(f"build input changed: {path}")
     dll = output / "native/Release/BodyPouches.dll"
     receipt = {
-        "product": "Body Pouches 2", "version": "2.0.0-prototype.4",
+        "product": "Body Pouches 2", "version": "2.0.0-prototype.5",
         "sourceRepository": git(ROOT, "remote", "get-url", "origin"), "sourceCommit": source_commit,
         "sourceDirtyAtEnd": bool(git(ROOT, "status", "--porcelain")),
         "frameworkRoot": str(framework), "frameworkCommit": FRAMEWORK_COMMIT,

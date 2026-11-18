@@ -58,6 +58,13 @@ std::optional<Core::FormKey> Resolve(SKSE::SerializationInterface& skse,
 }
 }
 
+std::optional<Core::Filter> MakeAssignment(const Core::Item& item) {
+    if (item.harmful || !item.key.IsSet()) return std::nullopt;
+    auto filter = Core::Filter::FromItem(item);
+    if (!Core::EncodeAssignments({{kCurrentIndex, filter}})) return std::nullopt;
+    return filter;
+}
+
 Core::Filter AssignmentStore::Copy() const {
     std::lock_guard lock(mutex_);
     return filter_;
@@ -69,13 +76,11 @@ void AssignmentStore::Clear() {
 }
 
 bool AssignmentStore::AssignIfUnset(const Core::Item& item) {
-    if (item.harmful || !item.key.IsSet()) return false;
-    auto next = Core::Filter::FromItem(item);
-    // Keep new state within the same bounds that the save codec can represent.
-    if (!Core::EncodeAssignments({{kCurrentIndex, next}})) return false;
+    auto next = MakeAssignment(item);
+    if (!next) return false;
     std::lock_guard lock(mutex_);
     if (filter_.IsSet()) return false;
-    filter_ = std::move(next);
+    filter_ = std::move(*next);
     return true;
 }
 

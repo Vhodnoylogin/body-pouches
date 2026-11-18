@@ -8,8 +8,8 @@ set(RC4_NATIVE "" CACHE PATH "Completed VR Interaction Framework RC4 native buil
 set(FRAMEWORK_ROOT "" CACHE PATH "Pinned public VR Interaction Framework source")
 set(HIGGS_ROOT "" CACHE PATH "Pinned public HIGGS API source")
 set(JSON_INCLUDE "" CACHE PATH "Optional directory containing nlohmann/json.hpp")
-set(FRAMEWORK_COMMIT "1c588c410e86aa73f6540fc16ab691f1eb0671ae")
-set(HIGGS_COMMIT "8a359896e5379e73a78baa0ff8715e692eba6639")
+set(FRAMEWORK_COMMIT "bf096583fa0bd1bf6a39d69d48c3fb3fc6e834d0")
+set(HIGGS_COMMIT "f7d0bef6d5498729d2889462d770d0cb3819f662")
 
 find_package(Git REQUIRED)
 foreach(dependency IN ITEMS FRAMEWORK HIGGS)
@@ -50,7 +50,7 @@ endforeach()
 
 get_filename_component(POUCHES_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
 file(GLOB potion_core_sources CONFIGURE_DEPENDS "${POUCHES_ROOT}/src/core/*.cpp")
-add_library(BodyPouches2Prototype SHARED runtime.cpp potion_policy.cpp settings.cpp assignment_store.cpp
+add_library(BodyPouches2Prototype SHARED runtime.cpp potion_policy.cpp potion_observer.cpp settings.cpp assignment_store.cpp
     ${potion_core_sources} "${POUCHES_ROOT}/src/game/Forms.cpp"
     "${FRAMEWORK_ROOT}/examples/ordinary_inventory_provider.cpp")
 set_target_properties(BodyPouches2Prototype PROPERTIES OUTPUT_NAME BodyPouches SUFFIX .dll)
@@ -62,7 +62,7 @@ target_include_directories(BodyPouches2Prototype PRIVATE
 target_compile_definitions(BodyPouches2Prototype PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX
     ENABLE_SKYRIM_SE=1 ENABLE_SKYRIM_AE=1 ENABLE_SKYRIM_VR=1 HAS_SKYRIM_MULTI_TARGETING=1
     SPDLOG_COMPILED_LIB SPDLOG_FMT_EXTERNAL _CRT_SECURE_NO_WARNINGS
-    BODYPOUCHES_PROTO_VERSION="2.0.0-prototype.4")
+    BODYPOUCHES_PROTO_VERSION="2.0.0-prototype.5")
 target_compile_options(BodyPouches2Prototype PRIVATE
     /W4 /permissive- /EHsc /utf-8 /wd4200 /wd4201 /wd4324)
 target_link_libraries(BodyPouches2Prototype PRIVATE

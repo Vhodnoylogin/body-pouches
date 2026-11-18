@@ -1,4 +1,4 @@
-Body Pouches 2 - prototype 4
+Body Pouches 2 - prototype 5
 
 A wearable potion bag using VR Interaction Framework. This is an untested local
 prototype, not an update to the released Body Pouches 0.2.0. Do not install both
@@ -53,3 +53,8 @@ No tests, DLL loading, game launch, deployment or publication were performed for
 this prototype. Bag rendering, positioning, handling and save behavior await
 actual gameplay qualification. Source commit and exact provider requirements are
 recorded in BodyPouches2-PROVENANCE.json; full build instructions stay on GitHub.
+
+Prototype5 isolates armed draws from other slot changes and separates factual
+delivery from optional original-grip following. It preflights saved assignments
+and refreshes eligibility independently of cached inventory observations.
+No tests or game runs were performed; this is a compile-only candidate.

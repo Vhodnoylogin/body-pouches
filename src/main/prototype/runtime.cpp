@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include "potion_policy.h"
+#include "potion_observer.h"
 #include "assignment_store.h"
 #include "settings.h"
 #include "game/Forms.h"
@@ -50,15 +51,6 @@ template<class Query, class T> bool Higgs(const char* name, std::uint32_t versio
 bool Drinkable(RE::AlchemyItem* potion) {
     return potion && potion->GetPlayable() && !potion->IsFood() && !potion->IsPoison();
 }
-Potion Describe(RE::AlchemyItem* potion) {
-    Potion result;
-    result.item = Game::Describe(potion);
-    result.form = potion->GetFormID();
-    const auto* model = potion->GetModel();
-    if (model && strlen(model) < 192) result.model = model;
-    return result;
-}
-
 // One owner for mutable integration state. Callbacks only read the immutable
 // policy snapshot; serialization changes only its separately locked assignment.
 class PouchApp final {
@@ -66,7 +58,7 @@ public:
     static PouchApp& Get() { static PouchApp app; return app; }
     void Connect();
     void Tick();
-    void Suspend() noexcept { loading_ = true; policy_.store(nullptr); cancel_ = true; }
+    void Suspend() noexcept { loading_ = true; policy_.store(nullptr); observer_.Invalidate(); cancel_ = true; }
     void Resume() noexcept { loading_ = false; refresh_ = true; }
     void Save(SKSE::SerializationInterface*);
     void Load(SKSE::SerializationInterface*);
@@ -90,8 +82,7 @@ private:
     HIGGS_HapticsInterface haptics_{};
     sdk::OrdinaryInventoryProvider inventory_;
     std::uint64_t writer_{}, higgsClient_{}, scope_{}, epoch_{}, operationScope_{}, processedTransfer_{}, processedEpoch_{};
-    std::uint64_t refreshedAt_{}, definitionRevision_{};
-    std::array<HIGGS_ItemIdentity, 2> observedHeld_{};
+    std::uint64_t definitionRevision_{};
     bs::InstanceRecord instance_{};
     bs::InstanceView view_{};
     std::uint32_t bagForm_{};
@@ -100,6 +91,7 @@ private:
     std::atomic<bool> loading_{false}, cancel_{false}, refresh_{true};
     std::atomic<std::shared_ptr<const PolicySnapshot>> policy_;
     AssignmentStore assignments_;
+    PotionObserver observer_;
     PouchSettings settings_;
     std::uint64_t eventSubscription_{};
     struct EntryHint { bs::RuntimeEvent event; std::uint64_t capturedNs; };
@@ -117,7 +109,8 @@ private:
     bool Attach();
     bool Retire();
     void Completed(const sdk::InventoryProviderProgress&);
-    std::shared_ptr<PolicySnapshot> Observe(const HIGGS_HandSnapshot&, const bs::RuntimeRecord&);
+    std::shared_ptr<PolicySnapshot> Observe(const HIGGS_HandSnapshot&, const bs::RuntimeRecord&,
+        const std::array<HIGGS_ItemIdentity, 2>&);
     void Present(const PolicySnapshot&, const bs::RuntimeRecord&);
 };
 
@@ -180,6 +173,8 @@ void PouchApp::Connect() {
     const auto phase = static_cast<HiggsPluginAPI::IHiggsInterface001*>(request.get(1));
     if (!phase) return;
     phase->AddPostVrikPostHiggsCallback(Phase);
+    if (!observer_.ConnectEvents())
+        spdlog::warn("inventory events unavailable; using bounded stock refresh fallback");
     if (runtime_->Subscribe(writer_, Event, this, &eventSubscription_) != bs::Status::Ok)
         spdlog::warn("slot entry feedback unavailable");
     connected_ = true;
@@ -285,44 +280,20 @@ bool PouchApp::Retire() {
     }
     attached_ = false; operationScope_ = 0; return true;
 }
-std::shared_ptr<PolicySnapshot> PouchApp::Observe(const HIGGS_HandSnapshot& hands, const bs::RuntimeRecord& runtime) {
+std::shared_ptr<PolicySnapshot> PouchApp::Observe(const HIGGS_HandSnapshot& hands,
+    const bs::RuntimeRecord& runtime, const std::array<HIGGS_ItemIdentity, 2>& held) {
     auto snapshot = std::make_shared<PolicySnapshot>();
     snapshot->epoch = hands.epoch; snapshot->save = view_.saveGeneration; snapshot->instance = instance_.instanceHandle;
     snapshot->filter = assignments_.Copy(); snapshot->worn = worn_;
     snapshot->available = runtime.availability == static_cast<std::uint32_t>(bs::RuntimeAvailability::Available);
-    auto* player = RE::PlayerCharacter::GetSingleton();
-    for (auto& [object, entry] : player->GetInventory([](RE::TESBoundObject& o) { return o.Is(RE::FormType::AlchemyItem); })) {
-        auto* potion = object ? object->As<RE::AlchemyItem>() : nullptr;
-        if (entry.first <= 0 || !Drinkable(potion)) continue;
-        auto candidate = Describe(potion); candidate.item.count = entry.first;
-        std::int64_t plain = entry.first;
-        std::uint32_t ordinal = 0, firstExtended = 0;
-        if (entry.second && entry.second->extraLists) for (const auto* extra : *entry.second->extraLists) {
-            if (!extra) continue;
-            if (++ordinal > 4096) { plain = -1; break; }
-            const auto count = extra->GetCount();
-            if (count <= 0) { plain = -1; break; }
-            plain -= count;
-            if (!firstExtended) firstExtended = ordinal;
-        }
-        if (plain < 0 || (!plain && !firstExtended)) continue;
-        candidate.ordinal = plain > 0 ? 0 : firstExtended;
-        snapshot->stock.push_back(std::move(candidate));
-    }
-    for (std::uint32_t hand = 1; hand <= 2; ++hand) {
-        HIGGS_ItemIdentity item{}; item.structSize = sizeof(item);
-        if (!tables_.transactions.CopyHeldItem || tables_.transactions.CopyHeldItem(higgsClient_, hand, &item) != HIGGS_HAND_OK ||
-            item.epoch != hands.epoch || item.kind != HIGGS_ITEM_WORLD_REFERENCE || !item.worldRefId || !item.quantity ||
-            (item.validFields & (HIGGS_ITEM_BASE_KNOWN | HIGGS_ITEM_REFERENCE_KNOWN | HIGGS_ITEM_QUANTITY_KNOWN | HIGGS_ITEM_NATIVE_OBSERVED)) !=
-            (HIGGS_ITEM_BASE_KNOWN | HIGGS_ITEM_REFERENCE_KNOWN | HIGGS_ITEM_QUANTITY_KNOWN | HIGGS_ITEM_NATIVE_OBSERVED)) continue;
-        auto* potion = RE::TESForm::LookupByID<RE::AlchemyItem>(item.baseFormId);
-        if (!Drinkable(potion)) continue;
-        snapshot->held[hand - 1] = {Describe(potion), item.worldRefId, item.quantity};
-    }
+    const auto now = NowNs();
+    snapshot->stock = observer_.CopyStock(now, refresh_.exchange(false));
+    snapshot->held = observer_.CopyHeld(held, hands.epoch, now);
     snapshot->capturedNs = NowNs();
     return snapshot;
 }
 void PouchApp::Present(const PolicySnapshot& snapshot, const bs::RuntimeRecord& row) {
+    if (!snapshot.stock) return; // Missing observation is not evidence of empty stock.
     const auto* next = NextPotion(snapshot);
     const auto count = MatchingCount(snapshot);
     bs::ContentObservation observation{}; observation.structSize = sizeof(observation);
@@ -348,6 +319,9 @@ void PouchApp::Completed(const sdk::InventoryProviderProgress& progress) {
     if (progress.stage != sdk::InventoryProviderStage::Completed || !progress.transfer ||
         (processedTransfer_ == progress.transfer && processedEpoch_ == progress.receipt.epoch)) return;
     processedTransfer_ = progress.transfer; processedEpoch_ = progress.receipt.epoch; refresh_ = true;
+    if (progress.releaseStatus != HIGGS_HAND_OK)
+        spdlog::warn("delivered transfer {} settled; original grip continuation unavailable ({})",
+            progress.transfer, progress.releaseStatus);
     const auto& receipt = progress.receipt;
     constexpr auto required = HIGGS_TX_DOMAIN_ATTESTED | HIGGS_TX_NATIVE_RELEASE_CONFIRMED;
     if (loading_ || operationScope_ != scope_ || receipt.epoch != epoch_ || receipt.stage != HIGGS_TX_COMPLETED ||
@@ -386,7 +360,7 @@ void PouchApp::Tick() {
     }
     const auto* worn = player->GetWornArmor(bagForm_, true);
     const bool equipped = worn && worn->GetFormID() == bagForm_;
-    const bool changed = worn_ != equipped;
+    if (worn_ != equipped) refresh_ = true;
     worn_ = equipped;
     if (!worn_) {
         policy_.store(nullptr);
@@ -407,21 +381,15 @@ void PouchApp::Tick() {
     Completed(progress);
     if (progress.stage == sdk::InventoryProviderStage::RecoveryRequired) { policy_.store(nullptr); return; }
     if (!worn_) return;
-    const auto now = NowNs();
-    // Refresh metadata/stock at 10 Hz. Geometry and visuals keep following the
-    // body at Framework's own rate. Offers expire after 150 ms without a refresh.
+    // Eligibility follows every safe Framework frame, independently of stock.
+    // Reuse immutable inventory observations; changed held identities are cheap
+    // copied HIGGS facts and are described without enumerating inventory again.
     std::array<HIGGS_ItemIdentity, 2> heldNow{};
     for (std::uint32_t hand = 1; hand <= 2; ++hand) {
         HIGGS_ItemIdentity item{}; item.structSize = sizeof(item);
         if (tables_.transactions.CopyHeldItem(higgsClient_, hand, &item) == HIGGS_HAND_OK && item.epoch == hands.epoch)
             heldNow[hand - 1] = item;
     }
-    // A semantic release is offered once. A new/changed held bottle must be
-    // described in this post-publish phase, without waiting for the stock timer.
-    const bool heldChanged = memcmp(heldNow.data(), observedHeld_.data(), sizeof(heldNow)) != 0;
-    const bool observe = changed || heldChanged || refresh_.exchange(false) || now - refreshedAt_ >= 100000000;
-    // Entry feedback is independent of the inventory/metadata throttle.
-    if (!observe && !entries_[0].load() && !entries_[1].load()) return;
     bs::RuntimeView runtimeView{}; runtimeView.structSize = sizeof(runtimeView); runtimeView.version = 1;
     if (runtime_->CopyRuntime(writer_, buffers_->runtime.data(), bs::kMaxInstances, &runtimeView) != bs::Status::Ok ||
         runtimeView.epoch != hands.epoch || runtimeView.saveGeneration != scope_) { policy_.store(nullptr); return; }
@@ -429,11 +397,9 @@ void PouchApp::Tick() {
         const auto& row = buffers_->runtime[i];
         if (row.configured.instance.instanceHandle != instance_.instanceHandle) continue;
         Feedback(row);
-        if (!observe) return;
-        auto snapshot = Observe(hands, row);
+        auto snapshot = Observe(hands, row, heldNow);
         Present(*snapshot, row);
-        observedHeld_ = heldNow;
-        refreshedAt_ = now; policy_.store(std::move(snapshot)); return;
+        policy_.store(std::move(snapshot)); return;
     }
     policy_.store(nullptr);
 }

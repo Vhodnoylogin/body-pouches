@@ -15,13 +15,14 @@ struct Potion {
 struct HeldPotion {
     Potion potion;
     std::uint32_t reference{}, quantity{};
+    bool assignable{}; // pure save-codec preflight performed on the safe main phase
 };
 // Main-phase observations only. Controller callbacks receive an immutable copy.
 struct PolicySnapshot {
     std::uint64_t capturedNs{}, epoch{}, save{}, instance{};
     bool worn{}, available{};
     Core::Filter filter;
-    std::vector<Potion> stock;
+    std::shared_ptr<const std::vector<Potion>> stock;
     std::array<HeldPotion, 2> held;
 };
 [[nodiscard]] const Potion* NextPotion(const PolicySnapshot&) noexcept;

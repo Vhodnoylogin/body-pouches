@@ -60,6 +60,16 @@ Framework's additive BehaviorApi2 explicitly opts a behavior into semantic relea
 
 The migration exposed and addressed additional contract gaps: quick native pickup/release before the first published grip, entering a bag and releasing within one update, exiting between Down and admission, stale10Hz held metadata and an Up racing with transfer admission. Stock observations remain throttled; a changed held identity triggers immediate metadata refresh. Actual native stack delivery, rendering and ergonomic parity remain unqualified because no tests or game runs were requested. Multiple bags, additional item domains and advanced legacy configurations remain later consumer work.
 
+## Pre-test hardening in prototype5
+
+The bag now refreshes current Framework eligibility on every safe update, independently of inventory scanning. A recovered anchor or newly available slot can accept a quick release without waiting for the previous100ms stock timer. A dedicated `PotionObserver` owns engine observations: immutable inventory snapshots are refreshed by player-container events, own-transfer/lifecycle invalidation and a one-second fallback. Held metadata follows copied HIGGS identity immediately and retains a100ms refresh for in-place form edits. Event callbacks only invalidate the cache; they never read or mutate inventory. No performance measurements or gameplay claims are made.
+
+Before proposing first storage, the main phase runs the same pure assignment/codec preflight used after the receipt. An unrepresentable initial filter is rejected before storing the potion. The immutable policy callback only reads the precomputed result and does not allocate. Existing effect matching, ranking and the BP2A save format remain unchanged.
+
+An armed draw now survives another slot's content, binding or anchor changes. Framework invalidates accepted work only for its own source, body, anchor, hand observation or behavior loss; restoring that source does not revive the old action. Visual-only updates retain geometry and no longer synthesize an exit/entry pair.
+
+HIGGS ends authority at the original deadline but retains exact admitted child receipts for factual settlement. A completed transfer can therefore be accounted after natural expiry, without another transfer or an extended grant. Original-grip continuation additionally requires the same original context and possession episode. If that continuation is no longer available, the helper reports `releaseStatus`, settles the already completed delivery and the consumer logs the limitation. It does not invent a press, drop, refund or second item. A child cancelled before completion remains subject to the existing compensation/recovery protocol. Tests, DLL loading and game runs remain disabled by the owner's instruction.
+
 ## Building
 
 Production sources are in `src/main/prototype/`. The separate CMake entry consumes only the public framework tables and its pinned SDK helper. It reuses existing pure Body Pouches potion rules and its form-description boundary, together with the completed RC4 build's CommonLib/fmt/spdlog libraries. It does not compile legacy input, VRIK holster or inventory-mutation code. Generated ESP/DLL/ZIP outputs stay outside Git.
