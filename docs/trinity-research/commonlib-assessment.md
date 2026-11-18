@@ -4,7 +4,7 @@ Updated 19 November 2026 (Moscow). Scope covers the second level of the [synergy
 
 ## Current inventory/source continuation - 19 November 2026
 
-The independent Framework uses unchanged public VRIK0.8.8 and its existing CommonLib3.7.0 build pin `c4ab853d095e81e3390b282d7ba01ab2f24ebf25`; this does not upgrade to the separately assessed9.1 fork. The newest implemented source/build limits are in the [implementation ledger](../trinity-synergy/implementation-status.md#current-prototype9-contract-and-consumer-delivery---19-november-2026). Older dated sections retain their historical scope.
+The independent Framework uses unchanged public VRIK 0.8.8 and its existing CommonLib 3.7.0 build pin `c4ab853d095e81e3390b282d7ba01ab2f24ebf25`; this does not upgrade to the separately assessed 9.1 fork. The newest implemented source/build limits are in the [implementation ledger](../trinity-synergy/implementation-status.md#current-prototype9-contract-and-consumer-delivery---19-november-2026). Older dated sections retain their historical scope.
 
 | Current operation | Already available CommonLib route | Stage-two conclusion |
 |---|---|---|
