@@ -152,6 +152,10 @@ void PouchApp::Connect() {
         !Higgs<HIGGS_QueryAuthorizedDispatchInterfaceFn>("HIGGS_QueryAuthorizedDispatchInterface", 2, tables_.dispatch)) {
         spdlog::error("Body Pouches 2 unavailable: compatible Framework/HIGGS services required"); return;
     }
+    if(!(tables_.behaviorOptions->base.capabilities&bs::kBehaviorExtendedOptions)||
+       !(tables_.hands.capabilities&HIGGS_HAND_CAP_ACCEPTED_RECEIPTS)){
+        spdlog::error("Body Pouches 2 requires Framework inventory-content contracts and HIGGS queued-result retention");return;
+    }
     if (registry_->RegisterClient(kProvider, &writer_) != bs::Status::Ok) return;
     HIGGS_HandClientInfo client{};
     client.structSize = sizeof(client);

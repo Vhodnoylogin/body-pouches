@@ -84,6 +84,10 @@ The SDK now waits for Body Pouches to acknowledge its semantic outcome before re
 
 HIGGS's optional accepted-receipt capability lets this queued consumer explicitly retain even an unstarted action's cancellation proof. An exact current `ACCEPTED` echo records responsibility for processing it, without creating a transfer or extending hand authority. Other clients keep their old finite-history behavior. Tracking loss or removal of only the spatial source also ends physical authority while preserving an admitted child's truthful receipt channel; the owning consumer's explicit teardown remains separate.
 
+The ordinary provider now declares an explicit inventory-only content contract through 24-byte Framework behavior options. Confirmed release into the world remains a physical fact, but no longer falsely implies that a potion entered inventory. If storage is cancelled before mutation, unchanged content can be acknowledged without creating a refund or duplicate bottle. Positive inventory evidence is sticky and required for typed content commitment; generic behaviors keep their conservative rules. Body Pouches checks these capabilities at startup so an older mixed dependency set does not enter silent attachment retries.
+
+Draw/store identities presented to HIGGS are now the stable ordinary transfer kinds, while each offer retains a separate cache token for exact execution. User action priorities no longer follow an incrementing offer number. The identity mode is explicit in the extended options; legacy providers keep their existing 64-bit discriminator.
+
 ## Building
 
 Production sources are in `src/main/prototype/`. The separate CMake entry consumes only the public framework tables and its pinned SDK helper. It reuses existing pure Body Pouches potion rules and its form-description boundary, together with the completed RC4 build's CommonLib/fmt/spdlog libraries. It does not compile legacy input, VRIK holster or inventory-mutation code. Generated ESP/DLL/ZIP outputs stay outside Git.
