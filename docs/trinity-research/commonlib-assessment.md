@@ -1,8 +1,22 @@
 # CommonLib assessment for synergy implementation
 
-Updated 11 November 2026. Scope covers the second level of the [synergy concept](../trinity-synergy/concept-en.md), moving engine addresses and shared technical operations behind verified CommonLib interfaces. CommonLib extension/migration remains a later stage. Earlier binding audits retain their stated versions and qualification limits.
+Updated 19 November 2026 (Moscow). Scope covers the second level of the [synergy concept](../trinity-synergy/concept-en.md), moving engine addresses and shared technical operations behind verified CommonLib interfaces. CommonLib extension/migration remains a later stage. Earlier binding audits retain their stated versions and qualification limits.
 
-## Complete-contract review on 11 November 2026
+## Current inventory/source continuation - 19 November 2026
+
+The independent Framework uses unchanged public VRIK0.8.8 and its existing CommonLib3.7.0 build pin `c4ab853d095e81e3390b282d7ba01ab2f24ebf25`; this does not upgrade to the separately assessed9.1 fork. The newest implemented source/build limits are in the [implementation ledger](../trinity-synergy/implementation-status.md#current-prototype9-contract-and-consumer-delivery---19-november-2026). Older dated sections retain their historical scope.
+
+| Current operation | Already available CommonLib route | Stage-two conclusion |
+|---|---|---|
+| Live player/body/cell/anchor eligibility | Player3D, parent cell/attachment, named nodes and retained `NiPointer` | Reused now; no new wrapper/address is required. Framework owns source identity, generations and admission eligibility. |
+| Wearable form eligibility | `Actor::GetWornArmor(FormID, true)` | Reused with initialization disabled. A future Boolean worn-item helper may avoid constructing the convenience inventory map, after profiling and semantic/lifetime review; not implemented here. |
+| Equipment continuity | `TESEquipEvent`, `BSTEventSink` and `ScriptEventSourceHolder` | Reused now. The bounded POD history and its link to slot generations remain Framework policy. |
+| Correlated inventory-effect proof | Existing HIGGS broker/transaction metadata and standard synchronization | No engine address is added. Receipt completeness, compensation aggregation and hand authority remain HIGGS responsibilities. |
+| Pouch assignment identity/save fence | Pure consumer filter operations and copied owned context | Consumer semantics remain in Body Pouches. They are not CommonLib gameplay policy. |
+
+No CommonLib source, address database, game relocation or live installation was changed. Windows frame-thread identification uses the operating-system API. A node/gear read remains an observation, not a grant or proof of global inventory state. The second level continues to mean migration of verified engine addresses and reusable technical operations into CommonLib; no such migration was implemented in this stage.
+
+## Historical complete-contract review on 11 November 2026
 
 The new provider contract work keeps input sequence ownership, observed correlation identifiers, executor permissions, equipment recovery, action priority and contact-to-hit causality in HIGGS and PLANCK. Body Slots owns source bindings, logical geometry and activation. PPB owns anatomy and fitting. Those responsibilities remain provider work when technical engine access later moves to CommonLib.
 
@@ -85,7 +99,7 @@ Inspected fork: [Vhodnoylogin/CommonLibSSE-NG](https://github.com/Vhodnoylogin/C
 | Remove a selected inventory item or pick up a reference | [TESObjectREFR::RemoveItem](https://github.com/Vhodnoylogin/CommonLibSSE-NG/blob/a898f469851c464d05137bb74b069dd234897643/include/RE/T/TESObjectREFR.h), [Actor::PickUpObject](https://github.com/Vhodnoylogin/CommonLibSSE-NG/blob/a898f469851c464d05137bb74b069dd234897643/src/RE/A/Actor.cpp) | Typed calls cover the existing drop and book-pickup sites, including the VR pickup slot. Preserve exact counts, extra data, reason, position and returned handle. Arbitrary statics/containers keep HIGGS's activation policy; these calls are not an atomic transfer receipt |
 | Traverse animation graphs, ragdoll drivers and constraints | Existing [graph manager](https://github.com/Vhodnoylogin/CommonLibSSE-NG/blob/a898f469851c464d05137bb74b069dd234897643/include/RE/B/BSAnimationGraphManager.h), graph/driver/ragdoll types and constraint body getters | Reuse modeled data for qualified traversal under graph/world locks. Per-graph add/remove/reset virtuals exist; they do not establish equivalence with PLANCK's manager-wide operations |
 
-The current VRIK extraction still uses its original SKSE dependency and a standalone copied geometry core. This table identifies a later replacement path; it does not claim CommonLib is already linked into that code or that changing dependency alone preserves its ABI.
+At that historical extraction checkpoint, the VRIK work used its original SKSE dependency and a standalone copied geometry core. This table identifies a later replacement path; it does not claim CommonLib is already linked into that code or that changing dependency alone preserves its ABI.
 
 ## Candidates needing a verified extension or further audit
 
