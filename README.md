@@ -1,5 +1,7 @@
 # Body Pouches — 0.2.0
 
+The separate [Body Pouches 2 prototype](docs/body-pouches-2-prototype.md) implements an equipable potion bag through VR Interaction Framework and HIGGS's shared inventory operations. It uses no native VRIK holster. Source and build instructions are in `src/main/prototype/`; this experimental path is compiled separately and is not a replacement release for 0.2.0. The owner requested development without testing; gameplay remains unqualified.
+
 This branch also contains a [private wearable-bag demonstration](docs/wearable-demo.md), enabled only by `BODYPOUCHES_WEARABLE_DEMO`. Its game behavior is not yet qualified; it is separate from the published release described below.
 
 Potions within reach in Skyrim VR. Turn a VRIK body slot into a potion pouch:

@@ -15,6 +15,12 @@ cmake_minimum_required(VERSION 3.24)
 # be run in a second, and the half that needs a headset holds no reasoning at all.
 project(BodyPouches VERSION 0.2.0 LANGUAGES CXX)
 
+option(BODYPOUCHES_FRAMEWORK_PROTOTYPE "Build the separate Body Pouches 2 Framework prototype" OFF)
+if(BODYPOUCHES_FRAMEWORK_PROTOTYPE)
+    add_subdirectory(src/main/prototype)
+    return()
+endif()
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -114,6 +120,8 @@ FetchContent_MakeAvailable(CommonLibSSE)
 # CommonLibSSE instead (src/vr/Handshake.h).
 file(GLOB_RECURSE BODYPOUCHES_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 file(GLOB_RECURSE BODYPOUCHES_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
+list(FILTER BODYPOUCHES_SOURCES EXCLUDE REGEX "/src/main/prototype/")
+list(FILTER BODYPOUCHES_HEADERS EXCLUDE REGEX "/src/main/prototype/")
 list(REMOVE_ITEM BODYPOUCHES_SOURCES ${BODYPOUCHES_CORE_SOURCES})
 list(REMOVE_ITEM BODYPOUCHES_HEADERS ${BODYPOUCHES_CORE_HEADERS})
 if(NOT BODYPOUCHES_WITH_DEVBENCH)

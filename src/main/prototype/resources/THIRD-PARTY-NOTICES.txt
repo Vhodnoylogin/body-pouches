@@ -1,0 +1,23 @@
+Body Pouches 2 prototype
+
+New prototype code is MIT-licensed; see BodyPouches2-LICENSE.txt. Third-party
+components retain their own licenses in licenses/. No blanket MIT grant is made
+for those components or for Skyrim assets.
+
+VR Interaction Framework: Vhodnoylogin, MIT. Its ordinary-inventory-provider
+SDK helper is consumed from pinned public source, not maintained as a copied fork.
+https://github.com/Vhodnoylogin/body-slots/tree/88e29961747f3e28e33e1027ab93c1da9b5a278a
+
+HIGGS: FlyingParticle / adamhynek, GPL-3.0. Public API contracts are consumed
+from the cooperation-fork revision below. HIGGS itself is a separate dependency;
+this archive contains no HIGGS DLL or native HIGGS implementation.
+https://github.com/Vhodnoylogin/higgs/tree/fd226f6546877fae8b82380ce16aa800000d12ad
+
+CommonLibSSE-NG, fmt, spdlog and rapidcsv are consumed through the separately
+recorded RC4 native build and its pinned source inputs. Their license texts are
+included in licenses/. Matching source/build references accompany PROVENANCE.
+
+The inventory and worn bag reference Skyrim's original CoinPurseLarge model,
+Plants\CoinBagLarge.nif, identified by the owner's Immersive Equipment Displays
+(Nexus 62001) visual reference. No IED implementation, mesh or texture is copied.
+Skyrim game assets are supplied by the user's installed game and remain Bethesda's.
