@@ -1,0 +1,107 @@
+{
+  "verifiedAt": "2026-11-02",
+  "source": "https://github.com/Telord72612/Precision-Physic-Bodies",
+  "commit": "e26b4ebc8061e8736b344e4f3e9216dea9254747",
+  "freshFetchUnchanged": true,
+  "sourcePins": {
+    "src/PpbTouchAPI.h": "0920a7a2deb9a6d63a25f24254b9bf8298ae71336f1e3ad70e4a0058dbd3eac7",
+    "src/PpbApi.cpp": "c6c85997324a66802b9e11a04c76352921c4b8887dc77d715031d1832686ad53",
+    "src/HandBox.cpp": "52e4b61bc5ae3696f195225cbe23eb6e43c086a211f0d7f0a77c95d017cdc0cb",
+    "src/CapFix.cpp": "39ea00918c1f9bbdf70ec389a0402ce952be8599a00e023888ff99c27697d66e",
+    "src/CapFix.h": "ad7ee140d8b82664ec40e482d05ba85544a581259c372cb8c05b623c02802d36",
+    "src/Hooks.cpp": "826a613cdaa099c587ae833483d30421d5e82aa349730af071654fc9024c6fd1",
+    "src/PPBHook.cpp": "c89e675a82c1d8a6b50cffce3b82b9e560d8b1cb985357c759561b671c80c1de",
+    "src/NpcFingerTest.cpp": "0a7fbc6818b60f6a2a07457218f415d7a05d94cad449b52eb401934c717d23f6",
+    "docs/09_Player_Hand_And_Finger_Colliders.md": "f0d124501aa624ac9e4158b91e980c70fd590ea92fd15b4a45b685decde053e9",
+    "docs/01_Pitfall_Ledger.md": "5a8131eda59b8e09722969ae704175f9428d7454a6bf5252c0c03da7a3dd17a6"
+  },
+  "bindings": [
+    {
+      "name": "bhkBoxShape_ctor",
+      "rva": "0x2AEB70",
+      "signatureAsPublished": "void(void*,hkVector4*)",
+      "evidence": "src/HandBox.cpp:123-145",
+      "qualification": "Published author RE binding, not newly runtime-qualified by this audit"
+    },
+    {
+      "name": "bhkRigidBodyCinfo_ctor",
+      "rva": "0xE06110",
+      "signatureAsPublished": "void(void*)",
+      "evidence": "src/HandBox.cpp:123-145",
+      "qualification": "Published author RE binding, not newly runtime-qualified by this audit"
+    },
+    {
+      "name": "bhkRigidBody_ctor",
+      "rva": "0x2AEC80",
+      "signatureAsPublished": "void(void*,void*)",
+      "evidence": "src/HandBox.cpp:123-145",
+      "qualification": "Published author RE binding, not newly runtime-qualified by this audit"
+    },
+    {
+      "name": "bhkRigidBody_setActivated",
+      "rva": "0xE085D0",
+      "signatureAsPublished": "void(void*,bool)",
+      "evidence": "src/HandBox.cpp:123-145",
+      "qualification": "Published author RE binding, not newly runtime-qualified by this audit"
+    },
+    {
+      "name": "hkpWorld_AddEntity",
+      "rva": "0xAB0CB0",
+      "signatureAsPublished": "hkpEntity*(void*,hkpEntity*,int)",
+      "evidence": "src/HandBox.cpp:123-145",
+      "qualification": "Published author RE binding, not newly runtime-qualified by this audit"
+    },
+    {
+      "name": "hkpWorld_RemoveEntity",
+      "rva": "0xAB0E50",
+      "signatureAsPublished": "hkpEntity*(void*,char*,hkpEntity*)",
+      "evidence": "src/HandBox.cpp:123-145",
+      "qualification": "Published author RE binding, not newly runtime-qualified by this audit"
+    },
+    {
+      "name": "applyHardKeyFrame",
+      "rva": "0xAF6DD0",
+      "signatureAsPublished": "void(const hkVector4&,const hkQuaternion&,hkReal,hkpRigidBody*)",
+      "evidence": "src/HandBox.cpp:123-145",
+      "qualification": "Published author RE binding, not newly runtime-qualified by this audit"
+    },
+    {
+      "name": "hkpWorld_UpdateCollisionFilterOnEntity",
+      "rva": "0xAB3110",
+      "signatureAsPublished": "void(void*,hkpEntity*,int,int)",
+      "evidence": "src/HandBox.cpp:123-145",
+      "qualification": "Published author RE binding, not newly runtime-qualified by this audit"
+    },
+    {
+      "name": "hkpBody_setPosition",
+      "rva": "0xAA8FD0",
+      "signatureAsPublished": "void(hkpEntity*,const hkVector4&)",
+      "evidence": "src/HandBox.cpp:123-145",
+      "qualification": "Published author RE binding, not newly runtime-qualified by this audit"
+    },
+    {
+      "name": "hkpBody_setRotation",
+      "rva": "0xAA9000",
+      "signatureAsPublished": "void(hkpEntity*,const hkQuaternion&)",
+      "evidence": "src/HandBox.cpp:123-145",
+      "qualification": "Published author RE binding, not newly runtime-qualified by this audit"
+    }
+  ],
+  "additionalExistingPlanckBindings": [
+    {
+      "name": "bhkListShape_ctor",
+      "rva": "0xE18840",
+      "signature": "bhkListShape*(bhkListShape*,bhkListShapeCinfo*)",
+      "source": "adamhynek/activeragdoll include/RE/offsets.h290; src/RE/offsets.cpp157"
+    },
+    {
+      "name": "bhkListShapeCinfo_dtor",
+      "rva": "0xE18CF0",
+      "signature": "void(bhkListShapeCinfo*)",
+      "source": "adamhynek/activeragdoll include/RE/offsets.h287; src/RE/offsets.cpp156"
+    }
+  ],
+  "capsuleConstructorFound": false,
+  "listConstructorCallsiteFound": false,
+  "gameStarts": 0
+}

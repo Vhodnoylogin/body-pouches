@@ -82,4 +82,6 @@ and requires its license notice when distributed. The default is `OFF`.
 
 ## Proposed framework cooperation
 
-The maintained [English concept](docs/trinity-synergy/concept-en.md), [Russian concept](docs/trinity-synergy/concept-ru.md) and [implementation ledger](docs/trinity-synergy/implementation-status.md) describe cooperation between HIGGS, VRIK, PLANCK and the separate Body Slots service. Body Pouches intends to adopt these services; their implementation and verification limits are recorded separately from the released mod.
+The maintained [English concept](docs/trinity-synergy/concept-en.md), [Russian concept](docs/trinity-synergy/concept-ru.md) and [implementation ledger](docs/trinity-synergy/implementation-status.md) describe cooperation between HIGGS, VRIK, PLANCK, PPB and the separate VR Interaction Framework service (formerly Body Slots). Body Pouches intends to adopt these services; their implementation and verification limits are recorded separately from the released mod.
+
+For the current framework design, start with the maintained [English concept](docs/trinity-synergy/concept-en.md#responsibilities) or [Russian concept](docs/trinity-synergy/concept-ru.md#ответственность-участников). HIGGS owns hand state/use, VR Interaction Framework owns all slot mechanics, VRIK provides the body and virtual hand poses, PPB provides anatomical surfaces and touch evidence, and PLANCK owns live NPC physics.

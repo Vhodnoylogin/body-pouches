@@ -1,0 +1,652 @@
+{
+  "reviewDate": "2026-11-03",
+  "scope": "All20illustrative consumers plus core providers; logical interaction regions, not an allowlist or implemented architecture",
+  "consumerSet": "consumer-contract-requirements.json",
+  "evidenceLimits": [
+    "Source versus archive differences retained",
+    "Skinning and PullArrows exact native geometry unknown",
+    "No new game/install/decompilation",
+    "Existing original VRIK release evidence, not reconstructed internals"
+  ],
+  "confirmedDistinctions": [
+    "HIGGS mouth/shoulder spheres use HMD-relative positions and speed/item/release gates",
+    "Pickpocket waist is a finite cylinder; its frozen world wheel and item targets have separate lifetimes",
+    "Lockpicking tool socket is a finite cylinder with orientation/insertion hysteresis",
+    "Equip category-specific insertion/removal radii and mixed anchors differ",
+    "SRAVR full HMD rotation differs from Shields yaw-only anchors",
+    "PPB geometric proximity is not a Havok contact",
+    "Climbing ray support and block/grip posture are not storage slots"
+  ],
+  "sourceB": [
+    {
+      "id": "weapon-throw",
+      "classification": "Motion/button gesture + projectile lifecycle and auto-aim target selection; no authored body slot verified",
+      "evidenceLevel": "Archive1.4.0 Papyrus native API/MCM source and INI; native C++ not available",
+      "evidence": [
+        {
+          "file": "consumers/weapon-throw/Scripts/Source/WeaponThrowVR_MCM.psc",
+          "line": 164,
+          "endLine": 179,
+          "sha256": "d2a70a6a4c8d732dd13368ce2f494aac198e1467d561bf4e546013a5479ee0c5"
+        },
+        {
+          "file": "consumers/weapon-throw/Scripts/Source/WeaponThrowVR_MCM.psc",
+          "line": 114,
+          "endLine": 121,
+          "sha256": "d2a70a6a4c8d732dd13368ce2f494aac198e1467d561bf4e546013a5479ee0c5"
+        },
+        {
+          "file": "consumers/weapon-throw/Scripts/Source/WeaponThrowVR_MCM.psc",
+          "line": 6032,
+          "endLine": 6066,
+          "sha256": "d2a70a6a4c8d732dd13368ce2f494aac198e1467d561bf4e546013a5479ee0c5"
+        },
+        {
+          "file": "consumers/weapon-throw/Scripts/Source/WeaponThrowVR_MCM.psc",
+          "line": 6069,
+          "endLine": 6102,
+          "sha256": "d2a70a6a4c8d732dd13368ce2f494aac198e1467d561bf4e546013a5479ee0c5"
+        },
+        {
+          "file": "consumers/weapon-throw/Scripts/Source/WeaponThrowVR_MCM.psc",
+          "line": 6223,
+          "endLine": 6227,
+          "sha256": "d2a70a6a4c8d732dd13368ce2f494aac198e1467d561bf4e546013a5479ee0c5"
+        },
+        {
+          "file": "consumers/weapon-throw/Scripts/Source/WeaponThrowVR_PluginScript.psc",
+          "line": 13,
+          "endLine": 29,
+          "sha256": "7aadbc2ee1c467fb8d5bb261c96a279fb4e96d64e893040e1fcf48d7ed121f0d"
+        }
+      ]
+    },
+    {
+      "id": "dual-wield-block",
+      "classification": "Posture + speed state machine; no proximity slot",
+      "evidenceLevel": "Public C++5a3f583961d96465cd46abb6055868d51e80f365; archive1.7 INI separate",
+      "evidence": [
+        {
+          "file": "consumers/sources/dual_wield_block_vr/src/main.cpp",
+          "line": 121,
+          "endLine": 198,
+          "sha256": "b27002e9a31b20e34a01847831fdadda335282c8cf927a68cd63e732485016df"
+        },
+        {
+          "file": "consumers/sources/dual_wield_block_vr/src/main.cpp",
+          "line": 47,
+          "endLine": 52,
+          "sha256": "b27002e9a31b20e34a01847831fdadda335282c8cf927a68cd63e732485016df"
+        },
+        {
+          "file": "consumers/sources/dual_wield_block_vr/src/main.cpp",
+          "line": 102,
+          "endLine": 118,
+          "sha256": "b27002e9a31b20e34a01847831fdadda335282c8cf927a68cd63e732485016df"
+        },
+        {
+          "file": "consumers/sources/dual_wield_block_vr/src/main.cpp",
+          "line": 272,
+          "endLine": 349,
+          "sha256": "b27002e9a31b20e34a01847831fdadda335282c8cf927a68cd63e732485016df"
+        },
+        {
+          "file": "consumers/sources/dual_wield_block_vr/src/main.cpp",
+          "line": 245,
+          "endLine": 255,
+          "sha256": "b27002e9a31b20e34a01847831fdadda335282c8cf927a68cd63e732485016df"
+        },
+        {
+          "file": "consumers/dual-wield-block/SKSE/Plugins/DualWieldBlockVR.ini",
+          "line": 17,
+          "endLine": 63,
+          "sha256": "37cb95137e18b3ab36357b1c20888965e4532059b2ed006649ee9dc8f457a4f9"
+        }
+      ]
+    },
+    {
+      "id": "archery",
+      "classification": "True player-relative quiver proximity zone + controller multi-tap; logical ammo selection",
+      "evidenceLevel": "Archive1.26 actual PSC source",
+      "evidence": [
+        {
+          "file": "consumers/archery/Source/Scripts/sravrQuestScript.psc",
+          "line": 4,
+          "endLine": 12,
+          "sha256": "d30f8dea8dafcc7974af71be2818f774afd06bd448f82512a6fe54068a90edb9"
+        },
+        {
+          "file": "consumers/archery/Source/Scripts/sravrQuestScript.psc",
+          "line": 109,
+          "endLine": 122,
+          "sha256": "d30f8dea8dafcc7974af71be2818f774afd06bd448f82512a6fe54068a90edb9"
+        },
+        {
+          "file": "consumers/archery/Source/Scripts/sravrQuestScript.psc",
+          "line": 127,
+          "endLine": 148,
+          "sha256": "d30f8dea8dafcc7974af71be2818f774afd06bd448f82512a6fe54068a90edb9"
+        },
+        {
+          "file": "consumers/archery/Source/Scripts/sravrQuestScript.psc",
+          "line": 150,
+          "endLine": 189,
+          "sha256": "d30f8dea8dafcc7974af71be2818f774afd06bd448f82512a6fe54068a90edb9"
+        },
+        {
+          "file": "consumers/archery/Source/Scripts/sravrMCMScript.psc",
+          "line": 151,
+          "endLine": 154,
+          "sha256": "c005bc47139c93cd029a65d38179cb8ec319b9172da15251be079c5082f5decf"
+        },
+        {
+          "file": "consumers/archery/Source/Scripts/sravrPlayerAliasScript.psc",
+          "line": 137,
+          "endLine": 145,
+          "sha256": "a69bb8011dd6918cd790403a6901c298c40cf7ead4a932db751b52c47145c5b2"
+        },
+        {
+          "file": "consumers/archery/Source/Scripts/sravrPlayerAliasScript.psc",
+          "line": 164,
+          "endLine": 181,
+          "sha256": "a69bb8011dd6918cd790403a6901c298c40cf7ead4a932db751b52c47145c5b2"
+        }
+      ]
+    },
+    {
+      "id": "pull-arrows",
+      "classification": "Embedded attachment extraction described by earlier author research; no exact spatial slot/shape independently established",
+      "evidenceLevel": "Archive2.0.0 zip has compiled PEX/DLL/ESP/assets only. No PSC, INI or README. No native decompilation/strings; primary website not revisited.",
+      "evidence": [
+        {
+          "file": "D:/Skyrim VR Modding/Repositories/body-pouches-synergy-docs/docs/trinity-synergy/consumer-contract-requirements.json",
+          "line": 363,
+          "endLine": 388,
+          "sha256": "08f73515a8234062e6d630b5473230c0e969834f5f8eea51f434a4f881b28942"
+        }
+      ]
+    },
+    {
+      "id": "truewield",
+      "classification": "Weapon-local grip interval + button/hold gesture; mass/motor behavior is not a proximity slot",
+      "evidenceLevel": "Archive1.2.0 richly documented INI; native implementation unavailable; comments reference later internal versions and must not be treated as a separately verified release",
+      "evidence": [
+        {
+          "file": "consumers/truewield/ini_both/SKSE/Plugins/TrueWieldVR.ini",
+          "line": 701,
+          "endLine": 720,
+          "sha256": "d43dacb07cbc42ec62e1b58d86918b8647d0ea06b01a88b09248dde1391589ba"
+        },
+        {
+          "file": "consumers/truewield/ini_both/SKSE/Plugins/TrueWieldVR.ini",
+          "line": 726,
+          "endLine": 796,
+          "sha256": "d43dacb07cbc42ec62e1b58d86918b8647d0ea06b01a88b09248dde1391589ba"
+        },
+        {
+          "file": "consumers/truewield/ini_both/SKSE/Plugins/TrueWieldVR.ini",
+          "line": 173,
+          "endLine": 205,
+          "sha256": "d43dacb07cbc42ec62e1b58d86918b8647d0ea06b01a88b09248dde1391589ba"
+        }
+      ]
+    },
+    {
+      "id": "climbing",
+      "classification": "World-surface ray queries and held-grip support/locomotion; not a body slot",
+      "evidenceLevel": "Archive0.11.3 INI + retained earlier public C++ snapshot; snapshot is NOT asserted binary-identical to0.11.3",
+      "evidence": [
+        {
+          "file": "D:/Skyrim VR Modding/Claude Skyrim VR/local/chats/higgs-vrik-planck/consumer-extension-2026-10-04/vr-climbing-source/src/ClimbSurfaceDetector.cpp",
+          "line": 11,
+          "endLine": 26,
+          "sha256": "6650e12328747efd704986cddc1762e6ab6c7489d49554e1745ce7744d295f0d"
+        },
+        {
+          "file": "D:/Skyrim VR Modding/Claude Skyrim VR/local/chats/higgs-vrik-planck/consumer-extension-2026-10-04/vr-climbing-source/src/ClimbSurfaceDetector.cpp",
+          "line": 30,
+          "endLine": 55,
+          "sha256": "6650e12328747efd704986cddc1762e6ab6c7489d49554e1745ce7744d295f0d"
+        },
+        {
+          "file": "D:/Skyrim VR Modding/Claude Skyrim VR/local/chats/higgs-vrik-planck/consumer-extension-2026-10-04/vr-climbing-source/src/ClimbSurfaceDetector.cpp",
+          "line": 61,
+          "endLine": 102,
+          "sha256": "6650e12328747efd704986cddc1762e6ab6c7489d49554e1745ce7744d295f0d"
+        },
+        {
+          "file": "D:/Skyrim VR Modding/Claude Skyrim VR/local/chats/higgs-vrik-planck/consumer-extension-2026-10-04/vr-climbing-source/src/ClimbSurfaceDetector.cpp",
+          "line": 126,
+          "endLine": 164,
+          "sha256": "6650e12328747efd704986cddc1762e6ab6c7489d49554e1745ce7744d295f0d"
+        },
+        {
+          "file": "D:/Skyrim VR Modding/Claude Skyrim VR/local/chats/higgs-vrik-planck/consumer-extension-2026-10-04/vr-climbing-source/src/ClimbManager.cpp",
+          "line": 363,
+          "endLine": 392,
+          "sha256": "a453351d7ceb1579e4799df52bfb7d4578f8622ea485772d2c56657657b4a3c9"
+        },
+        {
+          "file": "D:/Skyrim VR Modding/Claude Skyrim VR/local/chats/higgs-vrik-planck/consumer-extension-2026-10-04/vr-climbing-source/src/ClimbManager.cpp",
+          "line": 460,
+          "endLine": 476,
+          "sha256": "a453351d7ceb1579e4799df52bfb7d4578f8622ea485772d2c56657657b4a3c9"
+        },
+        {
+          "file": "D:/Skyrim VR Modding/Claude Skyrim VR/local/chats/higgs-vrik-planck/consumer-extension-2026-10-04/vr-climbing-source/src/ClimbManager.cpp",
+          "line": 625,
+          "endLine": 675,
+          "sha256": "a453351d7ceb1579e4799df52bfb7d4578f8622ea485772d2c56657657b4a3c9"
+        },
+        {
+          "file": "consumers/climbing/SKSE/Plugins/VRClimbing.ini",
+          "line": 18,
+          "endLine": 19,
+          "sha256": "d34f9799fb98f5e6d453c5301e45142c5c9b777f905452bf2c273e051bc97571"
+        },
+        {
+          "file": "consumers/climbing/SKSE/Plugins/VRClimbing.ini",
+          "line": 73,
+          "endLine": 78,
+          "sha256": "d34f9799fb98f5e6d453c5301e45142c5c9b777f905452bf2c273e051bc97571"
+        },
+        {
+          "file": "consumers/climbing/SKSE/Plugins/VRClimbing.ini",
+          "line": 141,
+          "endLine": 145,
+          "sha256": "d34f9799fb98f5e6d453c5301e45142c5c9b777f905452bf2c273e051bc97571"
+        },
+        {
+          "file": "D:/Skyrim VR Modding/Claude Skyrim VR/local/chats/higgs-vrik-planck/consumer-extension-2026-10-04/vr-climbing-source/src/ClimbManager.cpp",
+          "line": 577,
+          "endLine": 607,
+          "sha256": "a453351d7ceb1579e4799df52bfb7d4578f8622ea485772d2c56657657b4a3c9"
+        }
+      ]
+    },
+    {
+      "id": "shields-unlocked",
+      "classification": "Authored shoulder holster spheres plus separate shield/2H blocking posture recognizers",
+      "evidenceLevel": "ArchiveNexus184001 v1.2 INI; owner later fork/source not audited; configuration comments establish intent, not runtime implementation",
+      "evidence": [
+        {
+          "file": "consumers/shields-unlocked/Shields and Swords Unlocked/SKSE/plugins/Weapon Unlocked VR.ini",
+          "line": 31,
+          "endLine": 84,
+          "sha256": "54feb74dbe65c37daa89538e1609f78d022c530e1b7d5a7fce380947a179d4a4"
+        },
+        {
+          "file": "consumers/shields-unlocked/Shields and Swords Unlocked/SKSE/plugins/Weapon Unlocked VR.ini",
+          "line": 93,
+          "endLine": 107,
+          "sha256": "54feb74dbe65c37daa89538e1609f78d022c530e1b7d5a7fce380947a179d4a4"
+        },
+        {
+          "file": "consumers/shields-unlocked/Shields and Swords Unlocked/SKSE/plugins/Weapon Unlocked VR.ini",
+          "line": 178,
+          "endLine": 231,
+          "sha256": "54feb74dbe65c37daa89538e1609f78d022c530e1b7d5a7fce380947a179d4a4"
+        },
+        {
+          "file": "consumers/shields-unlocked/Shields and Swords Unlocked/SKSE/plugins/Weapon Unlocked VR.ini",
+          "line": 237,
+          "endLine": 243,
+          "sha256": "54feb74dbe65c37daa89538e1609f78d022c530e1b7d5a7fce380947a179d4a4"
+        }
+      ]
+    },
+    {
+      "id": "sdhr",
+      "classification": "VRIK-owned body holster reach + item grab/extraction geometry + grip/throw gestures; not one new universal slot family",
+      "evidenceLevel": "Archive3.0.1 documented INI variants + installer/menu config; native implementation unavailable",
+      "evidence": [
+        {
+          "file": "consumers/sdhr/11 Weapon mode - Grip hold - Where and reverse/SKSE/Plugins/SwapDropAndHoldRedux.ini",
+          "line": 88,
+          "endLine": 93,
+          "sha256": "8e5358711041efa5823e154a93167f5b9c729817466ef6c26faa759c03cdf6e0"
+        },
+        {
+          "file": "consumers/sdhr/11 Weapon mode - Grip hold - Where and reverse/SKSE/Plugins/SwapDropAndHoldRedux.ini",
+          "line": 149,
+          "endLine": 164,
+          "sha256": "8e5358711041efa5823e154a93167f5b9c729817466ef6c26faa759c03cdf6e0"
+        },
+        {
+          "file": "consumers/sdhr/11 Weapon mode - Grip hold - Where and reverse/SKSE/Plugins/SwapDropAndHoldRedux.ini",
+          "line": 189,
+          "endLine": 194,
+          "sha256": "8e5358711041efa5823e154a93167f5b9c729817466ef6c26faa759c03cdf6e0"
+        },
+        {
+          "file": "consumers/sdhr/11 Weapon mode - Grip hold - Where and reverse/SKSE/Plugins/SwapDropAndHoldRedux.ini",
+          "line": 358,
+          "endLine": 393,
+          "sha256": "8e5358711041efa5823e154a93167f5b9c729817466ef6c26faa759c03cdf6e0"
+        },
+        {
+          "file": "consumers/sdhr/11 Weapon mode - Grip hold - Where and reverse/SKSE/Plugins/SwapDropAndHoldRedux.ini",
+          "line": 394,
+          "endLine": 478,
+          "sha256": "8e5358711041efa5823e154a93167f5b9c729817466ef6c26faa759c03cdf6e0"
+        },
+        {
+          "file": "consumers/sdhr/11 Weapon mode - Grip hold - Where and reverse/SKSE/Plugins/SwapDropAndHoldRedux.ini",
+          "line": 507,
+          "endLine": 553,
+          "sha256": "8e5358711041efa5823e154a93167f5b9c729817466ef6c26faa759c03cdf6e0"
+        },
+        {
+          "file": "consumers/sdhr/11 Weapon mode - Grip hold - Where and reverse/SKSE/Plugins/SwapDropAndHoldRedux.ini",
+          "line": 620,
+          "endLine": 645,
+          "sha256": "8e5358711041efa5823e154a93167f5b9c729817466ef6c26faa759c03cdf6e0"
+        }
+      ]
+    },
+    {
+      "id": "interactive-torches",
+      "classification": "Item-relative and world-relative ignition regions, with different probes; not player Body Slots",
+      "evidenceLevel": "ArchiveNexus140404 v2.0 documented INI; native implementation unavailable",
+      "evidence": []
+    },
+    {
+      "id": "instant-equip",
+      "classification": "Player animation event/rate patch; no spatial region, probe, body anchor or slot",
+      "evidenceLevel": "Public C++be27c4139c6b83796555bf8125fb62367b6495bb plus local1.2 config",
+      "evidence": [
+        {
+          "file": "consumers/sources/instant_equip_vr/src/main.cpp",
+          "line": 21,
+          "endLine": 33,
+          "sha256": "33a6c51a7fd636eb37ed99977a10c29e83bb7ea1662a926ad5d7380f32e4786a"
+        },
+        {
+          "file": "consumers/sources/instant_equip_vr/src/main.cpp",
+          "line": 62,
+          "endLine": 75,
+          "sha256": "33a6c51a7fd636eb37ed99977a10c29e83bb7ea1662a926ad5d7380f32e4786a"
+        },
+        {
+          "file": "consumers/instant-equip/SKSE/Plugins/instant_equip_vr.ini",
+          "line": 5,
+          "endLine": 8,
+          "sha256": "627ed2ba315570c9a062eccd4fe2e3e590d1cfa1aa4ee5e4a784aa779ef9c4a7"
+        }
+      ]
+    },
+    {
+      "id": "stop-trigger",
+      "classification": "Action-specific default-input/unsheathe policy; no spatial region or slot",
+      "evidenceLevel": "Public C++92814e7a59ce58dff923b7bd3eae35b788b111b7",
+      "evidence": [
+        {
+          "file": "consumers/sources/stuf_vr/src/main.cpp",
+          "line": 12,
+          "endLine": 35,
+          "sha256": "efb702a6c5c70900e36d2bf4b94ff56cc2163444f30569fc98842e02b431afc5"
+        }
+      ]
+    }
+  ],
+  "sourceA": {
+    "generatedUtc": "2026-11-03T05:53:03.147645+00:00",
+    "review": "consumer-regions-a.md",
+    "selectedTextPins": {
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\archive-manifest.json": {
+        "bytes": 40456,
+        "sha256": "bc5d72bd2dcf037df93a4649ec2c06ff458ce9c0073b6dcd2d9ece51147293d1"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\harvesting\\CHANGELOG.md": {
+        "bytes": 30320,
+        "sha256": "24b68f4a64e9913598d5db89fdb1f7c1575e11ddec31316d4046e72a6bd59220"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\harvesting\\optional\\VRClimbing\\SKSE\\Plugins\\ImmersiveHarvesting_VRClimbing.ini": {
+        "bytes": 102,
+        "sha256": "fbaf520c82b6c140abefc8cb0e6902f77efb26af4aadf58bdc43f17b8028f515"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\harvesting\\README.md": {
+        "bytes": 18870,
+        "sha256": "c56d15d60634914662548f1d18c96346bf6a357abffd6c5819eae918a9bf6de0"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\harvesting\\SKSE\\Plugins\\ImmersiveHarvesting.ini": {
+        "bytes": 3712,
+        "sha256": "0942177443ab9d2d2d088d5f031b2bedc2212ccf09d75dd7565a052926afd9d7"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\harvesting\\SKSE\\Plugins\\ImmersiveHarvesting_CustomHarvests.txt": {
+        "bytes": 1132,
+        "sha256": "3de7ee02f8c72619faa4d08190de2dd9df8d1c06bcaa84512636b14a976e40e1"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\immersive-equip\\ImmersiveVREquip\\SKSE\\plugins\\ImmersiveEquipVR.ini": {
+        "bytes": 4409,
+        "sha256": "f2e19f3f035e1fb8e2717d442874dd28781813c6767531239f7b2a63d1b12e70"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\Interface\\Translations\\VRLockpicking_CHINESE.txt": {
+        "bytes": 11004,
+        "sha256": "5f0afa2cdb1dbfb8db83f27d71cfdfe7a624c83708e4a05f359a2f7efe385465"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\Interface\\Translations\\VRLockpicking_ENGLISH.txt": {
+        "bytes": 18662,
+        "sha256": "3f0b76fe57cfc0e1c64263bac98bcf770cc014a8685a544b79967765cd971026"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\Interface\\Translations\\VRLockpicking_FRENCH.txt": {
+        "bytes": 21626,
+        "sha256": "e777447c504967480549b839af9e33f90e7d5f31bfd74a2676e1c360bc4d9b99"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\Interface\\Translations\\VRLockpicking_GERMAN.txt": {
+        "bytes": 21296,
+        "sha256": "63ceddfdef2541ad80bad98cb6d7814c56612ee00ac7ed5f34c63e308eaf6b00"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\Interface\\Translations\\VRLockpicking_ITALIAN.txt": {
+        "bytes": 20942,
+        "sha256": "9d5dd0f3f9095ea5a0da443e16658cad3c6309063931af853dcaafab13c15318"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\Interface\\Translations\\VRLockpicking_JAPANESE.txt": {
+        "bytes": 12682,
+        "sha256": "55ad0f390bd62ba747bb23c9c2e9a695fd9a86f6275d6488d201cd7bfcd46249"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\Interface\\Translations\\VRLockpicking_POLISH.txt": {
+        "bytes": 19932,
+        "sha256": "ad87d93de91b72876ea33223fe8c26f6a1a0d077c0b8dd4a94c2b8068ee55b29"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\Interface\\Translations\\VRLockpicking_RUSSIAN.txt": {
+        "bytes": 19354,
+        "sha256": "9a2857a22db57fdfebabea01c0b83300e21304bfdce05f6663ffdf911d3976fa"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\Interface\\Translations\\VRLockpicking_SPANISH.txt": {
+        "bytes": 20994,
+        "sha256": "ba40cbaf1551c52ec667ca99e8233c3032cd5a576b177165229623fb2d8e8423"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\MCM\\Config\\VRLockpicking\\settings.ini": {
+        "bytes": 739,
+        "sha256": "431cdccb4e145798f15815a807d9929eaf8afc51b87b8d2934357a36e036efb5"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\Scripts\\Source\\VRLockpicking_MCM.psc": {
+        "bytes": 870,
+        "sha256": "ee9e055b2eafc73566c4f30b7329793d9e52b8cb38a0a5e6325bd7f490563f40"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\SKSE\\Plugins\\VRLockpicking-LICENSE.txt": {
+        "bytes": 35823,
+        "sha256": "230184f60bae2feaf244f10a8bac053c8ff33a183bcc365b4d8b876d2b7f4809"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\SKSE\\Plugins\\VRLockpicking-README.md": {
+        "bytes": 8830,
+        "sha256": "43c8f8860df7c1ec41900573e8469ababdd2bbd3e2223031f1af735b49ce46a1"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\lockpicking\\SKSE\\Plugins\\VRLockpicking.ini": {
+        "bytes": 6846,
+        "sha256": "fd32c465ea6fa7d3e73c88de6a8d103f5c0d6ea2d428447e2288355d9ed0714d"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\pickpocket\\ImmersivePickpocketingVR-README.md": {
+        "bytes": 4672,
+        "sha256": "4016fdec88d6237f0039b3d1479e1cf3dc1ad094df8384c305217141b83aa3b1"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\pickpocket\\MCM\\Settings\\ImmersivePickpocketingVR.ini": {
+        "bytes": 330,
+        "sha256": "6c83a1cc7153e31b25ea4aa7ebfeac39f2cf3cc5121de9e2bb597b39328d3842"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\pickpocket\\SKSE\\Plugins\\ImmersivePickpocketingVR.ini": {
+        "bytes": 29980,
+        "sha256": "840715bf8cb0658ad55ea6835e00d389aba1c0c53e1040179690ea24873cc2be"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\pickup-only\\source\\scripts\\IPO_ConfigMenu.psc": {
+        "bytes": 5379,
+        "sha256": "512b50743118e3de64247d51c82ce515ea1c1e874c65159e88b712f80b3f85fe"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\pickup-only\\source\\scripts\\IPO_InitQuest.psc": {
+        "bytes": 235,
+        "sha256": "ef66542bb32d551e83d7ee548667f4d3ff5e35560f4a8b009b8c7f23999aaea6"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\pickup-only\\source\\scripts\\IPO_PowerScript.psc": {
+        "bytes": 599,
+        "sha256": "3df6bcd2c7238db553fad552f9e0d07749186d2ee89386fdfb81a668ff9d42a8"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\skinning\\InteractiveAnimalSkinningVR\\SKSE\\plugins\\ICSVR-Blacklist\\Vanilla.ini": {
+        "bytes": 73,
+        "sha256": "a6e4ad2815ae5f3ec5e5803a8fd79bb6a547156b532ba2af4ee0780ff9631371"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\skinning\\InteractiveAnimalSkinningVR\\SKSE\\plugins\\InteractiveAnimalSkinningVR.ini": {
+        "bytes": 1503,
+        "sha256": "b12b6a4b89f426fa4b6145ca6ca378c14e0ae27471f63592b88f8fe5a5f5ff83"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\meta.ini": {
+        "bytes": 564,
+        "sha256": "fd65b5a9d338bb7e3f87c945214d3a442e6e8196d24adde79273e82d26358e72"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_AnvilAlaisScript.psc": {
+        "bytes": 373,
+        "sha256": "b2dc5e32e7bc9c67fe496107be09386985a9017106842e7a7d4a044713d751ee"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_BSHammerScript.psc": {
+        "bytes": 2144,
+        "sha256": "a0ac52b10a5cf32fddcaad38e73b9caf0bf13bfe32b70c6698bae180111e845a"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_ForgeAliasScript.psc": {
+        "bytes": 922,
+        "sha256": "f00abb4789cd8fae29617091a34772b0e875b8cc54cad2abfa3063a6e682dd45"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_ForgeDistanceMEScript.psc": {
+        "bytes": 420,
+        "sha256": "409172bb4c8ad1c308f83491228f93fd0050797012fb429a24ba5172381970dc"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_GrindingWheelAliasScript.psc": {
+        "bytes": 639,
+        "sha256": "ca03e467f1149d49a6a57ae45e0501ca7c26d0e66b0aa9d74ab8fea8849bf7b6"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_ImmersiveSmithingQuestScript.psc": {
+        "bytes": 84324,
+        "sha256": "8b94e36c0dc0aa43ac1694c5e893d95da50ac80d9c816ef78f571995b16c742b"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_ImmersiveTanningQuestScript.psc": {
+        "bytes": 9745,
+        "sha256": "0df182611941be53cf3dae770c5e4992b4f42a635a5ecf79c1ca49eb476fa49f"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_ImmersiveTanningRackAliasScript.psc": {
+        "bytes": 1727,
+        "sha256": "1b84223b75293c73e5decfbd11aeaeae0703d54e8ac1acebd0a04e5371d84823"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_ImmersiveTanningRefAliasScript.psc": {
+        "bytes": 1254,
+        "sha256": "a03ac6afaddbdc3e3e2b623de8cf46a37909da9ed8419d63abe782e87fe6a4bc"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_MCMScript.psc": {
+        "bytes": 6596,
+        "sha256": "065f294ed17b9e7c50ea3921bf4db15a121ed597c04e8e7925c101425b7757ee"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_SmeltingPlayerAliasScript.psc": {
+        "bytes": 352,
+        "sha256": "6f95b40f4c1176e556d6510b6d2aec95abdc8a68a8c9a97a99924231253075dd"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_SmeltingQuestScript.psc": {
+        "bytes": 11555,
+        "sha256": "4669848abe813a6be73821ff456493cf1609ca715390e8f9b2b7e58e450fc1e3"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_WaterTroughAliasScript.psc": {
+        "bytes": 361,
+        "sha256": "755714233947972420db407487fb98fdcc57acc19c63142522a41c986484c447"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\smithing\\Source\\Scripts\\VRIF_WorkbenchAliasScript.psc": {
+        "bytes": 381,
+        "sha256": "a65a890c081a2e3555c843d7afea61551cf49741b02f7eba69395b4bfebc04bb"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\sources\\physical-lockpicking\\src\\core\\Config.h": {
+        "bytes": 9025,
+        "sha256": "834628643b45bc109084ed0f92adcd49767723328b85c427466391dc8caa8190"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\sources\\physical-lockpicking\\src\\core\\LockSession.cpp": {
+        "bytes": 21752,
+        "sha256": "c036da5323fc37ba1e945fc54078a60d64700733e8277955c9694c3185587cf1"
+      },
+      "D:\\Skyrim VR Modding\\Builds\\synergy-native-20261102\\consumers\\sources\\physical-lockpicking\\src\\plugin\\LockpickManager.cpp": {
+        "bytes": 63133,
+        "sha256": "8d03d9a0e17fd1ec6c836acb371df10379a9dccde352fb542300817d180c37d5"
+      },
+      "D:\\Skyrim VR Modding\\Repositories\\body-pouches-synergy-docs\\docs\\trinity-synergy\\consumer-contract-matrix.md": {
+        "bytes": 25732,
+        "sha256": "77ba1e0e974a3c695fabcf15e6d24c089e232ff1f6d81e550ce8e183497b7c13"
+      },
+      "D:\\Skyrim VR Modding\\Repositories\\body-pouches-synergy-docs\\docs\\trinity-synergy\\consumer-contract-requirements.json": {
+        "bytes": 26578,
+        "sha256": "08f73515a8234062e6d630b5473230c0e969834f5f8eea51f434a4f881b28942"
+      },
+      "D:\\Skyrim VR Modding\\Repositories\\body-pouches-synergy-docs\\src\\core\\PouchSet.cpp": {
+        "bytes": 7954,
+        "sha256": "2d42cac4546288a80ba2378ffe193901dfcae041b950c08b782bdac1c8298015"
+      },
+      "D:\\Skyrim VR Modding\\Repositories\\body-pouches-synergy-docs\\src\\game\\Body.cpp": {
+        "bytes": 3351,
+        "sha256": "8d0c6e83c12f985ce28a79959e5ced8be78b846aae5647d4eea0c6e44477addd"
+      },
+      "D:\\Skyrim VR Modding\\Repositories\\body-pouches-synergy-docs\\src\\Mod.cpp": {
+        "bytes": 53956,
+        "sha256": "5d25641979f7fd39521cff279e77b0b7090680487ad284d50a2905934b558ec7"
+      }
+    },
+    "existingArchiveManifestEntries": [
+      {
+        "key": "harvesting",
+        "archive": "D:\\Skyrim VR Modding\\MO2\\ModOrganizer\\Skyrim VR\\downloads\\Immersive Harvesting 1.5.23 186754 1.5.23 2026-09-19T16-19Z n0oTCmHMT.zip",
+        "sha256": "60826e09b75cc63e384430dc0e490a481a03aebbcaf35b407dc8c6f6fe1c433a"
+      },
+      {
+        "key": "pickpocket",
+        "archive": "D:\\Skyrim VR Modding\\MO2\\ModOrganizer\\Skyrim VR\\downloads\\1_Immersive Pickpocketing VR 189538 1.1 2026-09-03T16-37Z JrECN2WqU.zip",
+        "sha256": "f93b32364626650a4d1aaeda96b2423ce05789c1ae12ff2d872e6f64fe752a2b"
+      },
+      {
+        "key": "skinning",
+        "archive": "D:\\Skyrim VR Modding\\MO2\\ModOrganizer\\Skyrim VR\\downloads\\Interactive Animal Skinning VR 188121 1 2026-08-12T07-04Z QRde31wGS.zip",
+        "sha256": "35ace3bef11b89380ebaaccf8a5dd91cde10223e59453ea42395086a83515a30"
+      },
+      {
+        "key": "pickup-only",
+        "archive": "D:\\Skyrim VR Modding\\MO2\\ModOrganizer\\Skyrim VR\\downloads\\Immersive Pickup Only.7z-70913-1-1-0-1658087405.7z",
+        "sha256": "a05ee334f30f14dd89fd0340d2d4fc00959eb96f26d0e745a9e914741e89fde4"
+      },
+      {
+        "key": "immersive-equip",
+        "archive": "D:\\Skyrim VR Modding\\MO2\\ModOrganizer\\Skyrim VR\\downloads\\Immersive Equip VR 186897 2.0.0 2026-08-12T06-27Z s6Og0d9LM.zip",
+        "sha256": "e33948058f02b8d06d1cffc79484f7f7a7c338c77c964eb84a69e3b041150970"
+      },
+      {
+        "key": "smithing",
+        "archive": "D:\\Skyrim VR Modding\\MO2\\ModOrganizer\\Skyrim VR\\downloads\\1_Immersive Smithing 1.0.5-72298-1-0-5-1723108922.zip",
+        "sha256": "142c3b245329e7b259e4a9dc58c0f3b7bd31215e936d8fa2520135e1c3e6eafb"
+      },
+      {
+        "key": "body-pouches",
+        "archive": "D:\\Skyrim VR Modding\\MO2\\ModOrganizer\\Skyrim VR\\downloads\\Body Pouches 0.2.0 194796 0.2.0 2026-10-10T21-50Z uhRBKsNO4.7z",
+        "sha256": "3835c5dc9c8424056ee139633fd0253227409fd1a3b783241ccfc5406876647e"
+      },
+      {
+        "key": "lockpicking",
+        "archive": "D:\\Skyrim VR Modding\\MO2\\ModOrganizer\\Skyrim VR\\downloads\\VR Physical Lockpicking 196953 1.0.1 2026-10-27T02-57Z 4t2yDc4SQ.zip",
+        "sha256": "fecdbafb3d30744877648e2ade76061e1d94b9e66348cc4ddd8d50b626687e15"
+      }
+    ],
+    "archiveHashLimit": "Archive SHA256 values are carried from the existing archive-manifest.json; selected extracted text was hashed now. Native DLL content and archive/source byte equivalence not inspected.",
+    "lockpickingSourceHead": "880a3a02f5e2a7dbb8ffc533e618712225bb29e7",
+    "bodyPouchesSourceTag020": "699196120d3c72e5eb463bf98a9c025e8d98c1f3",
+    "activity": "Read-only; no DLL/code execution, builds, game, install, network or production/journal edits."
+  }
+}
