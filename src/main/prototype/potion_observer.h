@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "potion_policy.h"
-#include <RE/B/BSTEvent.h>
-#include <RE/T/TESContainerChangedEvent.h>
+#include <RE/Skyrim.h>
 #include <atomic>
 
 namespace BodyPouches::Prototype {
