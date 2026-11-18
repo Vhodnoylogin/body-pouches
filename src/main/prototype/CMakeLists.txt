@@ -8,8 +8,8 @@ set(RC4_NATIVE "" CACHE PATH "Completed VR Interaction Framework RC4 native buil
 set(FRAMEWORK_ROOT "" CACHE PATH "Pinned public VR Interaction Framework source")
 set(HIGGS_ROOT "" CACHE PATH "Pinned public HIGGS API source")
 set(JSON_INCLUDE "" CACHE PATH "Optional directory containing nlohmann/json.hpp")
-set(FRAMEWORK_COMMIT "1ea08aa98d4ef5d6ed2773bc309a793d49a336d1")
-set(HIGGS_COMMIT "b06eed4ccd39ca87cc4a8aecaebe5b5ebb3b71de")
+set(FRAMEWORK_COMMIT "fac67fdedb1591bf20bebf61016402a7e7b45f26")
+set(HIGGS_COMMIT "ec452367c01617c4eb0e9e039697d0221f788d13")
 
 find_package(Git REQUIRED)
 foreach(dependency IN ITEMS FRAMEWORK HIGGS)

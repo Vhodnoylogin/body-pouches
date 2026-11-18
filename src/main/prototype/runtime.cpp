@@ -9,7 +9,6 @@
 #include "potion_observer.h"
 #include "assignment_store.h"
 #include "settings.h"
-#include "game/Forms.h"
 #include "higgsinterface001.h"
 #include "body_slots_equipment_api.h"
 #include "body_slots_content_observation_api.h"
@@ -48,8 +47,24 @@ template<class Query, class T> bool Higgs(const char* name, std::uint32_t versio
     return query && query(version, sizeof(table), &table) == HIGGS_HAND_OK &&
         table.structSize == sizeof(table) && table.abiVersion == version;
 }
-bool Drinkable(RE::AlchemyItem* potion) {
-    return potion && potion->GetPlayable() && !potion->IsFood() && !potion->IsPoison();
+struct CapturedAssignment {
+    AssignmentSnapshot assignment;
+    std::uint64_t save{},epoch{};
+    std::uint32_t form{},reference{},quantity{};
+};
+const CapturedAssignment* StoredAssignment(const sdk::InventoryProviderProgress& progress) noexcept {
+    const auto& r=progress.receipt;
+    constexpr auto flags=HIGGS_TX_DOMAIN_ATTESTED|HIGGS_TX_NATIVE_RELEASE_CONFIRMED;
+    constexpr auto identity=HIGGS_ITEM_BASE_KNOWN|HIGGS_ITEM_REFERENCE_KNOWN|HIGGS_ITEM_QUANTITY_KNOWN;
+    if(!progress.semanticContext || !progress.transfer || r.requestId!=progress.transfer ||
+       r.stage!=HIGGS_TX_COMPLETED || r.disposition!=HIGGS_DISPOSITION_INVENTORY ||
+       (r.receiptFlags&flags)!=flags || (r.receiptFlags&HIGGS_TX_COMPENSATION_CONFIRMED) ||
+       sdk::TransferNeedsRecovery(r) || (r.original.validFields&identity)!=identity) return nullptr;
+    const auto* captured=static_cast<const CapturedAssignment*>(progress.semanticContext.get());
+    return captured->assignment.generation && captured->save==progress.saveGeneration &&
+        captured->epoch==r.epoch && captured->form==r.original.baseFormId &&
+        captured->reference==r.original.worldRefId && captured->quantity==r.original.quantity &&
+        captured->quantity==r.quantity ? captured : nullptr;
 }
 // One owner for mutable integration state. Callbacks only read the immutable
 // policy snapshot; serialization changes only its separately locked assignment.
@@ -126,7 +141,12 @@ bool PouchApp::Policy(void* context, const bs::SourceActionContext& input, sdk::
     const auto& app = *static_cast<PouchApp*>(context);
     if (app.loading_.load()) return false;
     const auto snapshot = app.policy_.load();
-    return snapshot && PlanPotion(*snapshot, input, NowNs(), plan);
+    if(!snapshot || !PlanPotion(*snapshot, input, NowNs(), plan)) return false;
+    if(plan.transferKind==HIGGS_TRANSFER_HAND_TO_INVENTORY){
+        plan.semanticContext=snapshot->storeContexts[input.context.input.physicalHand-1];
+        if(!plan.semanticContext)return false;
+    }
+    return true;
 }
 void PouchApp::Connect() {
     if (connected_) return;
@@ -294,11 +314,23 @@ std::shared_ptr<PolicySnapshot> PouchApp::Observe(const HIGGS_HandSnapshot& hand
     const bs::RuntimeRecord& runtime, const std::array<HIGGS_ItemIdentity, 2>& held) {
     auto snapshot = std::make_shared<PolicySnapshot>();
     snapshot->epoch = hands.epoch; snapshot->save = view_.saveGeneration; snapshot->instance = instance_.instanceHandle;
-    snapshot->filter = assignments_.Copy(); snapshot->worn = worn_;
+    auto assignment=assignments_.Snapshot();
+    snapshot->filter=std::move(assignment.filter);snapshot->assignmentGeneration=assignment.generation;
+    snapshot->worn = worn_;
     snapshot->available = runtime.availability == static_cast<std::uint32_t>(bs::RuntimeAvailability::Available);
     const auto now = NowNs();
     snapshot->stock = observer_.CopyStock(now, refresh_.exchange(false));
     snapshot->held = observer_.CopyHeld(held, hands.epoch, now);
+    for(std::size_t hand=0;hand<snapshot->held.size();++hand){
+        const auto& item=snapshot->held[hand];
+        if(!snapshot->assignmentGeneration || !item.reference ||
+           (!snapshot->filter.IsSet()&&!item.assignment)) continue;
+        auto captured=std::make_shared<CapturedAssignment>();
+        captured->assignment={item.assignment.value_or(Core::Filter{}),snapshot->assignmentGeneration};
+        captured->save=snapshot->save;captured->epoch=snapshot->epoch;
+        captured->form=item.potion.form;captured->reference=item.reference;captured->quantity=item.quantity;
+        snapshot->storeContexts[hand]=std::move(captured);
+    }
     snapshot->capturedNs = NowNs();
     return snapshot;
 }
@@ -337,24 +369,19 @@ bs::Status PouchApp::Completed(const sdk::InventoryProviderProgress& progress) {
         (receipt.receiptFlags&required)==required&&
         !(receipt.receiptFlags&HIGGS_TX_COMPENSATION_CONFIRMED)&&!sdk::TransferNeedsRecovery(receipt)&&
         (receipt.original.validFields&HIGGS_ITEM_BASE_KNOWN);
-    // A cell/world transition ends physical authority, not this save's logical
-    // assignment. Resume may also precede our cached scope refresh. Use only
-    // the captured logical save and a fresh Framework scope, never cached epoch.
-    if (storage&&(loading_ || !progress.saveGeneration)) return bs::Status::Unavailable;
-    bs::RuntimeView current{}; current.structSize = sizeof(current); current.version = bs::kRuntimeApiVersion;
     if(storage){
-        const auto copied=runtime_->CopyRuntime(writer_,nullptr,0,&current);
-        if(copied!=bs::Status::Ok&&copied!=bs::Status::BufferTooSmall)return copied;
-        if(!current.saveGeneration)return bs::Status::Unavailable;
-        if(current.saveGeneration==progress.saveGeneration){
-            if(!assignments_.Copy().IsSet()){
-                auto* potion=RE::TESForm::LookupByID<RE::AlchemyItem>(receipt.original.baseFormId);
-                if(!Drinkable(potion))return bs::Status::Unavailable;
-                const bool assigned=assignments_.AssignIfUnset(Game::Describe(potion));
-                if(!assigned&&!assignments_.Copy().IsSet())return bs::Status::Conflict;
-                if(assigned)spdlog::info("pouch assigned by factual stored potion {:08X}",potion->GetFormID());
-            }
-        } // A positively different save deliberately discards old assignment work.
+        const auto* captured=StoredAssignment(progress);
+        if(!captured)return bs::Status::Conflict;
+        // Revert/Load retires the consumer generation under the same lock used
+        // for assignment and saving. A physical epoch change does not retire it.
+        if(loading_ && assignments_.Snapshot().generation==captured->assignment.generation)
+            return bs::Status::Unavailable;
+        const std::optional<Core::Filter> filter=captured->assignment.filter.IsSet()
+            ? std::optional<Core::Filter>(captured->assignment.filter) : std::nullopt;
+        const auto applied=assignments_.ApplyCaptured(filter,captured->assignment.generation);
+        if(applied==AssignmentApplyResult::Invalid)return bs::Status::Conflict;
+        if(applied==AssignmentApplyResult::Applied)
+            spdlog::info("pouch assigned by factual stored potion {:08X}",captured->form);
     }
     processedTransfer_ = progress.transfer; processedEpoch_ = progress.receipt.epoch; refresh_ = true;
     if (progress.releaseStatus != HIGGS_HAND_OK)
@@ -432,7 +459,11 @@ void PouchApp::Tick() {
     policy_.store(nullptr);
 }
 void PouchApp::Save(SKSE::SerializationInterface* skse) {
-    if (!assignments_.Save(skse))
+    // Copy-only projection: never run provider dispatch/inventory work or change
+    // live policy from a serialization callback. Unknown outcomes grant nothing.
+    const auto progress=inventory_.CopyProgress();
+    const auto* captured=StoredAssignment(progress);
+    if (!assignments_.Save(skse,captured?&captured->assignment:nullptr))
         spdlog::error("Body Pouches 2 assignment save failed");
 }
 void PouchApp::Load(SKSE::SerializationInterface* skse) {

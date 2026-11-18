@@ -126,8 +126,9 @@ std::array<HeldPotion, 2> PotionObserver::CopyHeld(
         auto* potion = RE::TESForm::LookupByID<RE::AlchemyItem>(item.baseFormId);
         if (Drinkable(potion)) {
             auto described = Describe(potion);
-            const bool assignable = MakeAssignment(described.item).has_value();
-            held_[hand] = {std::move(described), item.worldRefId, item.quantity, assignable};
+            auto assignment = MakeAssignment(described.item);
+            const bool assignable = assignment.has_value();
+            held_[hand] = {std::move(described), item.worldRefId, item.quantity, assignable, std::move(assignment)};
         }
     }
     return held_;

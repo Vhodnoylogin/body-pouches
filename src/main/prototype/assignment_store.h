@@ -8,6 +8,11 @@ namespace SKSE { class SerializationInterface; }
 
 namespace BodyPouches::Prototype {
 enum class AssignmentLoadResult { Empty, Loaded, Imported, Invalid };
+enum class AssignmentApplyResult { Applied, AlreadySet, StaleGeneration, Invalid };
+struct AssignmentSnapshot {
+    Core::Filter filter;
+    std::uint64_t generation{};
+};
 
 // Pure preflight shared by offer policy and receipt application. A successful
 // store must not discover only afterwards that its assignment cannot be saved.
@@ -18,13 +23,19 @@ enum class AssignmentLoadResult { Empty, Loaded, Imported, Invalid };
 class AssignmentStore final {
 public:
     [[nodiscard]] Core::Filter Copy() const;
+    [[nodiscard]] AssignmentSnapshot Snapshot() const;
     void Clear();
     [[nodiscard]] bool AssignIfUnset(const Core::Item&);
-    [[nodiscard]] bool Save(SKSE::SerializationInterface*) const;
+    // Applies only a preflighted, captured logical outcome from this save.
+    [[nodiscard]] AssignmentApplyResult ApplyCaptured(const std::optional<Core::Filter>&,
+        std::uint64_t expectedGeneration);
+    // An already factual pending outcome may be serialized without changing live state.
+    [[nodiscard]] bool Save(SKSE::SerializationInterface*, const AssignmentSnapshot* factual = nullptr) const;
     [[nodiscard]] AssignmentLoadResult Load(SKSE::SerializationInterface*, int legacySlot = 13);
 
 private:
     mutable std::mutex mutex_;
     Core::Filter filter_;
+    std::uint64_t generation_=1;
 };
 }

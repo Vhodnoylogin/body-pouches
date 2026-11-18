@@ -4,6 +4,7 @@
 #include "game/Forms.h"
 #include <SKSE/SKSE.h>
 #include <algorithm>
+#include <limits>
 #include <utility>
 
 namespace BodyPouches::Prototype {
@@ -70,9 +71,16 @@ Core::Filter AssignmentStore::Copy() const {
     return filter_;
 }
 
+AssignmentSnapshot AssignmentStore::Snapshot() const {
+    std::lock_guard lock(mutex_);
+    return {filter_, generation_};
+}
+
 void AssignmentStore::Clear() {
     std::lock_guard lock(mutex_);
     filter_ = {};
+    // Zero is a permanent fail-closed sentinel after theoretical exhaustion.
+    if(generation_) generation_=generation_==std::numeric_limits<std::uint64_t>::max()?0:generation_+1;
 }
 
 bool AssignmentStore::AssignIfUnset(const Core::Item& item) {
@@ -84,8 +92,25 @@ bool AssignmentStore::AssignIfUnset(const Core::Item& item) {
     return true;
 }
 
-bool AssignmentStore::Save(SKSE::SerializationInterface* skse) const {
-    const auto filter = Copy();
+AssignmentApplyResult AssignmentStore::ApplyCaptured(const std::optional<Core::Filter>& captured,
+    std::uint64_t expectedGeneration) {
+    auto next=captured;
+    std::lock_guard lock(mutex_);
+    if(!generation_ || expectedGeneration!=generation_) return AssignmentApplyResult::StaleGeneration;
+    if(filter_.IsSet()) return AssignmentApplyResult::AlreadySet;
+    if(!captured || !captured->IsSet()) return AssignmentApplyResult::Invalid;
+    filter_=std::move(*next);
+    return AssignmentApplyResult::Applied;
+}
+
+bool AssignmentStore::Save(SKSE::SerializationInterface* skse, const AssignmentSnapshot* factual) const {
+    Core::Filter filter;
+    {
+        std::lock_guard lock(mutex_);
+        filter = filter_;
+        if(!filter.IsSet() && factual && generation_ && factual->generation==generation_)
+            filter=factual->filter;
+    }
     const auto bytes = Core::EncodeAssignments(filter.IsSet()
         ? Core::Assignments{{kCurrentIndex, filter}} : Core::Assignments{});
     // Always write the empty current record too: it explicitly overrides legacy ASGN.
