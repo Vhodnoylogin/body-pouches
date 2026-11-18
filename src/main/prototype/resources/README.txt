@@ -1,4 +1,4 @@
-Body Pouches 2 - prototype 1
+Body Pouches 2 - prototype 2
 
 A wearable potion bag using VR Interaction Framework. This is an untested local
 prototype, not an update to the released Body Pouches 0.2.0. Do not install both
@@ -20,12 +20,13 @@ add one returned ARMO using player.additem <id> 1. Local ID is BodyPouches.esp:8
 Equip it to activate its slot on the right hip; removing it disables new actions.
 The vanilla coin purse is displayed by Framework; no VRIK holster is reserved.
 
-At the bag, hold a drinkable potion and release a fresh grip to store it and
+At the bag, hold a drinkable potion and press the trigger to store it and
 assign its effect filter. With an empty hand, grip at the bag to withdraw a
 matching potion from ordinary player inventory. Move out while holding grip,
 then release outside. HIGGS handles the actual item and drinking at the mouth.
-To return a drawn bottle, take a later fresh grip sequence before releasing at
-the bag: the release owned by the withdrawal cannot trigger a second action.
+To return a drawn bottle, bring it to the bag and press the trigger while
+holding it. Releasing the grip remains the original action's release; it never
+also stores the bottle. Only the selected trigger action at this bag is consumed.
 Poisons, food and game-equipped weapons are not accepted as potions.
 
 Assignments are per-save and survive removing the bag. Potions remain in normal

@@ -85,7 +85,7 @@ def main():
             raise RuntimeError(f"build input changed: {path}")
     dll = output / "native/Release/BodyPouches.dll"
     receipt = {
-        "product": "Body Pouches 2", "version": "2.0.0-prototype.1",
+        "product": "Body Pouches 2", "version": "2.0.0-prototype.2",
         "sourceRepository": git(ROOT, "remote", "get-url", "origin"), "sourceCommit": source_commit,
         "sourceDirtyAtEnd": bool(git(ROOT, "status", "--porcelain")),
         "frameworkRoot": str(framework), "frameworkCommit": FRAMEWORK_COMMIT,

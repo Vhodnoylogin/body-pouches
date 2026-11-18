@@ -200,7 +200,7 @@ bool PouchApp::Attach() {
         !Higgs<HIGGS_QueryTransactionsInterfaceFn>("HIGGS_QueryTransactionsInterface", HIGGS_TRANSACTIONS_VERSION, tables_.transactions)) return false;
     sdk::InventoryProviderConfig config;
     config.writer = writer_; config.instance = instance_.instanceHandle; config.higgsClient = higgsClient_;
-    config.storeEdge = HIGGS_INPUT_UP; config.timeoutMs = 1500;
+    config.storeEdge = HIGGS_INPUT_DOWN; config.timeoutMs = 1500;
     config.policy = Policy; config.policyContext = this;
     const auto status = inventory_.Attach(tables_, config);
     attached_ = status == bs::Status::Ok;

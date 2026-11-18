@@ -32,9 +32,9 @@ bool PlanPotion(const PolicySnapshot& snapshot, const body_slots::SourceActionCo
         nowNs - snapshot.capturedNs > 150000000 || input.epoch != snapshot.epoch ||
         slot.configured.instance.instanceHandle != snapshot.instance ||
         slot.epoch != snapshot.epoch || input.physicalHand < 1 || input.physicalHand > 2 ||
-        input.button != HIGGS_INPUT_GRIP) return false;
+        input.edge != HIGGS_INPUT_DOWN) return false;
     plan = {};
-    if (input.edge == HIGGS_INPUT_DOWN && input.handOccupancy == HIGGS_OCCUPANCY_EMPTY) {
+    if (input.button == HIGGS_INPUT_GRIP && input.handOccupancy == HIGGS_OCCUPANCY_EMPTY) {
         const auto* next = NextPotion(snapshot);
         if (!next) return false;
         plan.transferKind = HIGGS_TRANSFER_INVENTORY_TO_HAND;
@@ -43,7 +43,7 @@ bool PlanPotion(const PolicySnapshot& snapshot, const body_slots::SourceActionCo
         plan.quantity = 1;
         return true;
     }
-    if (input.edge != HIGGS_INPUT_UP) return false;
+    if (input.button != HIGGS_INPUT_TRIGGER) return false;
     const auto& incoming = context.items[0];
     const auto& held = snapshot.held[input.physicalHand - 1];
     if (!incoming.known || !incoming.allowed || incoming.source != 1 || !held.reference ||

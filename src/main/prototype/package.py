@@ -63,7 +63,7 @@ def main():
     }
     files["BodyPouches2-PROVENANCE.json"] = (json.dumps(provenance, indent=2) + "\n").encode("utf-8")
     output.mkdir(parents=True)
-    archive = output / "BodyPouches2-2.0.0-prototype.1.zip"
+    archive = output / f"BodyPouches2-{receipt['version']}.zip"
     with zipfile.ZipFile(archive, "x", compression=zipfile.ZIP_DEFLATED) as stream:
         for name, data in sorted(files.items()):
             member = zipfile.ZipInfo(name, (2026, 11, 18, 0, 0, 0))
