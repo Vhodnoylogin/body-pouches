@@ -11,7 +11,7 @@ import subprocess
 
 SOURCE = Path(__file__).resolve().parent
 ROOT = SOURCE.parents[2]
-FRAMEWORK_COMMIT = "085317c1655e5960d820bd57d5b88f546f46146f"
+FRAMEWORK_COMMIT = "209674ef0bb882c5d70f6f9078fcf6951f8aeb2e"
 HIGGS_COMMIT = "0e9053fe4beb657ef51c7bf2e2bc031091d815cc"
 HIGGS_HEADERS = ("higgsinterface001.h", "higgsabitypes.h", "higgshandapi.h", "higgsinput.h",
                  "higgstransactions.h", "higgsphysics.h", "higgsobservations.h", "higgsnativeinterop.h")
@@ -104,7 +104,7 @@ def main():
         raise RuntimeError("source revision or working-tree state changed during compilation")
     dll = output / "native/Release/BodyPouches.dll"
     receipt = {
-        "product": "Body Pouches 2", "version": "2.0.0-prototype.8",
+        "product": "Body Pouches 2", "version": "2.0.0-prototype.9",
         "sourceRepository": git(ROOT, "remote", "get-url", "origin"), "sourceCommit": source_commit,
         "sourceDirtyAtEnd": bool(git(ROOT, "status", "--porcelain")),
         "frameworkRoot": str(framework), "frameworkCommit": FRAMEWORK_COMMIT,

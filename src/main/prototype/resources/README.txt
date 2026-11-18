@@ -1,4 +1,4 @@
-Body Pouches 2 - prototype 8
+Body Pouches 2 - prototype 9
 
 A wearable potion bag using VR Interaction Framework. This is an untested local
 prototype, not an update to the released Body Pouches 0.2.0. Do not install both
@@ -8,7 +8,8 @@ Required separately:
 - Skyrim VR with SKSEVR, VR Address Library and normal runtime requirements.
 - Released VRIK Player Avatar 0.8.8 (unchanged).
 - VR Interaction Framework with BehaviorApi2/GameApi3 and semantic held-release
-  integration; its technical runtime filename remains BodySlots.dll.
+  integration and native-source validation; its technical runtime filename remains
+  BodySlots.dll.
 - HIGGS cooperation API build with HeldReleaseInterface1 (including explicit
   FollowInventoryGrip), AuthorizedDispatch2 and InventoryEffectsInterface1. Exact source pins accompany the
   archive. Released HIGGS or earlier prototype builds lack these contracts.
@@ -54,7 +55,7 @@ this prototype. Bag rendering, positioning, handling and save behavior await
 actual gameplay qualification. Source commit and exact provider requirements are
 recorded in BodyPouches2-PROVENANCE.json; full build instructions stay on GitHub.
 
-Prototype8 retains the lifecycle fixes: it drains cancelled unstarted work after save/world replacement and
+Prototype9 retains the lifecycle fixes: it drains cancelled unstarted work after save/world replacement and
 retains terminal receipts while final reporting is retried. A cell-world change
 does not erase an assignment from factual storage in the same save; receipts
 cannot assign another loaded save. Both storage and withdrawal recheck the

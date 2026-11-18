@@ -49,7 +49,7 @@ bool PlanPotion(const PolicySnapshot& snapshot, const body_slots::SourceActionCo
     std::uint64_t nowNs, body_slots::examples::OrdinaryItemPlan& plan) noexcept {
     const auto& input = context.context.input;
     const auto& slot = context.context.slot;
-    if (!snapshot.worn || !snapshot.available || !snapshot.capturedNs || nowNs < snapshot.capturedNs ||
+    if (!snapshot.available || !snapshot.capturedNs || nowNs < snapshot.capturedNs ||
         nowNs - snapshot.capturedNs > 150000000 || input.epoch != snapshot.epoch ||
         slot.configured.instance.instanceHandle != snapshot.instance ||
         slot.epoch != snapshot.epoch || input.physicalHand < 1 || input.physicalHand > 2 ||

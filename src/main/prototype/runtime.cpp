@@ -105,7 +105,7 @@ private:
     bs::InstanceRecord instance_{};
     bs::InstanceView view_{};
     std::uint32_t bagForm_{};
-    bool attached_{}, connected_{}, worn_{}, failStopped_{};
+    bool attached_{}, connected_{}, failStopped_{};
     std::unique_ptr<Buffers> buffers_ = std::make_unique<Buffers>();
     std::atomic<bool> loading_{false}, cancel_{false}, refresh_{true};
     std::atomic<std::shared_ptr<const PolicySnapshot>> policy_;
@@ -180,9 +180,10 @@ void PouchApp::Connect() {
         !Higgs<HIGGS_QueryAuthorizedDispatchInterfaceFn>("HIGGS_QueryAuthorizedDispatchInterface", 2, tables_.dispatch)) {
         spdlog::error("Body Pouches 2 unavailable: compatible Framework/HIGGS services required"); return;
     }
-    if(!(tables_.behaviorOptions->base.capabilities&bs::kBehaviorExtendedOptions)||
+    constexpr auto behaviorCapabilities=bs::kBehaviorExtendedOptions|bs::kBehaviorNativeSourceValidation;
+    if((tables_.behaviorOptions->base.capabilities&behaviorCapabilities)!=behaviorCapabilities||
        !(tables_.hands.capabilities&HIGGS_HAND_CAP_ACCEPTED_RECEIPTS)){
-        spdlog::error("Body Pouches 2 requires Framework inventory-content contracts and HIGGS queued-result retention");return;
+        spdlog::error("Body Pouches 2 requires Framework inventory/native-source contracts and HIGGS queued-result retention");return;
     }
     if (registry_->RegisterClient(kProvider, &writer_) != bs::Status::Ok) return;
     HIGGS_HandClientInfo client{};
@@ -230,7 +231,7 @@ void BS_CALL PouchApp::Event(void* context, const bs::RuntimeEvent* event) noexc
 void PouchApp::Feedback(const bs::RuntimeRecord& row) {
     for (std::uint32_t hand = bs::Left; hand <= bs::Right; ++hand) {
         const auto entry = entries_[hand - 1].exchange(nullptr);
-        if (!entry || !settings_.entryHaptics || !haptics_.RequestHaptic || !worn_ || loading_ ||
+        if (!entry || !settings_.entryHaptics || !haptics_.RequestHaptic || loading_ ||
             row.availability != static_cast<std::uint32_t>(bs::RuntimeAvailability::Available) ||
             entry->event.epoch != row.epoch || entry->event.instanceHandle != instance_.instanceHandle ||
             !(row.insideHands & hand) || row.frame < entry->event.frame ||
@@ -269,7 +270,7 @@ bool PouchApp::BindBag() {
     if (instance_.instanceHandle) return true;
     bs::EquipmentSlotEntry entry{};
     auto& spec = entry.instance;
-    spec.structSize = sizeof(spec); spec.flags = worn_ ? bs::kInstanceActive : 0;
+    spec.structSize = sizeof(spec); spec.flags = bs::kInstanceActive;
     Text(spec.equipmentKey, kEquipment); Text(spec.slotKey, kSlot);
     Text(spec.definitionProvider, kProvider); Text(spec.definitionKey, kSlot);
     spec.definitionRevision = definitionRevision_;
@@ -334,11 +335,12 @@ std::shared_ptr<PolicySnapshot> PouchApp::Observe(const HIGGS_HandSnapshot& hand
     auto assignment=assignments_.Snapshot();
     snapshot->filter=std::move(assignment.filter);snapshot->assignmentGeneration=assignment.generation;
     snapshot->assignmentProjection=AssignmentProjection(snapshot->filter);
-    snapshot->worn = worn_;
     snapshot->available = runtime.availability == static_cast<std::uint32_t>(bs::RuntimeAvailability::Available);
     const auto now = NowNs();
-    snapshot->stock = observer_.CopyStock(now, refresh_.exchange(false));
-    snapshot->held = observer_.CopyHeld(held, hands.epoch, now);
+    if(snapshot->available){
+        snapshot->stock = observer_.CopyStock(now, refresh_.exchange(false));
+        snapshot->held = observer_.CopyHeld(held, hands.epoch, now);
+    }
     for(std::size_t hand=0;hand<snapshot->held.size();++hand){
         const auto& item=snapshot->held[hand];
         auto& cached=assignmentContexts_[hand];
@@ -376,8 +378,8 @@ void PouchApp::Present(const PolicySnapshot& snapshot, const bs::RuntimeRecord& 
 }
 bs::Status PouchApp::Completed(const sdk::InventoryProviderProgress& progress) {
     if (progress.stage != lastStage_) {
-        spdlog::info("inventory stage {}: transfer {}, HIGGS {}, Framework {}, consumer {}", static_cast<unsigned>(progress.stage),
-            progress.transfer, progress.handStatus, static_cast<unsigned>(progress.slotStatus),static_cast<unsigned>(progress.settlementStatus));
+        spdlog::info("inventory stage {}: transfer {}, HIGGS {}, Framework {}, source {}, consumer {}", static_cast<unsigned>(progress.stage),
+            progress.transfer, progress.handStatus, static_cast<unsigned>(progress.slotStatus),static_cast<unsigned>(progress.sourceStatus),static_cast<unsigned>(progress.settlementStatus));
         lastStage_ = progress.stage;
     }
     if (progress.stage != sdk::InventoryProviderStage::Completed || !progress.transfer ||
@@ -416,10 +418,11 @@ void PouchApp::Tick() {
     }
     HIGGS_HandSnapshot hands{}; hands.structSize = sizeof(hands);
     bs::GameIntegration game{}; game.structSize = sizeof(game);
-    auto* player = RE::PlayerCharacter::GetSingleton();
-    if (!player || !player->Get3D(false) || tables_.hands.CopySnapshot(higgsClient_, &hands) != HIGGS_HAND_OK ||
-        !hands.worldReady || game_->CopyIntegration(&game) != bs::Status::Ok || !game.connected || !ReadInstances()) {
+    if (tables_.hands.CopySnapshot(higgsClient_, &hands) != HIGGS_HAND_OK ||
+        !hands.worldReady || game_->CopyIntegration(&game) != bs::Status::Ok || !game.connected ||
+        !game.frame || !game.bodyGeneration || game.higgsEpoch!=hands.epoch || !ReadInstances()) {
         policy_.store(nullptr);
+        CancelFeedback();
         if (attached_) { inventory_.Cancel(); Completed(inventory_.Tick()); }
         return;
     }
@@ -434,28 +437,19 @@ void PouchApp::Tick() {
         if (!bag) { policy_.store(nullptr); return; }
         bagForm_ = bag->GetFormID();
     }
-    const auto* worn = player->GetWornArmor(bagForm_, true);
-    const bool equipped = worn && worn->GetFormID() == bagForm_;
-    if (worn_ != equipped) refresh_ = true;
-    worn_ = equipped;
-    if (!worn_) {
-        policy_.store(nullptr);
-        CancelFeedback();
-        if (attached_) inventory_.Cancel();
-    }
     if (!BindBag()) return;
-    if (((instance_.flags & bs::kInstanceActive) != 0) != worn_) {
+    // Provider intent stays enabled. Framework's declared equipment binding owns
+    // actual eligibility and validates its live source before transfer admission.
+    if (!(instance_.flags & bs::kInstanceActive)) {
         bs::InstanceView result{}; result.structSize = sizeof(result); result.version = 1;
-        if (equipment_->SetSlotSetActive(writer_, kEquipment, worn_ ? 1 : 0, view_.saveGeneration, view_.viewRevision, &result) != bs::Status::Ok) return;
+        if (equipment_->SetSlotSetActive(writer_, kEquipment, 1, view_.saveGeneration, view_.viewRevision, &result) != bs::Status::Ok) return;
         view_ = result;
     }
     if (!Attach()) return;
-    feedbackInstance_.store(worn_ && settings_.entryHaptics ? instance_.instanceHandle : 0);
     const auto progress = inventory_.Tick();
     Completed(progress);
     if (progress.stage == sdk::InventoryProviderStage::RecoveryRequired ||
         progress.stage == sdk::InventoryProviderStage::Settling) { policy_.store(nullptr); return; }
-    if (!worn_) return;
     // Eligibility follows every safe Framework frame, independently of stock.
     // Reuse immutable inventory observations; changed held identities are cheap
     // copied HIGGS facts and are described without enumerating inventory again.
@@ -471,6 +465,9 @@ void PouchApp::Tick() {
     for (std::uint32_t i = 0; i < runtimeView.count; ++i) {
         const auto& row = buffers_->runtime[i];
         if (row.configured.instance.instanceHandle != instance_.instanceHandle) continue;
+        const bool available=row.availability==static_cast<std::uint32_t>(bs::RuntimeAvailability::Available);
+        if(!available)CancelFeedback();
+        else feedbackInstance_.store(settings_.entryHaptics?instance_.instanceHandle:0);
         Feedback(row);
         auto snapshot = Observe(hands, row, heldNow);
         Present(*snapshot, row);

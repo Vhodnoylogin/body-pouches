@@ -24,7 +24,7 @@ struct HeldPotion {
 struct PolicySnapshot {
     std::uint64_t capturedNs{}, epoch{}, save{}, instance{};
     std::uint64_t assignmentGeneration{};
-    bool worn{}, available{};
+    bool available{}; // Includes Framework's equipment/body/activation gate.
     Core::Filter filter;
     body_slots::examples::ContentProjection assignmentProjection;
     std::shared_ptr<const std::vector<Potion>> stock;
