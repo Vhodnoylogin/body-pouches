@@ -6,12 +6,12 @@ for those components or for Skyrim assets.
 
 VR Interaction Framework: Vhodnoylogin, MIT. Its ordinary-inventory-provider
 SDK helper is consumed from pinned public source, not maintained as a copied fork.
-https://github.com/Vhodnoylogin/body-slots/tree/fac67fdedb1591bf20bebf61016402a7e7b45f26
+https://github.com/Vhodnoylogin/body-slots/tree/085317c1655e5960d820bd57d5b88f546f46146f
 
 HIGGS: FlyingParticle / adamhynek, GPL-3.0. Public API contracts are consumed
 from the cooperation-fork revision below. HIGGS itself is a separate dependency;
 this archive contains no HIGGS DLL or native HIGGS implementation.
-https://github.com/Vhodnoylogin/higgs/tree/ec452367c01617c4eb0e9e039697d0221f788d13
+https://github.com/Vhodnoylogin/higgs/tree/0e9053fe4beb657ef51c7bf2e2bc031091d815cc
 
 CommonLibSSE-NG, fmt, spdlog and rapidcsv are consumed through the separately
 recorded RC4 native build and its pinned source inputs. Their license texts are

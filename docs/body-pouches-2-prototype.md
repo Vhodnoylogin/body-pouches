@@ -92,6 +92,10 @@ Saving may project an already observed, factual successful storage receipt and i
 
 Explicit reconciliation after an uncertain native mutation is still a bounded recovery limitation: if HIGGS has already terminally cancelled the original broker action, a later transaction reconciliation cannot reopen that action for content mirroring. The helper retains the recovery stop rather than replaying the operation or fabricating success. This prototype supplies no automatic reconciliation or refund.
 
+## Positive inventory outcomes in prototype7
+
+The common validator no longer treats a cancelled action's missing inventory flag as proof of nonmutation. HIGGS's additive read-only `InventoryEffectsInterface1` reports closed, correlated recorded inventory effects without changing old receipt flags or layouts. Frame accepts typed unchanged cancellation only with positive evidence (or confirmed compensation); active, missing, uncertain or incomplete child history remains reserved. A callback that has explicitly failed can release a known nonmutating reservation, but a still-running callback and accepted consumer work cannot. Body Pouches requires the observation service; no extra inventory or button mechanism is introduced.
+
 ## Building
 
 Production sources are in `src/main/prototype/`. The separate CMake entry consumes only the public framework tables and its pinned SDK helper. It reuses existing pure Body Pouches potion rules and its form-description boundary, together with the completed RC4 build's CommonLib/fmt/spdlog libraries. It does not compile legacy input, VRIK holster or inventory-mutation code. Generated ESP/DLL/ZIP outputs stay outside Git.

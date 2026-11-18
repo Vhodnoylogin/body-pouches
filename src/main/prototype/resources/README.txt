@@ -1,4 +1,4 @@
-Body Pouches 2 - prototype 6
+Body Pouches 2 - prototype 7
 
 A wearable potion bag using VR Interaction Framework. This is an untested local
 prototype, not an update to the released Body Pouches 0.2.0. Do not install both
@@ -10,7 +10,7 @@ Required separately:
 - VR Interaction Framework with BehaviorApi2/GameApi3 and semantic held-release
   integration; its technical runtime filename remains BodySlots.dll.
 - HIGGS cooperation API build with HeldReleaseInterface1 (including explicit
-  FollowInventoryGrip) and AuthorizedDispatch2. Exact source pins accompany the
+  FollowInventoryGrip), AuthorizedDispatch2 and InventoryEffectsInterface1. Exact source pins accompany the
   archive. Released HIGGS or earlier prototype builds lack these contracts.
 PLANCK is optional for this player-body bag; it is not bundled or required by it.
 Keep each dependency as its own mod installation.
@@ -54,9 +54,13 @@ this prototype. Bag rendering, positioning, handling and save behavior await
 actual gameplay qualification. Source commit and exact provider requirements are
 recorded in BodyPouches2-PROVENANCE.json; full build instructions stay on GitHub.
 
-Prototype6 drains cancelled unstarted work after save/world replacement and
+Prototype7 retains the lifecycle fixes: it drains cancelled unstarted work after save/world replacement and
 retains terminal receipts while final reporting is retried. A cell-world change
 does not erase an assignment from factual storage in the same save; receipts
 cannot assign another loaded save. Both storage and withdrawal recheck the
 actual age of their source observations immediately before admission.
 No tests or game runs were performed; this is a compile-only candidate.
+
+Inventory-only cancellation requires positive HIGGS evidence of no recorded
+mutation. Unknown or incomplete outcomes stay blocked; the framework does not
+infer nonmutation merely because an action was cancelled.

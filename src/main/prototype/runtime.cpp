@@ -163,8 +163,11 @@ void PouchApp::Connect() {
     tables_.gameServices = Framework<bs::GameApi2>("BodySlots_QueryGameInterface", 2);
     tables_.frameObservations = Framework<bs::GameApi3>("BodySlots_QueryGameInterface", 3);
     content_ = Framework<bs::ContentObservationApi>("BodySlots_QueryContentObservationInterface");
+    HIGGS_InventoryEffectsInterface inventoryEffects{};
     if (!registry_ || !instances_ || !equipment_ || !runtime_ || !behavior_ || !game_ || !content_ ||
         !tables_.behaviorOptions || !tables_.gameServices || !tables_.frameObservations ||
+        !Higgs<HIGGS_QueryInventoryEffectsInterfaceFn>("HIGGS_QueryInventoryEffectsInterface",HIGGS_INVENTORY_EFFECTS_ABI_VERSION,inventoryEffects) ||
+        !(inventoryEffects.capabilities&1) || !inventoryEffects.CopyForAction ||
         !Higgs<HIGGS_QueryHandInterfaceFn>("HIGGS_QueryHandInterface", HIGGS_HAND_ABI_VERSION, tables_.hands) ||
         !Higgs<HIGGS_QueryHandRoutingInterfaceFn>("HIGGS_QueryHandRoutingInterface", HIGGS_HAND_ROUTING_ABI_VERSION, tables_.routing) ||
         !Higgs<HIGGS_QueryInputRoutesInterfaceFn>("HIGGS_QueryInputRoutesInterface", 1, tables_.routes) ||
@@ -278,6 +281,15 @@ bool PouchApp::BindBag() {
 }
 bool PouchApp::Attach() {
     if (attached_) return true;
+    bs::GameIntegration integration{};integration.structSize=sizeof(integration);
+    std::uint64_t services{};
+    if(game_->CopyIntegration(&integration)==bs::Status::Ok && integration.connected &&
+       tables_.gameServices->CopyInputServices(&services)==bs::Status::Ok &&
+       !(services&bs::kGameInventoryEffectEvidence)){
+        failStopped_=true;
+        spdlog::error("Body Pouches 2 requires Framework inventory-effect evidence; install the matching runtime");
+        return false;
+    }
     // Capabilities become available only after HIGGS installs its native backend.
     if (!Higgs<HIGGS_QueryInventoryInterfaceFn>("HIGGS_QueryInventoryInterface", HIGGS_INVENTORY_VERSION, tables_.inventory) ||
         !Higgs<HIGGS_QueryTransactionsInterfaceFn>("HIGGS_QueryTransactionsInterface", HIGGS_TRANSACTIONS_VERSION, tables_.transactions)) return false;

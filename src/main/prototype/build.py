@@ -11,8 +11,8 @@ import subprocess
 
 SOURCE = Path(__file__).resolve().parent
 ROOT = SOURCE.parents[2]
-FRAMEWORK_COMMIT = "fac67fdedb1591bf20bebf61016402a7e7b45f26"
-HIGGS_COMMIT = "ec452367c01617c4eb0e9e039697d0221f788d13"
+FRAMEWORK_COMMIT = "085317c1655e5960d820bd57d5b88f546f46146f"
+HIGGS_COMMIT = "0e9053fe4beb657ef51c7bf2e2bc031091d815cc"
 HIGGS_HEADERS = ("higgsinterface001.h", "higgsabitypes.h", "higgshandapi.h", "higgsinput.h",
                  "higgstransactions.h", "higgsphysics.h", "higgsobservations.h", "higgsnativeinterop.h")
 
@@ -23,6 +23,11 @@ def sha(path):
 
 def git(root, *arguments):
     return subprocess.check_output(["git", "-C", str(root), *arguments], text=True).strip()
+
+
+def source_state(root):
+    return {"root": str(root), "revision": git(root, "rev-parse", "HEAD"),
+            "status": git(root, "status", "--porcelain")}
 
 
 def dependency_sources(native):
@@ -62,6 +67,9 @@ def main():
     dependencies["nlohmann_json"] = json_root
     licenses = {name: path / ("LICENSE.MIT" if name == "nlohmann_json" else "LICENSE")
                 for name, path in dependencies.items()}
+    source_roots = {"bodyPouches": ROOT, "framework": framework, "higgs": higgs}
+    source_states = {name: source_state(root) for name, root in source_roots.items()}
+    source_commit = source_states["bodyPouches"]["revision"]
     inputs = [p for p in SOURCE.rglob("*") if p.is_file() and "__pycache__" not in p.parts]
     inputs += list((ROOT / "src/core").glob("*.cpp")) + list((ROOT / "src/core").glob("*.h"))
     inputs += [ROOT / "src/game/Forms.cpp", ROOT / "src/game/Forms.h", ROOT / "tools/make-esp.py"]
@@ -74,7 +82,6 @@ def main():
     inputs += [framework / "LICENSE", higgs / "LICENSE"]
     inputs += list(licenses.values()) + [json_include / "nlohmann/json.hpp"]
     pins = {str(path.resolve()): sha(path) for path in inputs}
-    source_commit = git(ROOT, "rev-parse", "HEAD")
     output.mkdir(parents=True, exist_ok=True)
     commands = [
         [str(cmake), "-S", str(SOURCE), "-B", str(output / "native"), "-G", "Visual Studio 18 2026", "-A", "x64",
@@ -84,16 +91,20 @@ def main():
     executions = []
     for label, command in zip(("configure", "build"), commands):
         completed = subprocess.run(command, capture_output=True, timeout=1200)
-        (output / f"{label}.log").write_bytes(completed.stdout + completed.stderr)
-        executions.append({"argv": command, "exitCode": completed.returncode})
+        log = output / f"{label}.log"
+        log.write_bytes(completed.stdout + completed.stderr)
+        executions.append({"name": label, "argv": command, "exitCode": completed.returncode,
+                           "log": {"path": str(log), "sha256": sha(log)}})
         if completed.returncode:
             raise RuntimeError(f"{label} failed; read {output / (label + '.log')}")
     for path, expected in pins.items():
         if sha(Path(path)) != expected:
             raise RuntimeError(f"build input changed: {path}")
+    if source_states != {name: source_state(root) for name, root in source_roots.items()}:
+        raise RuntimeError("source revision or working-tree state changed during compilation")
     dll = output / "native/Release/BodyPouches.dll"
     receipt = {
-        "product": "Body Pouches 2", "version": "2.0.0-prototype.6",
+        "product": "Body Pouches 2", "version": "2.0.0-prototype.7",
         "sourceRepository": git(ROOT, "remote", "get-url", "origin"), "sourceCommit": source_commit,
         "sourceDirtyAtEnd": bool(git(ROOT, "status", "--porcelain")),
         "frameworkRoot": str(framework), "frameworkCommit": FRAMEWORK_COMMIT,
@@ -101,6 +112,7 @@ def main():
         "dependencySources": {name: str(path) for name, path in dependencies.items()},
         "dependencyLicenses": {name: str(path) for name, path in licenses.items()},
         "sourceSha256": pins, "commands": executions,
+        "sourceStates": source_states,
         "dll": {"path": str(dll), "bytes": dll.stat().st_size, "sha256": sha(dll)},
         "testsRun": False, "gameStarts": 0, "dllLoaded": False,
         "qualification": "Compiled and linked only. Owner requested no testing; gameplay is unqualified.",

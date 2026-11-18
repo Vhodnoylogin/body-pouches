@@ -34,6 +34,17 @@ def main():
         parser.error("commit source changes, then build that clean revision before packaging")
     if receipt.get("sourceDirtyAtEnd") or receipt.get("testsRun") or receipt.get("dllLoaded") or receipt.get("gameStarts"):
         parser.error("expected a clean build-only receipt for this no-testing prototype")
+    for state in receipt["sourceStates"].values():
+        root=Path(state["root"])
+        if state["status"] or subprocess.check_output(["git","-C",str(root),"status","--porcelain"],text=True).strip() or \
+                subprocess.check_output(["git","-C",str(root),"rev-parse","HEAD"],text=True).strip()!=state["revision"]:
+            parser.error("source checkout changed since compilation: "+str(root))
+    commands=receipt["commands"]
+    if len(commands)!=2 or [command["name"] for command in commands]!=["configure","build"] or any(command["exitCode"] for command in commands):
+        parser.error("expected successful configure and production-target build evidence")
+    for command in commands:
+        if sha(Path(command["log"]["path"]).read_bytes())!=command["log"]["sha256"]:
+            parser.error("build log changed since compilation")
     for name, expected in receipt["sourceSha256"].items():
         if sha(Path(name).read_bytes()) != expected:
             parser.error("build input changed since compilation: " + name)
@@ -59,7 +70,9 @@ def main():
         "sourceUrl": f"https://github.com/Vhodnoylogin/body-pouches/tree/{receipt['sourceCommit']}",
         "requiredFrameworkSource": receipt["frameworkCommit"], "requiredHiggsSource": receipt["higgsCommit"],
         "gameAssets": "References Skyrim.esm and Plants\\CoinBagLarge.nif from the installed game; no game assets copied.",
-        "testsRun": False, "gameStarts": 0, "publication": "local prototype only",
+        "testsRun": False, "gameStarts": 0, "dllLoaded": False, "publication": "local prototype only",
+        "sourceStates": receipt["sourceStates"],
+        "buildManifestSha256": sha(args.build_manifest.read_bytes()),
         "files": {name: {"bytes": len(data), "sha256": sha(data)} for name, data in sorted(files.items())},
     }
     files["BodyPouches2-PROVENANCE.json"] = (json.dumps(provenance, indent=2) + "\n").encode("utf-8")
