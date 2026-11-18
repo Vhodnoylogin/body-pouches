@@ -108,7 +108,10 @@ private:
     bool BindBag();
     bool Attach();
     bool Retire();
-    void Completed(const sdk::InventoryProviderProgress&);
+    bs::Status Completed(const sdk::InventoryProviderProgress&);
+    static bs::Status Settle(void* context,const sdk::InventoryProviderProgress& outcome) {
+        return static_cast<PouchApp*>(context)->Completed(outcome);
+    }
     std::shared_ptr<PolicySnapshot> Observe(const HIGGS_HandSnapshot&, const bs::RuntimeRecord&,
         const std::array<HIGGS_ItemIdentity, 2>&);
     void Present(const PolicySnapshot&, const bs::RuntimeRecord&);
@@ -258,6 +261,7 @@ bool PouchApp::Attach() {
     config.writer = writer_; config.instance = instance_.instanceHandle; config.higgsClient = higgsClient_;
     config.storeOnHeldRelease = true; config.withdrawOnExit = true; config.timeoutMs = 1500;
     config.policy = Policy; config.policyContext = this;
+    config.settle = Settle; config.settlementContext = this;
     const auto status = inventory_.Attach(tables_, config);
     attached_ = status == bs::Status::Ok;
     if (attached_) { refresh_ = true; spdlog::info("potion inventory behavior attached to instance {}", instance_.instanceHandle); }
@@ -312,36 +316,47 @@ void PouchApp::Present(const PolicySnapshot& snapshot, const bs::RuntimeRecord& 
     if (memcmp(&visual, &lastVisual_, sizeof(visual)) && runtime_->SetVisual(writer_, instance_.instanceHandle, &visual) == bs::Status::Ok)
         lastVisual_ = visual;
 }
-void PouchApp::Completed(const sdk::InventoryProviderProgress& progress) {
+bs::Status PouchApp::Completed(const sdk::InventoryProviderProgress& progress) {
     if (progress.stage != lastStage_) {
-        spdlog::info("inventory stage {}: transfer {}, HIGGS {}, Framework {}", static_cast<unsigned>(progress.stage),
-            progress.transfer, progress.handStatus, static_cast<unsigned>(progress.slotStatus));
+        spdlog::info("inventory stage {}: transfer {}, HIGGS {}, Framework {}, consumer {}", static_cast<unsigned>(progress.stage),
+            progress.transfer, progress.handStatus, static_cast<unsigned>(progress.slotStatus),static_cast<unsigned>(progress.settlementStatus));
         lastStage_ = progress.stage;
     }
     if (progress.stage != sdk::InventoryProviderStage::Completed || !progress.transfer ||
-        (processedTransfer_ == progress.transfer && processedEpoch_ == progress.receipt.epoch)) return;
+        (processedTransfer_ == progress.transfer && processedEpoch_ == progress.receipt.epoch)) return bs::Status::Ok;
+    // Keep offers closed until this safe phase publishes policy containing the
+    // settled assignment. Clearing helper work must not expose the old filter.
+    policy_.store(nullptr);
+    const auto& receipt = progress.receipt;
+    constexpr auto required = HIGGS_TX_DOMAIN_ATTESTED | HIGGS_TX_NATIVE_RELEASE_CONFIRMED;
+    const bool storage=receipt.stage==HIGGS_TX_COMPLETED&&receipt.disposition==HIGGS_DISPOSITION_INVENTORY&&
+        (receipt.receiptFlags&required)==required&&
+        !(receipt.receiptFlags&HIGGS_TX_COMPENSATION_CONFIRMED)&&!sdk::TransferNeedsRecovery(receipt)&&
+        (receipt.original.validFields&HIGGS_ITEM_BASE_KNOWN);
     // A cell/world transition ends physical authority, not this save's logical
     // assignment. Resume may also precede our cached scope refresh. Use only
     // the captured logical save and a fresh Framework scope, never cached epoch.
-    if (loading_ || !progress.saveGeneration) return;
+    if (storage&&(loading_ || !progress.saveGeneration)) return bs::Status::Unavailable;
     bs::RuntimeView current{}; current.structSize = sizeof(current); current.version = bs::kRuntimeApiVersion;
-    const auto copied = runtime_->CopyRuntime(writer_, nullptr, 0, &current);
-    if ((copied != bs::Status::Ok && copied != bs::Status::BufferTooSmall) ||
-        current.saveGeneration != progress.saveGeneration) return;
+    if(storage){
+        const auto copied=runtime_->CopyRuntime(writer_,nullptr,0,&current);
+        if(copied!=bs::Status::Ok&&copied!=bs::Status::BufferTooSmall)return copied;
+        if(!current.saveGeneration)return bs::Status::Unavailable;
+        if(current.saveGeneration==progress.saveGeneration){
+            if(!assignments_.Copy().IsSet()){
+                auto* potion=RE::TESForm::LookupByID<RE::AlchemyItem>(receipt.original.baseFormId);
+                if(!Drinkable(potion))return bs::Status::Unavailable;
+                const bool assigned=assignments_.AssignIfUnset(Game::Describe(potion));
+                if(!assigned&&!assignments_.Copy().IsSet())return bs::Status::Conflict;
+                if(assigned)spdlog::info("pouch assigned by factual stored potion {:08X}",potion->GetFormID());
+            }
+        } // A positively different save deliberately discards old assignment work.
+    }
     processedTransfer_ = progress.transfer; processedEpoch_ = progress.receipt.epoch; refresh_ = true;
     if (progress.releaseStatus != HIGGS_HAND_OK)
         spdlog::warn("delivered transfer {} settled; original grip continuation unavailable ({})",
             progress.transfer, progress.releaseStatus);
-    const auto& receipt = progress.receipt;
-    constexpr auto required = HIGGS_TX_DOMAIN_ATTESTED | HIGGS_TX_NATIVE_RELEASE_CONFIRMED;
-    if (receipt.stage != HIGGS_TX_COMPLETED ||
-        receipt.disposition != HIGGS_DISPOSITION_INVENTORY || (receipt.receiptFlags & required) != required ||
-        (receipt.receiptFlags & (HIGGS_TX_COMPENSATION_CONFIRMED | HIGGS_TX_MUTATION_UNCERTAIN)) ||
-        !(receipt.original.validFields & HIGGS_ITEM_BASE_KNOWN)) return;
-    auto* potion = RE::TESForm::LookupByID<RE::AlchemyItem>(receipt.original.baseFormId);
-    if (!Drinkable(potion)) return;
-    if (assignments_.AssignIfUnset(Game::Describe(potion)))
-        spdlog::info("pouch assigned by factual stored potion {:08X}", potion->GetFormID());
+    return bs::Status::Ok;
 }
 void PouchApp::Tick() {
     if (!connected_) return;
@@ -387,7 +402,8 @@ void PouchApp::Tick() {
     feedbackInstance_.store(worn_ && settings_.entryHaptics ? instance_.instanceHandle : 0);
     const auto progress = inventory_.Tick();
     Completed(progress);
-    if (progress.stage == sdk::InventoryProviderStage::RecoveryRequired) { policy_.store(nullptr); return; }
+    if (progress.stage == sdk::InventoryProviderStage::RecoveryRequired ||
+        progress.stage == sdk::InventoryProviderStage::Settling) { policy_.store(nullptr); return; }
     if (!worn_) return;
     // Eligibility follows every safe Framework frame, independently of stock.
     // Reuse immutable inventory observations; changed held identities are cheap

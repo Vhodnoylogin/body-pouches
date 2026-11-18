@@ -80,6 +80,10 @@ GameApi3 supplies the actual spatial observation-start time. Both storage and wi
 
 These are source changes under the owner's no-testing instruction. Compilation/linking is recorded separately and does not qualify actual loading, inventory, save behavior or ergonomics.
 
+The SDK now waits for Body Pouches to acknowledge its semantic outcome before rearming that bag. Completed protocol reporting releases physical authority first; a separate `Settling` status retains only the owned receipt while save/assignment metadata is temporarily unavailable. Retrying it never transfers another item or depends on already released provider history. Missing or newly unsavable first-assignment metadata cannot be reported as successful assignment. Policy is suppressed until the settled filter is published, closing the interval where another offer could observe the old unassigned bag. Confirmed provider reconciliation is distinguished from unresolved mutation by one shared pure receipt helper; no automatic reconciliation is performed.
+
+HIGGS's optional accepted-receipt capability lets this queued consumer explicitly retain even an unstarted action's cancellation proof. An exact current `ACCEPTED` echo records responsibility for processing it, without creating a transfer or extending hand authority. Other clients keep their old finite-history behavior. Tracking loss or removal of only the spatial source also ends physical authority while preserving an admitted child's truthful receipt channel; the owning consumer's explicit teardown remains separate.
+
 ## Building
 
 Production sources are in `src/main/prototype/`. The separate CMake entry consumes only the public framework tables and its pinned SDK helper. It reuses existing pure Body Pouches potion rules and its form-description boundary, together with the completed RC4 build's CommonLib/fmt/spdlog libraries. It does not compile legacy input, VRIK holster or inventory-mutation code. Generated ESP/DLL/ZIP outputs stay outside Git.
