@@ -105,7 +105,7 @@ private:
     bs::InstanceRecord instance_{};
     bs::InstanceView view_{};
     std::uint32_t bagForm_{};
-    bool attached_{}, connected_{}, failStopped_{};
+    bool attached_{}, connected_{}, failStopped_{}, phaseRegistered_{};
     std::unique_ptr<Buffers> buffers_ = std::make_unique<Buffers>();
     std::atomic<bool> loading_{false}, cancel_{false}, refresh_{true};
     std::atomic<std::shared_ptr<const PolicySnapshot>> policy_;
@@ -185,6 +185,17 @@ void PouchApp::Connect() {
        !(tables_.hands.capabilities&HIGGS_HAND_CAP_ACCEPTED_RECEIPTS)){
         spdlog::error("Body Pouches 2 requires Framework inventory/native-source contracts and HIGGS queued-result retention");return;
     }
+    if (writer_ || higgsClient_) {
+        spdlog::error("Body Pouches 2 startup retained an unreleased registration; restart required"); return;
+    }
+    SKSE::stl::scope_exit rollback{[this]() noexcept {
+        // Only startup leases exist here. Keep any unconfirmed lease rather than
+        // overwrite it on another connection attempt or claim it was released.
+        if (higgsClient_ && tables_.hands.UnregisterClient(higgsClient_) == HIGGS_HAND_OK) higgsClient_ = 0;
+        if (writer_ && registry_->ReleaseClient(writer_) == bs::Status::Ok) {
+            writer_ = 0; definitionRevision_ = 0;
+        }
+    }};
     if (registry_->RegisterClient(kProvider, &writer_) != bs::Status::Ok) return;
     HIGGS_HandClientInfo client{};
     client.structSize = sizeof(client);
@@ -209,12 +220,16 @@ void PouchApp::Connect() {
     if (!bus || !bus->Dispatch(0xF9279A57, &request, sizeof(request), "HIGGS") || !request.get) return;
     const auto phase = static_cast<HiggsPluginAPI::IHiggsInterface001*>(request.get(1));
     if (!phase) return;
-    phase->AddPostVrikPostHiggsCallback(Phase);
+    if (!phaseRegistered_) {
+        phase->AddPostVrikPostHiggsCallback(Phase);
+        phaseRegistered_ = true;
+    }
     if (!observer_.ConnectEvents())
         spdlog::warn("inventory events unavailable; using bounded stock refresh fallback");
     if (runtime_->Subscribe(writer_, Event, this, &eventSubscription_) != bs::Status::Ok)
         spdlog::warn("slot entry feedback unavailable");
     connected_ = true;
+    rollback.release();
     spdlog::info("Body Pouches 2 connected; no native VRIK holster or controller hooks");
 }
 void BS_CALL PouchApp::Event(void* context, const bs::RuntimeEvent* event) noexcept {
