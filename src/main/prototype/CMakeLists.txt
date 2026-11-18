@@ -62,7 +62,7 @@ target_include_directories(BodyPouches2Prototype PRIVATE
 target_compile_definitions(BodyPouches2Prototype PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX
     ENABLE_SKYRIM_SE=1 ENABLE_SKYRIM_AE=1 ENABLE_SKYRIM_VR=1 HAS_SKYRIM_MULTI_TARGETING=1
     SPDLOG_COMPILED_LIB SPDLOG_FMT_EXTERNAL _CRT_SECURE_NO_WARNINGS
-    BODYPOUCHES_PROTO_VERSION="2.0.0-prototype.7")
+    BODYPOUCHES_PROTO_VERSION="2.0.0-prototype.8")
 target_compile_options(BodyPouches2Prototype PRIVATE
     /W4 /permissive- /EHsc /utf-8 /wd4200 /wd4201 /wd4324)
 target_link_libraries(BodyPouches2Prototype PRIVATE

@@ -14,21 +14,19 @@ struct AssignmentSnapshot {
     std::uint64_t generation{};
 };
 
-// Pure preflight shared by offer policy and receipt application. A successful
-// store must not discover only afterwards that its assignment cannot be saved.
+// Pure preflight before an offer. Its result is captured with the accepted plan;
+// completion must not rediscover that an assignment cannot be saved.
 [[nodiscard]] std::optional<Core::Filter> MakeAssignment(const Core::Item&);
 
 // The bag's logical filter is independent of Framework placement and activation.
-// Runtime calls AssignIfUnset only after a factual, successful store receipt.
+// Runtime applies a captured assignment only after factual successful storage.
 class AssignmentStore final {
 public:
     [[nodiscard]] Core::Filter Copy() const;
     [[nodiscard]] AssignmentSnapshot Snapshot() const;
     void Clear();
-    [[nodiscard]] bool AssignIfUnset(const Core::Item&);
     // Applies only a preflighted, captured logical outcome from this save.
-    [[nodiscard]] AssignmentApplyResult ApplyCaptured(const std::optional<Core::Filter>&,
-        std::uint64_t expectedGeneration);
+    [[nodiscard]] AssignmentApplyResult ApplyCaptured(const AssignmentSnapshot&);
     // An already factual pending outcome may be serialized without changing live state.
     [[nodiscard]] bool Save(SKSE::SerializationInterface*, const AssignmentSnapshot* factual = nullptr) const;
     [[nodiscard]] AssignmentLoadResult Load(SKSE::SerializationInterface*, int legacySlot = 13);

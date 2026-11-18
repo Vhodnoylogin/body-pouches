@@ -1,4 +1,4 @@
-Body Pouches 2 - prototype 7
+Body Pouches 2 - prototype 8
 
 A wearable potion bag using VR Interaction Framework. This is an untested local
 prototype, not an update to the released Body Pouches 0.2.0. Do not install both
@@ -54,7 +54,7 @@ this prototype. Bag rendering, positioning, handling and save behavior await
 actual gameplay qualification. Source commit and exact provider requirements are
 recorded in BodyPouches2-PROVENANCE.json; full build instructions stay on GitHub.
 
-Prototype7 retains the lifecycle fixes: it drains cancelled unstarted work after save/world replacement and
+Prototype8 retains the lifecycle fixes: it drains cancelled unstarted work after save/world replacement and
 retains terminal receipts while final reporting is retried. A cell-world change
 does not erase an assignment from factual storage in the same save; receipts
 cannot assign another loaded save. Both storage and withdrawal recheck the

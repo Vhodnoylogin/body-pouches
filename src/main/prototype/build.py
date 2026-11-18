@@ -104,7 +104,7 @@ def main():
         raise RuntimeError("source revision or working-tree state changed during compilation")
     dll = output / "native/Release/BodyPouches.dll"
     receipt = {
-        "product": "Body Pouches 2", "version": "2.0.0-prototype.7",
+        "product": "Body Pouches 2", "version": "2.0.0-prototype.8",
         "sourceRepository": git(ROOT, "remote", "get-url", "origin"), "sourceCommit": source_commit,
         "sourceDirtyAtEnd": bool(git(ROOT, "status", "--porcelain")),
         "frameworkRoot": str(framework), "frameworkCommit": FRAMEWORK_COMMIT,

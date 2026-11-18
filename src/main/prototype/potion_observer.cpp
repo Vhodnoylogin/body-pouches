@@ -128,7 +128,8 @@ std::array<HeldPotion, 2> PotionObserver::CopyHeld(
             auto described = Describe(potion);
             auto assignment = MakeAssignment(described.item);
             const bool assignable = assignment.has_value();
-            held_[hand] = {std::move(described), item.worldRefId, item.quantity, assignable, std::move(assignment)};
+            const auto projection=assignment?AssignmentProjection(*assignment):body_slots::examples::ContentProjection{};
+            held_[hand] = {std::move(described), item.worldRefId, item.quantity, assignable, std::move(assignment), projection};
         }
     }
     return held_;

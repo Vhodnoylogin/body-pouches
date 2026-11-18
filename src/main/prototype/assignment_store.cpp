@@ -83,23 +83,13 @@ void AssignmentStore::Clear() {
     if(generation_) generation_=generation_==std::numeric_limits<std::uint64_t>::max()?0:generation_+1;
 }
 
-bool AssignmentStore::AssignIfUnset(const Core::Item& item) {
-    auto next = MakeAssignment(item);
-    if (!next) return false;
+AssignmentApplyResult AssignmentStore::ApplyCaptured(const AssignmentSnapshot& captured) {
+    auto next=captured.filter;
     std::lock_guard lock(mutex_);
-    if (filter_.IsSet()) return false;
-    filter_ = std::move(*next);
-    return true;
-}
-
-AssignmentApplyResult AssignmentStore::ApplyCaptured(const std::optional<Core::Filter>& captured,
-    std::uint64_t expectedGeneration) {
-    auto next=captured;
-    std::lock_guard lock(mutex_);
-    if(!generation_ || expectedGeneration!=generation_) return AssignmentApplyResult::StaleGeneration;
+    if(!generation_ || captured.generation!=generation_) return AssignmentApplyResult::StaleGeneration;
     if(filter_.IsSet()) return AssignmentApplyResult::AlreadySet;
-    if(!captured || !captured->IsSet()) return AssignmentApplyResult::Invalid;
-    filter_=std::move(*next);
+    if(!next.IsSet()) return AssignmentApplyResult::Invalid;
+    filter_=std::move(next);
     return AssignmentApplyResult::Applied;
 }
 

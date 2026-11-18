@@ -6,6 +6,25 @@
 #include <string_view>
 
 namespace BodyPouches::Prototype {
+body_slots::examples::ContentProjection AssignmentProjection(const Core::Filter& filter) noexcept {
+    if(!filter.IsSet() || filter.effects.size()>64)return {};
+    std::uint64_t hash=14695981039346656037ull;
+    const auto byte=[&](std::uint8_t value){hash=(hash^value)*1099511628211ull;};
+    const auto number=[&](std::uint64_t value){for(unsigned shift=0;shift<64;shift+=8)byte(static_cast<std::uint8_t>(value>>shift));};
+    const auto key=[&](const Core::FormKey& value){number(value.plugin.size());for(unsigned char c:value.plugin)byte(c);number(value.localId);};
+    if(filter.exact.IsSet()){byte(1);key(filter.exact);}
+    else {
+        byte(2);
+        std::array<const Core::FormKey*,64> keys{};
+        for(std::size_t i=0;i<filter.effects.size();++i)keys[i]=&filter.effects[i];
+        const auto end=keys.begin()+filter.effects.size();
+        std::sort(keys.begin(),end,[](const auto* a,const auto* b){return std::tie(a->plugin,a->localId)<std::tie(b->plugin,b->localId);});
+        const auto unique=std::unique(keys.begin(),end,[](const auto* a,const auto* b){return *a==*b;});
+        number(static_cast<std::uint64_t>(unique-keys.begin()));
+        for(auto it=keys.begin();it!=unique;++it)key(**it);
+    }
+    return {hash?hash:1,1};
+}
 const Potion* NextPotion(const PolicySnapshot& snapshot) noexcept {
     const Potion* next = nullptr;
     if (!snapshot.stock) return nullptr;
@@ -38,11 +57,12 @@ bool PlanPotion(const PolicySnapshot& snapshot, const body_slots::SourceActionCo
     plan = {};
     if (input.edge == HIGGS_INPUT_DOWN && input.handOccupancy == HIGGS_OCCUPANCY_EMPTY) {
         const auto* next = NextPotion(snapshot);
-        if (!next) return false;
+        if (!next || !snapshot.assignmentProjection.identity || snapshot.assignmentProjection.quantity!=1) return false;
         plan.transferKind = HIGGS_TRANSFER_INVENTORY_TO_HAND;
         plan.baseFormId = next->form;
         plan.stackOrdinal = next->ordinal;
         plan.quantity = 1;
+        plan.after=snapshot.assignmentProjection;
         return true;
     }
     if (input.edge != HIGGS_INPUT_HELD_RELEASE) return false;
@@ -56,8 +76,7 @@ bool PlanPotion(const PolicySnapshot& snapshot, const body_slots::SourceActionCo
     plan.transferKind = HIGGS_TRANSFER_HAND_TO_INVENTORY;
     plan.baseFormId = held.potion.form;
     plan.quantity = held.quantity;
-    // The helper requires an after-projection. Hide it until a fresh main-phase
-    // inventory observation: a planned count is not a factual inventory count.
-    return true;
+    plan.after=snapshot.filter.IsSet()?snapshot.assignmentProjection:held.assignmentProjection;
+    return plan.after.identity && plan.after.quantity==1;
 }
 }

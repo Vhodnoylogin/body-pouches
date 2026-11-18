@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <optional>
 
 namespace BodyPouches::Prototype {
 namespace bs = body_slots;
@@ -51,6 +50,11 @@ struct CapturedAssignment {
     AssignmentSnapshot assignment;
     std::uint64_t save{},epoch{};
     std::uint32_t form{},reference{},quantity{};
+    bool Matches(const Core::Filter& filter,const PolicySnapshot& snapshot,const HeldPotion& held) const noexcept {
+        return assignment.generation==snapshot.assignmentGeneration && save==snapshot.save && epoch==snapshot.epoch &&
+            form==held.potion.form && reference==held.reference && quantity==held.quantity &&
+            assignment.filter.exact==filter.exact && assignment.filter.effects==filter.effects;
+    }
 };
 const CapturedAssignment* StoredAssignment(const sdk::InventoryProviderProgress& progress) noexcept {
     const auto& r=progress.receipt;
@@ -105,6 +109,7 @@ private:
     std::unique_ptr<Buffers> buffers_ = std::make_unique<Buffers>();
     std::atomic<bool> loading_{false}, cancel_{false}, refresh_{true};
     std::atomic<std::shared_ptr<const PolicySnapshot>> policy_;
+    std::array<std::shared_ptr<const CapturedAssignment>,2> assignmentContexts_;
     AssignmentStore assignments_;
     PotionObserver observer_;
     PouchSettings settings_;
@@ -328,6 +333,7 @@ std::shared_ptr<PolicySnapshot> PouchApp::Observe(const HIGGS_HandSnapshot& hand
     snapshot->epoch = hands.epoch; snapshot->save = view_.saveGeneration; snapshot->instance = instance_.instanceHandle;
     auto assignment=assignments_.Snapshot();
     snapshot->filter=std::move(assignment.filter);snapshot->assignmentGeneration=assignment.generation;
+    snapshot->assignmentProjection=AssignmentProjection(snapshot->filter);
     snapshot->worn = worn_;
     snapshot->available = runtime.availability == static_cast<std::uint32_t>(bs::RuntimeAvailability::Available);
     const auto now = NowNs();
@@ -335,25 +341,29 @@ std::shared_ptr<PolicySnapshot> PouchApp::Observe(const HIGGS_HandSnapshot& hand
     snapshot->held = observer_.CopyHeld(held, hands.epoch, now);
     for(std::size_t hand=0;hand<snapshot->held.size();++hand){
         const auto& item=snapshot->held[hand];
-        if(!snapshot->assignmentGeneration || !item.reference ||
-           (!snapshot->filter.IsSet()&&!item.assignment)) continue;
-        auto captured=std::make_shared<CapturedAssignment>();
-        captured->assignment={item.assignment.value_or(Core::Filter{}),snapshot->assignmentGeneration};
-        captured->save=snapshot->save;captured->epoch=snapshot->epoch;
-        captured->form=item.potion.form;captured->reference=item.reference;captured->quantity=item.quantity;
-        snapshot->storeContexts[hand]=std::move(captured);
+        auto& cached=assignmentContexts_[hand];
+        if(!snapshot->assignmentGeneration || !item.reference || !item.quantity ||
+           (!snapshot->filter.IsSet()&&!item.assignment)){cached.reset();continue;}
+        const auto& target=snapshot->filter.IsSet()?snapshot->filter:*item.assignment;
+        if(!cached || !cached->Matches(target,*snapshot,item)){
+            auto captured=std::make_shared<CapturedAssignment>();
+            captured->assignment={target,snapshot->assignmentGeneration};
+            captured->save=snapshot->save;captured->epoch=snapshot->epoch;
+            captured->form=item.potion.form;captured->reference=item.reference;captured->quantity=item.quantity;
+            cached=std::move(captured);
+        }
+        snapshot->storeContexts[hand]=cached;
     }
     snapshot->capturedNs = NowNs();
     return snapshot;
 }
 void PouchApp::Present(const PolicySnapshot& snapshot, const bs::RuntimeRecord& row) {
-    if (!snapshot.stock) return; // Missing observation is not evidence of empty stock.
     const auto* next = NextPotion(snapshot);
-    const auto count = MatchingCount(snapshot);
     bs::ContentObservation observation{}; observation.structSize = sizeof(observation);
     observation.epoch = row.epoch; observation.saveGeneration = view_.saveGeneration;
     observation.instanceHandle = instance_.instanceHandle; observation.expectedContentVersion = row.contentVersion;
-    observation.contentIdentity = next && count ? next->form : 0; observation.quantity = next ? count : 0;
+    observation.contentIdentity = snapshot.assignmentProjection.identity;
+    observation.quantity = snapshot.assignmentProjection.quantity;
     std::uint64_t version = 0;
     // Conflict during a transfer is expected. Never overwrite its factual receipt.
     if (content_->Publish(writer_, &observation, &version) != bs::Status::Ok) return;
@@ -388,9 +398,7 @@ bs::Status PouchApp::Completed(const sdk::InventoryProviderProgress& progress) {
         // for assignment and saving. A physical epoch change does not retire it.
         if(loading_ && assignments_.Snapshot().generation==captured->assignment.generation)
             return bs::Status::Unavailable;
-        const std::optional<Core::Filter> filter=captured->assignment.filter.IsSet()
-            ? std::optional<Core::Filter>(captured->assignment.filter) : std::nullopt;
-        const auto applied=assignments_.ApplyCaptured(filter,captured->assignment.generation);
+        const auto applied=assignments_.ApplyCaptured(captured->assignment);
         if(applied==AssignmentApplyResult::Invalid)return bs::Status::Conflict;
         if(applied==AssignmentApplyResult::Applied)
             spdlog::info("pouch assigned by factual stored potion {:08X}",captured->form);
