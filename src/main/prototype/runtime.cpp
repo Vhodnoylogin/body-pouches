@@ -29,12 +29,16 @@ std::uint64_t NowNs() {
         std::chrono::steady_clock::now().time_since_epoch()).count());
 }
 template<std::size_t N> void Text(char (&out)[N], const char* value) { strncpy_s(out, value, _TRUNCATE); }
-template<class T> const T* Framework(const char* name) {
+template<class T> const T* Framework(const char* name, std::uint32_t version = 1) {
     const auto module = GetModuleHandleW(L"BodySlots.dll");
     const auto query = module ? reinterpret_cast<const T* (BS_CALL*)(std::uint32_t, std::uint32_t)>(
         GetProcAddress(module, name)) : nullptr;
-    const auto* table = query ? query(1, sizeof(T)) : nullptr;
-    return table && table->structSize == sizeof(T) && table->version == 1 ? table : nullptr;
+    const auto* table = query ? query(version, sizeof(T)) : nullptr;
+    if (!table) return nullptr;
+    if constexpr (requires { table->base; })
+        return table->base.structSize == sizeof(T) && table->base.version == version ? table : nullptr;
+    else
+        return table->structSize == sizeof(T) && table->version == version ? table : nullptr;
 }
 template<class Query, class T> bool Higgs(const char* name, std::uint32_t version, T& table) {
     const auto module = GetModuleHandleW(L"higgs_vr.dll");
@@ -87,6 +91,7 @@ private:
     sdk::OrdinaryInventoryProvider inventory_;
     std::uint64_t writer_{}, higgsClient_{}, scope_{}, epoch_{}, operationScope_{}, processedTransfer_{}, processedEpoch_{};
     std::uint64_t refreshedAt_{}, definitionRevision_{};
+    std::array<HIGGS_ItemIdentity, 2> observedHeld_{};
     bs::InstanceRecord instance_{};
     bs::InstanceView view_{};
     std::uint32_t bagForm_{};
@@ -138,11 +143,16 @@ void PouchApp::Connect() {
     runtime_ = Framework<bs::RuntimeApi>("BodySlots_QueryRuntimeInterface");
     behavior_ = Framework<bs::BehaviorApi>("BodySlots_QueryBehaviorInterface");
     game_ = Framework<bs::GameApi>("BodySlots_QueryGameInterface");
+    tables_.behaviorOptions = Framework<bs::BehaviorApi2>("BodySlots_QueryBehaviorInterface", 2);
+    tables_.gameServices = Framework<bs::GameApi2>("BodySlots_QueryGameInterface", 2);
     content_ = Framework<bs::ContentObservationApi>("BodySlots_QueryContentObservationInterface");
     if (!registry_ || !instances_ || !equipment_ || !runtime_ || !behavior_ || !game_ || !content_ ||
+        !tables_.behaviorOptions || !tables_.gameServices ||
         !Higgs<HIGGS_QueryHandInterfaceFn>("HIGGS_QueryHandInterface", HIGGS_HAND_ABI_VERSION, tables_.hands) ||
         !Higgs<HIGGS_QueryHandRoutingInterfaceFn>("HIGGS_QueryHandRoutingInterface", HIGGS_HAND_ROUTING_ABI_VERSION, tables_.routing) ||
-        !Higgs<HIGGS_QueryInputRoutesInterfaceFn>("HIGGS_QueryInputRoutesInterface", 1, tables_.routes)) {
+        !Higgs<HIGGS_QueryInputRoutesInterfaceFn>("HIGGS_QueryInputRoutesInterface", 1, tables_.routes) ||
+        !Higgs<HIGGS_QueryHeldReleaseInterfaceFn>("HIGGS_QueryHeldReleaseInterface", HIGGS_HELD_RELEASE_ABI_VERSION, tables_.releases) ||
+        !Higgs<HIGGS_QueryAuthorizedDispatchInterfaceFn>("HIGGS_QueryAuthorizedDispatchInterface", 2, tables_.dispatch)) {
         spdlog::error("Body Pouches 2 unavailable: compatible Framework/HIGGS services required"); return;
     }
     if (registry_->RegisterClient(kProvider, &writer_) != bs::Status::Ok) return;
@@ -250,7 +260,7 @@ bool PouchApp::Attach() {
         !Higgs<HIGGS_QueryTransactionsInterfaceFn>("HIGGS_QueryTransactionsInterface", HIGGS_TRANSACTIONS_VERSION, tables_.transactions)) return false;
     sdk::InventoryProviderConfig config;
     config.writer = writer_; config.instance = instance_.instanceHandle; config.higgsClient = higgsClient_;
-    config.storeEdge = HIGGS_INPUT_DOWN; config.timeoutMs = 1500;
+    config.storeOnHeldRelease = true; config.withdrawOnExit = true; config.timeoutMs = 1500;
     config.policy = Policy; config.policyContext = this;
     const auto status = inventory_.Attach(tables_, config);
     attached_ = status == bs::Status::Ok;
@@ -400,7 +410,16 @@ void PouchApp::Tick() {
     const auto now = NowNs();
     // Refresh metadata/stock at 10 Hz. Geometry and visuals keep following the
     // body at Framework's own rate. Offers expire after 150 ms without a refresh.
-    const bool observe = changed || refresh_.exchange(false) || now - refreshedAt_ >= 100000000;
+    std::array<HIGGS_ItemIdentity, 2> heldNow{};
+    for (std::uint32_t hand = 1; hand <= 2; ++hand) {
+        HIGGS_ItemIdentity item{}; item.structSize = sizeof(item);
+        if (tables_.transactions.CopyHeldItem(higgsClient_, hand, &item) == HIGGS_HAND_OK && item.epoch == hands.epoch)
+            heldNow[hand - 1] = item;
+    }
+    // A semantic release is offered once. A new/changed held bottle must be
+    // described in this post-publish phase, without waiting for the stock timer.
+    const bool heldChanged = memcmp(heldNow.data(), observedHeld_.data(), sizeof(heldNow)) != 0;
+    const bool observe = changed || heldChanged || refresh_.exchange(false) || now - refreshedAt_ >= 100000000;
     // Entry feedback is independent of the inventory/metadata throttle.
     if (!observe && !entries_[0].load() && !entries_[1].load()) return;
     bs::RuntimeView runtimeView{}; runtimeView.structSize = sizeof(runtimeView); runtimeView.version = 1;
@@ -413,6 +432,7 @@ void PouchApp::Tick() {
         if (!observe) return;
         auto snapshot = Observe(hands, row);
         Present(*snapshot, row);
+        observedHeld_ = heldNow;
         refreshedAt_ = now; policy_.store(std::move(snapshot)); return;
     }
     policy_.store(nullptr);

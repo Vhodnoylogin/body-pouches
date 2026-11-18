@@ -1,4 +1,4 @@
-Body Pouches 2 - prototype 3
+Body Pouches 2 - prototype 4
 
 A wearable potion bag using VR Interaction Framework. This is an untested local
 prototype, not an update to the released Body Pouches 0.2.0. Do not install both
@@ -7,10 +7,11 @@ versions together: both intentionally use BodyPouches.dll and BodyPouches.esp.
 Required separately:
 - Skyrim VR with SKSEVR, VR Address Library and normal runtime requirements.
 - Released VRIK Player Avatar 0.8.8 (unchanged).
-- VR Interaction Framework 0.2.0-rc.4 from source a9b3ac9, whose technical
-  runtime filename remains BodySlots.dll.
-- HIGGS cooperation API build from fd226f6546877fae8b82380ce16aa800000d12ad.
-  Released HIGGS alone does not supply the required inventory/input contracts.
+- VR Interaction Framework with BehaviorApi2/GameApi2 and semantic held-release
+  integration; its technical runtime filename remains BodySlots.dll.
+- HIGGS cooperation API build with HeldReleaseInterface1 (including explicit
+  FollowInventoryGrip) and AuthorizedDispatch2. Exact source pins accompany the
+  archive. Released HIGGS or earlier prototype builds lack these contracts.
 PLANCK is optional for this player-body bag; it is not bundled or required by it.
 Keep each dependency as its own mod installation.
 
@@ -20,15 +21,15 @@ add one returned ARMO using player.additem <id> 1. Local ID is BodyPouches.esp:8
 Equip it to activate its slot on the right hip; removing it disables new actions.
 The vanilla coin purse is displayed by Framework; no VRIK holster is reserved.
 
-At the bag, hold a drinkable potion and press the trigger to store it and
-assign its effect filter. With an empty hand, grip at the bag to withdraw a
-matching potion from ordinary player inventory. HIGGS handles the actual item
-and drinking at the mouth.
-To return a drawn bottle, bring it to the bag and press the trigger while
-holding it. Releasing the grip remains the original action's release; it never
-also stores the bottle. The withdrawal's original release is consumed; normal
-release/drop and release-to-assign/return parity are NOT implemented. These
-temporary controls are not a replacement for released0.2.0's gesture.
+Hold a drinkable potion, bring it inside the bag and release grip to store it
+and assign its effect filter. With an empty hand, press grip inside the bag and
+pull the same hand out while keeping grip held to draw a matching inventory
+potion. Releasing inside before exit cancels the draw. Bring a drawn bottle back
+and release the original grip to return it; no second press or trigger is needed.
+Outside eligible regions, release follows HIGGS's normal drop path. HIGGS handles
+actual item transfers and drinking; overlapping native actions share its choice.
+Armed draw waits at most60seconds and cancels if its source or item becomes stale.
+These controls are implemented in source and compiled, not gameplay-qualified.
 Poisons, food and game-equipped weapons are not accepted as potions.
 
 Assignments are per-save and survive removing the bag. Potions remain in normal
