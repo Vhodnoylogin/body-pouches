@@ -499,7 +499,9 @@ void Message(SKSE::MessagingInterface::Message* message) noexcept {
         case SKSE::MessagingInterface::kPostPostLoad: app.Connect(); break;
         case SKSE::MessagingInterface::kPreLoadGame: app.Suspend(); break;
         case SKSE::MessagingInterface::kPostLoadGame:
-            if (message->dataLen == 1 && reinterpret_cast<std::uintptr_t>(message->data) == 1) app.Resume();
+            // SKSE sends this after either load result. End only the loading
+            // guard; factual provider/world/save readiness still gates Tick.
+            if (message->dataLen == 1) app.Resume();
             break;
         case SKSE::MessagingInterface::kNewGame: app.Revert(); app.Resume(); break;
         default: break;
