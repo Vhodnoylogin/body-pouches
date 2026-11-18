@@ -9,7 +9,7 @@ set(FRAMEWORK_ROOT "" CACHE PATH "Pinned public VR Interaction Framework source"
 set(HIGGS_ROOT "" CACHE PATH "Pinned public HIGGS API source")
 set(JSON_INCLUDE "" CACHE PATH "Optional directory containing nlohmann/json.hpp")
 set(FRAMEWORK_COMMIT "bf096583fa0bd1bf6a39d69d48c3fb3fc6e834d0")
-set(HIGGS_COMMIT "f7d0bef6d5498729d2889462d770d0cb3819f662")
+set(HIGGS_COMMIT "8e3d36434f1ff7791cab3ed5eaf9b00cf838629e")
 
 find_package(Git REQUIRED)
 foreach(dependency IN ITEMS FRAMEWORK HIGGS)
