@@ -6,15 +6,16 @@
 #include <Windows.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include "potion_policy.h"
-#include "core/Assignments.h"
+#include "assignment_store.h"
+#include "settings.h"
 #include "game/Forms.h"
 #include "higgsinterface001.h"
 #include "body_slots_equipment_api.h"
 #include "body_slots_content_observation_api.h"
+#include "higgsphysics.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <mutex>
 #include <optional>
 
 namespace BodyPouches::Prototype {
@@ -23,7 +24,6 @@ namespace sdk = body_slots::examples;
 constexpr char kProvider[] = "BodyPouches2";
 constexpr char kEquipment[] = "single-potion-bag";
 constexpr char kSlot[] = "potions";
-constexpr std::uint32_t kAssignment = 0x42503241; // BP2A, not legacy ASGN
 std::uint64_t NowNs() {
     return static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count());
@@ -68,8 +68,7 @@ public:
     void Load(SKSE::SerializationInterface*);
     void Revert() {
         Suspend();
-        std::lock_guard lock(assignmentMutex_);
-        filter_ = {};
+        assignments_.Clear();
     }
 private:
     struct Buffers {
@@ -84,6 +83,7 @@ private:
     const bs::GameApi* game_{};
     const bs::ContentObservationApi* content_{};
     sdk::InventoryProviderTables tables_;
+    HIGGS_HapticsInterface haptics_{};
     sdk::OrdinaryInventoryProvider inventory_;
     std::uint64_t writer_{}, higgsClient_{}, scope_{}, epoch_{}, operationScope_{}, processedTransfer_{}, processedEpoch_{};
     std::uint64_t refreshedAt_{}, definitionRevision_{};
@@ -94,12 +94,19 @@ private:
     std::unique_ptr<Buffers> buffers_ = std::make_unique<Buffers>();
     std::atomic<bool> loading_{false}, cancel_{false}, refresh_{true};
     std::atomic<std::shared_ptr<const PolicySnapshot>> policy_;
-    std::mutex assignmentMutex_;
-    Core::Filter filter_;
+    AssignmentStore assignments_;
+    PouchSettings settings_;
+    std::uint64_t eventSubscription_{};
+    struct EntryHint { bs::RuntimeEvent event; std::uint64_t capturedNs; };
+    std::array<std::atomic<std::shared_ptr<const EntryHint>>, 2> entries_;
+    std::atomic<std::uint64_t> feedbackInstance_{0};
+    std::array<std::uint64_t, 2> hapticRequests_{};
     bs::SlotVisualSpec lastVisual_{};
     sdk::InventoryProviderStage lastStage_ = sdk::InventoryProviderStage::Detached;
-    Core::Filter Assignment() { std::lock_guard lock(assignmentMutex_); return filter_; }
     static bool Policy(void*, const bs::SourceActionContext&, sdk::OrdinaryItemPlan&);
+    static void BS_CALL Event(void*, const bs::RuntimeEvent*) noexcept;
+    void Feedback(const bs::RuntimeRecord&);
+    void CancelFeedback();
     bool ReadInstances();
     bool BindBag();
     bool Attach();
@@ -122,6 +129,9 @@ bool PouchApp::Policy(void* context, const bs::SourceActionContext& input, sdk::
 }
 void PouchApp::Connect() {
     if (connected_) return;
+    settings_ = LoadPouchSettings();
+    spdlog::set_level(spdlog::level::from_str(settings_.logLevel));
+    if (!settings_.enabled) { spdlog::info("Body Pouches 2 disabled in configuration"); return; }
     registry_ = Framework<bs::Api>("BodySlots_QueryInterface");
     instances_ = Framework<bs::InstanceApi>("BodySlots_QueryInstanceInterface");
     equipment_ = Framework<bs::EquipmentApi>("BodySlots_QueryEquipmentInterface");
@@ -140,14 +150,16 @@ void PouchApp::Connect() {
     client.structSize = sizeof(client);
     Text(client.name, kProvider);
     if (tables_.hands.RegisterClient(&client, &higgsClient_) != HIGGS_HAND_OK) return;
+    // Optional coordinated feedback. Missing hardware/service never blocks use.
+    Higgs<HIGGS_QueryHapticsInterfaceFn>("HIGGS_QueryHapticsInterface", 1, haptics_);
     bs::Definition definition{};
     definition.structSize = sizeof(definition); definition.flags = bs::kEnabled;
     Text(definition.provider, kProvider); Text(definition.key, kSlot);
-    Text(definition.anchor, "NPC Pelvis [Pelv]");
+    Text(definition.anchor, settings_.anchor.c_str());
     Text(definition.referenceRig, "skyrimvr-humanoid-v1"); Text(definition.kind, "potion-bag");
-    definition.position[0] = 18; definition.position[2] = -4;
-    definition.rotation[0] = definition.rotation[4] = definition.rotation[8] = 1;
-    definition.radius = 10; definition.handMask = bs::Both; definition.contentMask = bs::Potion;
+    std::copy(settings_.position.begin(), settings_.position.end(), definition.position);
+    std::copy(settings_.rotation.begin(), settings_.rotation.end(), definition.rotation);
+    definition.radius = settings_.radius; definition.handMask = bs::Both; definition.contentMask = bs::Potion;
     bs::SlotRecord record{};
     if (registry_->UpsertDefinition(writer_, &definition, 0, &record) != bs::Status::Ok) return;
     definitionRevision_ = record.definitionRevision;
@@ -158,8 +170,46 @@ void PouchApp::Connect() {
     const auto phase = static_cast<HiggsPluginAPI::IHiggsInterface001*>(request.get(1));
     if (!phase) return;
     phase->AddPostVrikPostHiggsCallback(Phase);
+    if (runtime_->Subscribe(writer_, Event, this, &eventSubscription_) != bs::Status::Ok)
+        spdlog::warn("slot entry feedback unavailable");
     connected_ = true;
     spdlog::info("Body Pouches 2 connected; no native VRIK holster or controller hooks");
+}
+void BS_CALL PouchApp::Event(void* context, const bs::RuntimeEvent* event) noexcept {
+    if (!context || !event || event->kind != static_cast<std::uint32_t>(bs::RuntimeEventKind::Enter) ||
+        (event->physicalHand != bs::Left && event->physicalHand != bs::Right)) return;
+    auto& app = *static_cast<PouchApp*>(context);
+    // Retain copied scope, including an entry before the first policy snapshot.
+    // No live integration state is read on the notifying thread.
+    if (!app.loading_.load() && event->instanceHandle == app.feedbackInstance_.load()) {
+        try { app.entries_[event->physicalHand - 1].store(std::make_shared<EntryHint>(EntryHint{*event, NowNs()})); }
+        catch (...) {} // Feedback allocation failure cannot escape a provider callback.
+    }
+}
+void PouchApp::Feedback(const bs::RuntimeRecord& row) {
+    for (std::uint32_t hand = bs::Left; hand <= bs::Right; ++hand) {
+        const auto entry = entries_[hand - 1].exchange(nullptr);
+        if (!entry || !settings_.entryHaptics || !haptics_.RequestHaptic || !worn_ || loading_ ||
+            row.availability != static_cast<std::uint32_t>(bs::RuntimeAvailability::Available) ||
+            entry->event.epoch != row.epoch || entry->event.instanceHandle != instance_.instanceHandle ||
+            !(row.insideHands & hand) || row.frame < entry->event.frame ||
+            NowNs() < entry->capturedNs || NowNs() - entry->capturedNs > 150000000) continue;
+        HIGGS_HapticRequest request{};
+        request.structSize = sizeof(request); request.physicalHand = hand;
+        request.epoch = row.epoch; request.contextKey = instance_.instanceHandle;
+        request.durationMs = 30; request.startStrength = 0.2f;
+        std::uint64_t id{};
+        if (haptics_.RequestHaptic(higgsClient_, &request, &id) == HIGGS_HAND_OK)
+            hapticRequests_[hand - 1] = id;
+    }
+}
+void PouchApp::CancelFeedback() {
+    feedbackInstance_.store(0);
+    for (auto& entry : entries_) entry.store(nullptr);
+    for (auto& id : hapticRequests_) {
+        if (id && haptics_.CancelHaptic) haptics_.CancelHaptic(higgsClient_, id);
+        id = 0;
+    }
 }
 bool PouchApp::ReadInstances() {
     view_ = {}; view_.structSize = sizeof(view_); view_.version = 1;
@@ -213,6 +263,7 @@ bool PouchApp::Attach() {
 }
 bool PouchApp::Retire() {
     policy_.store(nullptr);
+    CancelFeedback();
     if (!attached_) return true;
     inventory_.Cancel();
     const auto progress = inventory_.Tick();
@@ -227,7 +278,7 @@ bool PouchApp::Retire() {
 std::shared_ptr<PolicySnapshot> PouchApp::Observe(const HIGGS_HandSnapshot& hands, const bs::RuntimeRecord& runtime) {
     auto snapshot = std::make_shared<PolicySnapshot>();
     snapshot->epoch = hands.epoch; snapshot->save = view_.saveGeneration; snapshot->instance = instance_.instanceHandle;
-    snapshot->filter = Assignment(); snapshot->worn = worn_;
+    snapshot->filter = assignments_.Copy(); snapshot->worn = worn_;
     snapshot->available = runtime.availability == static_cast<std::uint32_t>(bs::RuntimeAvailability::Available);
     auto* player = RE::PlayerCharacter::GetSingleton();
     for (auto& [object, entry] : player->GetInventory([](RE::TESBoundObject& o) { return o.Is(RE::FormType::AlchemyItem); })) {
@@ -295,9 +346,8 @@ void PouchApp::Completed(const sdk::InventoryProviderProgress& progress) {
         !(receipt.original.validFields & HIGGS_ITEM_BASE_KNOWN)) return;
     auto* potion = RE::TESForm::LookupByID<RE::AlchemyItem>(receipt.original.baseFormId);
     if (!Drinkable(potion)) return;
-    const auto assignment = Core::Filter::FromItem(Game::Describe(potion));
-    std::lock_guard lock(assignmentMutex_);
-    if (!filter_.IsSet()) { filter_ = assignment; spdlog::info("pouch assigned by factual stored potion {:08X}", potion->GetFormID()); }
+    if (assignments_.AssignIfUnset(Game::Describe(potion)))
+        spdlog::info("pouch assigned by factual stored potion {:08X}", potion->GetFormID());
 }
 void PouchApp::Tick() {
     if (!connected_) return;
@@ -330,6 +380,7 @@ void PouchApp::Tick() {
     worn_ = equipped;
     if (!worn_) {
         policy_.store(nullptr);
+        CancelFeedback();
         if (attached_) inventory_.Cancel();
     }
     if (!BindBag()) return;
@@ -339,6 +390,7 @@ void PouchApp::Tick() {
         view_ = result;
     }
     if (!Attach()) return;
+    feedbackInstance_.store(worn_ && settings_.entryHaptics ? instance_.instanceHandle : 0);
     const auto before = inventory_.CopyProgress();
     if (before.stage == sdk::InventoryProviderStage::Queued) operationScope_ = scope_;
     const auto progress = inventory_.Tick();
@@ -348,13 +400,17 @@ void PouchApp::Tick() {
     const auto now = NowNs();
     // Refresh metadata/stock at 10 Hz. Geometry and visuals keep following the
     // body at Framework's own rate. Offers expire after 150 ms without a refresh.
-    if (!changed && !refresh_.exchange(false) && now - refreshedAt_ < 100000000) return;
+    const bool observe = changed || refresh_.exchange(false) || now - refreshedAt_ >= 100000000;
+    // Entry feedback is independent of the inventory/metadata throttle.
+    if (!observe && !entries_[0].load() && !entries_[1].load()) return;
     bs::RuntimeView runtimeView{}; runtimeView.structSize = sizeof(runtimeView); runtimeView.version = 1;
     if (runtime_->CopyRuntime(writer_, buffers_->runtime.data(), bs::kMaxInstances, &runtimeView) != bs::Status::Ok ||
         runtimeView.epoch != hands.epoch || runtimeView.saveGeneration != scope_) { policy_.store(nullptr); return; }
     for (std::uint32_t i = 0; i < runtimeView.count; ++i) {
         const auto& row = buffers_->runtime[i];
         if (row.configured.instance.instanceHandle != instance_.instanceHandle) continue;
+        Feedback(row);
+        if (!observe) return;
         auto snapshot = Observe(hands, row);
         Present(*snapshot, row);
         refreshedAt_ = now; policy_.store(std::move(snapshot)); return;
@@ -362,36 +418,16 @@ void PouchApp::Tick() {
     policy_.store(nullptr);
 }
 void PouchApp::Save(SKSE::SerializationInterface* skse) {
-    const auto filter = Assignment();
-    const auto bytes = Core::EncodeAssignments(filter.IsSet() ? Core::Assignments{{1, filter}} : Core::Assignments{});
-    if (!skse || !bytes || !skse->WriteRecord(kAssignment, 1, bytes->data(), static_cast<std::uint32_t>(bytes->size())))
+    if (!assignments_.Save(skse))
         spdlog::error("Body Pouches 2 assignment save failed");
 }
 void PouchApp::Load(SKSE::SerializationInterface* skse) {
     Revert();
-    Core::Assignments saved;
-    bool seen = false;
-    std::uint32_t type{}, version{}, length{};
-    if (!skse) return;
-    while (skse->GetNextRecordInfo(type, version, length)) {
-        if (type != kAssignment) continue;
-        if (seen || version != 1 || length > Core::kAssignmentBytes) return;
-        seen = true;
-        std::vector<std::uint8_t> bytes(length);
-        if (skse->ReadRecordData(bytes.data(), length) != length) return;
-        const auto decoded = Core::DecodeAssignments(bytes);
-        if (!decoded || decoded->size() > 1 || (!decoded->empty() && decoded->front().slot != 1)) return;
-        saved = *decoded;
-    }
-    auto resolved = Core::ResolveAssignments(saved, [skse](const Core::FormKey& key, bool effect) -> std::optional<Core::FormKey> {
-        auto current = key;
-        if (key.plugin.empty() && (!skse->ResolveFormID(key.localId, current.localId) || !current.localId)) return std::nullopt;
-        auto* form = Game::Lookup(current);
-        if (!form || (effect ? !form->As<RE::EffectSetting>() : !Drinkable(form->As<RE::AlchemyItem>()))) return std::nullopt;
-        return current;
-    });
-    std::lock_guard lock(assignmentMutex_);
-    filter_ = resolved.empty() ? Core::Filter{} : resolved.front().filter;
+    const auto result = assignments_.Load(skse, settings_.importLegacySlot);
+    if (result == AssignmentLoadResult::Imported)
+        spdlog::info("imported released Body Pouches assignment from native slot {}", settings_.importLegacySlot);
+    else if (result == AssignmentLoadResult::Invalid)
+        spdlog::warn("invalid or missing assignment forms; bag left unassigned without fallback");
 }
 void Message(SKSE::MessagingInterface::Message* message) noexcept {
     try {

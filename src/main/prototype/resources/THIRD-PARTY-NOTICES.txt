@@ -17,6 +17,10 @@ CommonLibSSE-NG, fmt, spdlog and rapidcsv are consumed through the separately
 recorded RC4 native build and its pinned source inputs. Their license texts are
 included in licenses/. Matching source/build references accompany PROVENANCE.
 
+nlohmann/json is used for settings under its MIT license, included as
+licenses/nlohmann_json.txt. The exact single header and license are hash-pinned
+in the external build receipt; no second maintained copy is kept in this repo.
+
 The inventory and worn bag reference Skyrim's original CoinPurseLarge model,
 Plants\CoinBagLarge.nif, identified by the owner's Immersive Equipment Displays
 (Nexus 62001) visual reference. No IED implementation, mesh or texture is copied.

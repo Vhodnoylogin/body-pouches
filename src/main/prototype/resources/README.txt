@@ -1,4 +1,4 @@
-Body Pouches 2 - prototype 2
+Body Pouches 2 - prototype 3
 
 A wearable potion bag using VR Interaction Framework. This is an untested local
 prototype, not an update to the released Body Pouches 0.2.0. Do not install both
@@ -22,17 +22,31 @@ The vanilla coin purse is displayed by Framework; no VRIK holster is reserved.
 
 At the bag, hold a drinkable potion and press the trigger to store it and
 assign its effect filter. With an empty hand, grip at the bag to withdraw a
-matching potion from ordinary player inventory. Move out while holding grip,
-then release outside. HIGGS handles the actual item and drinking at the mouth.
+matching potion from ordinary player inventory. HIGGS handles the actual item
+and drinking at the mouth.
 To return a drawn bottle, bring it to the bag and press the trigger while
 holding it. Releasing the grip remains the original action's release; it never
-also stores the bottle. Only the selected trigger action at this bag is consumed.
+also stores the bottle. The withdrawal's original release is consumed; normal
+release/drop and release-to-assign/return parity are NOT implemented. These
+temporary controls are not a replacement for released0.2.0's gesture.
 Poisons, food and game-equipped weapons are not accepted as potions.
 
 Assignments are per-save and survive removing the bag. Potions remain in normal
 player inventory; this prototype is not a separate container. One logical bag is
-supported; identical armor copies do not have independent contents. Older 0.2.0
-native-slot assignments are not migrated. Keep original saves before use.
+supported; identical armor copies do not have independent contents.
+
+The first load of a save without BP2A imports only the configured 0.2.0 ASGN
+assignment (native slot13 by default). Other legacy slots are not merged. BP2A
+including an empty or invalid record prevents legacy fallback. A missing form
+rejects the whole filter. A different potion never replaces an assigned filter.
+Keep original saves: released0.2.0 cannot read the new BP2A record.
+
+Settings are created at SKSE/Plugins/bodypouches/bodypouches2.json. Edit with the
+game closed: enabled, entryHaptics, logLevel, importLegacySlot (0 disables import),
+anchor, position, rotationDegrees and radius. Framework's saved placement takes
+precedence over these defaults. The released mod's settings/INI are not changed.
+Entry vibration is requested through HIGGS and is optional, not proof of hardware
+delivery. Invalid new settings disable the bag while retaining the file.
 
 No tests, DLL loading, game launch, deployment or publication were performed for
 this prototype. Bag rendering, positioning, handling and save behavior await

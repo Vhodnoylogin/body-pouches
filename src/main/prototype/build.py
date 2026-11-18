@@ -37,6 +37,7 @@ def main():
     parser.add_argument("--rc4-native", type=Path, required=True)
     parser.add_argument("--framework-root", type=Path, required=True)
     parser.add_argument("--higgs-root", type=Path, required=True)
+    parser.add_argument("--json-root", type=Path, help="Pinned nlohmann_json source (defaults to RC4 dependency cache sibling)")
     parser.add_argument("--cmake", type=Path)
     args = parser.parse_args()
     output = args.output.resolve()
@@ -54,6 +55,13 @@ def main():
         installation = subprocess.check_output([str(vswhere), "-latest", "-products", "*", "-property", "installationPath"], text=True).strip()
         cmake = Path(installation) / "Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe"
     dependencies = dependency_sources(native)
+    json_root = (args.json_root or dependencies["commonlibsse"].parent / "nlohmann_json-src").resolve(strict=True)
+    json_include = json_root / "single_include"
+    if not (json_include / "nlohmann/json.hpp").is_file():
+        parser.error("--json-root must contain single_include/nlohmann/json.hpp")
+    dependencies["nlohmann_json"] = json_root
+    licenses = {name: path / ("LICENSE.MIT" if name == "nlohmann_json" else "LICENSE")
+                for name, path in dependencies.items()}
     inputs = [p for p in SOURCE.rglob("*") if p.is_file() and "__pycache__" not in p.parts]
     inputs += list((ROOT / "src/core").glob("*.cpp")) + list((ROOT / "src/core").glob("*.h"))
     inputs += [ROOT / "src/game/Forms.cpp", ROOT / "src/game/Forms.h", ROOT / "tools/make-esp.py"]
@@ -64,13 +72,13 @@ def main():
     inputs += [native / f"_deps/{directory}/Release/{library}.lib" for directory, library in (
         ("commonlibsse-build", "CommonLibSSE"), ("fmt-build", "fmt"), ("spdlog-build", "spdlog"))]
     inputs += [framework / "LICENSE", higgs / "LICENSE"]
-    inputs += [path / "LICENSE" for path in dependencies.values()]
+    inputs += list(licenses.values()) + [json_include / "nlohmann/json.hpp"]
     pins = {str(path.resolve()): sha(path) for path in inputs}
     source_commit = git(ROOT, "rev-parse", "HEAD")
     output.mkdir(parents=True, exist_ok=True)
     commands = [
         [str(cmake), "-S", str(SOURCE), "-B", str(output / "native"), "-G", "Visual Studio 18 2026", "-A", "x64",
-         f"-DRC4_NATIVE={native}", f"-DFRAMEWORK_ROOT={framework}", f"-DHIGGS_ROOT={higgs}"],
+         f"-DRC4_NATIVE={native}", f"-DFRAMEWORK_ROOT={framework}", f"-DHIGGS_ROOT={higgs}", f"-DJSON_INCLUDE={json_include}"],
         [str(cmake), "--build", str(output / "native"), "--config", "Release", "--target", "BodyPouches2Prototype", "--parallel", "4"],
     ]
     executions = []
@@ -85,12 +93,13 @@ def main():
             raise RuntimeError(f"build input changed: {path}")
     dll = output / "native/Release/BodyPouches.dll"
     receipt = {
-        "product": "Body Pouches 2", "version": "2.0.0-prototype.2",
+        "product": "Body Pouches 2", "version": "2.0.0-prototype.3",
         "sourceRepository": git(ROOT, "remote", "get-url", "origin"), "sourceCommit": source_commit,
         "sourceDirtyAtEnd": bool(git(ROOT, "status", "--porcelain")),
         "frameworkRoot": str(framework), "frameworkCommit": FRAMEWORK_COMMIT,
         "higgsRoot": str(higgs), "higgsCommit": HIGGS_COMMIT,
         "dependencySources": {name: str(path) for name, path in dependencies.items()},
+        "dependencyLicenses": {name: str(path) for name, path in licenses.items()},
         "sourceSha256": pins, "commands": executions,
         "dll": {"path": str(dll), "bytes": dll.stat().st_size, "sha256": sha(dll)},
         "testsRun": False, "gameStarts": 0, "dllLoaded": False,

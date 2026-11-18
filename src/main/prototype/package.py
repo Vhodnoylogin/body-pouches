@@ -51,7 +51,8 @@ def main():
         "licenses/HIGGS-GPL-3.0.txt": (Path(receipt["higgsRoot"]) / "LICENSE").read_bytes(),
     }
     for name, path in dependencies.items():
-        files[f"licenses/{name}.txt"] = (path / "LICENSE").read_bytes()
+        license_path = Path(receipt["dependencyLicenses"][name])
+        files[f"licenses/{name}.txt"] = license_path.read_bytes()
     provenance = {
         "product": receipt["product"], "version": receipt["version"],
         "sourceRepository": receipt["sourceRepository"], "sourceCommit": receipt["sourceCommit"],
