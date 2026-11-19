@@ -15,6 +15,12 @@ cmake_minimum_required(VERSION 3.24)
 # be run in a second, and the half that needs a headset holds no reasoning at all.
 project(BodyPouches VERSION 0.2.0 LANGUAGES CXX)
 
+option(BODYPOUCHES_FRAMEWORK_PROTOTYPE "Build the separate Body Pouches 2 Framework prototype" OFF)
+if(BODYPOUCHES_FRAMEWORK_PROTOTYPE)
+    add_subdirectory(src/main/prototype)
+    return()
+endif()
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -23,6 +29,7 @@ set(CMAKE_SKIP_INSTALL_RULES ON)
 option(BODYPOUCHES_BUILD_PLUGIN "Build the SKSE plugin (needs CommonLibSSE-NG)" ON)
 option(BODYPOUCHES_BUILD_TESTS  "Build the checks of the core" ON)
 option(BODYPOUCHES_WITH_DEVBENCH "Include the development-only DevBench inspection bridge" OFF)
+option(BODYPOUCHES_WEARABLE_DEMO "Build the private singleton wearable-bag/native14 demonstration" OFF)
 
 # ------------------------------------------------------------------------ core
 # No dependencies by design. A new file under src/core is picked up by the next
@@ -43,6 +50,7 @@ endif()
 # else, so -DBODYPOUCHES_BUILD_PLUGIN=OFF gives a configure that fetches nothing
 # from the network and builds in seconds on a machine with no Skyrim on it.
 if(BODYPOUCHES_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
+    enable_testing()
     add_subdirectory(tests)
 endif()
 
@@ -112,6 +120,8 @@ FetchContent_MakeAvailable(CommonLibSSE)
 # CommonLibSSE instead (src/vr/Handshake.h).
 file(GLOB_RECURSE BODYPOUCHES_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 file(GLOB_RECURSE BODYPOUCHES_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
+list(FILTER BODYPOUCHES_SOURCES EXCLUDE REGEX "/src/main/prototype/")
+list(FILTER BODYPOUCHES_HEADERS EXCLUDE REGEX "/src/main/prototype/")
 list(REMOVE_ITEM BODYPOUCHES_SOURCES ${BODYPOUCHES_CORE_SOURCES})
 list(REMOVE_ITEM BODYPOUCHES_HEADERS ${BODYPOUCHES_CORE_HEADERS})
 if(NOT BODYPOUCHES_WITH_DEVBENCH)
@@ -122,6 +132,29 @@ add_library(BodyPouches SHARED
     ${BODYPOUCHES_SOURCES}
     ${BODYPOUCHES_HEADERS}
 )
+if(BODYPOUCHES_WEARABLE_DEMO)
+    target_compile_definitions(BodyPouches PRIVATE BODYPOUCHES_WEARABLE_DEMO=1)
+    # Only public ABI headers are needed. Do not configure or link the provider plugin.
+    FetchContent_Declare(body_slots_sdk
+        GIT_REPOSITORY https://github.com/Vhodnoylogin/body-slots.git
+        GIT_TAG 9e3273938725cb35edca04b9283dc9bd45363c5a
+        SOURCE_SUBDIR include)
+    FetchContent_MakeAvailable(body_slots_sdk)
+    target_include_directories(BodyPouches BEFORE PRIVATE "${body_slots_sdk_SOURCE_DIR}/include")
+    if(BODYPOUCHES_BUILD_TESTS)
+        add_executable(bodypouches_bag_return_tests tests/bag_return_region_consumer.cpp src/vr/BagReturnRegion.cpp)
+        # Link the region/registry core used by the provider's native fixtures.
+        foreach(unit IN ITEMS registry instances instance_configuration validation configuration_serialization
+                native_placement native_policy package runtime runtime_saved zone_geometry manipulation
+                content_policy main/interaction_regions)
+            target_sources(bodypouches_bag_return_tests PRIVATE "${body_slots_sdk_SOURCE_DIR}/src/${unit}.cpp")
+        endforeach()
+        target_compile_definitions(bodypouches_bag_return_tests PRIVATE BODYPOUCHES_WEARABLE_DEMO=1 NOMINMAX WIN32_LEAN_AND_MEAN)
+        target_include_directories(bodypouches_bag_return_tests PRIVATE src "${body_slots_sdk_SOURCE_DIR}/include" "${body_slots_sdk_SOURCE_DIR}/src")
+        target_link_options(bodypouches_bag_return_tests PRIVATE /STACK:8388608)
+        add_test(NAME bag_return_regions COMMAND bodypouches_bag_return_tests)
+    endif()
+endif()
 if(BODYPOUCHES_WITH_DEVBENCH)
     target_sources(BodyPouches PRIVATE contract/DevBenchAPI.cpp)
     target_compile_definitions(BodyPouches PRIVATE BODYPOUCHES_WITH_DEVBENCH=1)

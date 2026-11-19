@@ -1,24 +1,15 @@
-# VRIK HIGGS and PLANCK synergy concept
+# VR interaction synergy
 
-This directory is the single source of the cooperation concept and its two
-language versions:
+The single maintained concept of cooperation between HIGGS, VRIK, PLANCK, PPB and VR Interaction Framework (formerly Body Slots) lives here in two aligned language versions:
 
 - [English concept](concept-en.md)
 - [Русская концепция](concept-ru.md)
-- [Implementation status](implementation-status.md): delivered code, verification and remaining gaps.
-- [CommonLib assessment](commonlib-assessment.md): current technical reuse and extension candidates for the second stage.
+- [Implementation status](implementation-status.md): delivered source, verification limits and remaining work.
 
-Body Pouches intends to migrate to this architecture. The proposal is hosted
-here because Body Pouches is maintained by its owner independently of the three
-framework repositories. Hosting the concept does not mean the new services are
-implemented or agreed with the framework authors.
+Body Pouches hosts the concept because its author independently maintains this mod and intends to adopt the shared services. The concept describes the target architecture; hosting it does not imply agreement from other mod authors or completed implementation.
 
-[Body Pouches 0.2.0 is released on Nexus](https://www.nexusmods.com/skyrimspecialedition/mods/194796).
-Both concepts now describe how shared services could simplify its integration
-and support persistent configurable slots, independent previews and wearable
-bags. Those extensions are proposals, not features of the released mod.
+HIGGS owns hand use, input and grants; VR Interaction Framework owns logical interaction regions and slot mechanics; VRIK supplies the body and virtual-hand poses; PPB supplies anatomical geometry and fitting; PLANCK owns live NPC physics, physical contacts and hits. Consumer mods retain their gameplay rules. A slot is a named interaction region with offered actions; content, visuals and persistence are optional.
 
-Edit the full concept only here and keep both languages aligned. Framework
-repositories contain short summaries and their own architectural requirements,
-with links to this directory; they do not maintain copies of the full concept.
-The function and event declarations are illustrative pseudo-ABI, not a released SDK.
+The concept's declarations are illustrative pseudo-ABI. Implemented, negotiated contracts are documented in each provider's source repository. Framework repositories link here and do not maintain copies of the full concept.
+
+Source-backed [research and consumer assessments](../trinity-research/README.md), including PPB proposals and the CommonLib stage-two inventory, are kept separately. Superseded checkpoints and the earlier VRIK integration presentation remain available in Git history; they are not competing descriptions of the current concept.

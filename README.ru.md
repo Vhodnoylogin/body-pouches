@@ -1,5 +1,7 @@
 # Body Pouches — 0.2.0
 
+В этой ветке также находится [закрытая демонстрация надеваемой сумки](docs/wearable-demo.md), включаемая только параметром `BODYPOUCHES_WEARABLE_DEMO`. Её работа в игре ещё не проверена; опубликованный релиз описан ниже.
+
 Зелья под рукой в Skyrim VR. Превратите слот на теле VRIK в сумку для зелий:
 возьмите бутылку любой рукой, выпейте через HIGGS или верните в слот.
 Для обращения с сумкой не нужны меню инвентаря, колесо выбора или отдельная горячая клавиша.
@@ -72,4 +74,4 @@ cmake --build build --config Release --target BodyPouches
 
 ## Предлагаемое взаимодействие модов
 
-[Русская концепция](docs/trinity-synergy/concept-ru.md), [английская концепция](docs/trinity-synergy/concept-en.md) и [журнал реализации](docs/trinity-synergy/implementation-status.md) описывают взаимодействие HIGGS, VRIK, PLANCK и отдельного мода Body Slots. Body Pouches планирует использовать эти службы; ход реализации и границы проверок описаны отдельно от возможностей выпущенного мода.
+[Русская концепция](docs/trinity-synergy/concept-ru.md), [английская концепция](docs/trinity-synergy/concept-en.md) и [журнал реализации](docs/trinity-synergy/implementation-status.md) описывают взаимодействие HIGGS, VRIK, PLANCK, PPB и отдельного мода Body Slots. Body Pouches планирует использовать эти службы; ход реализации и границы проверок описаны отдельно от возможностей выпущенного мода.

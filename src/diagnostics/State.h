@@ -32,6 +32,17 @@ namespace BodyPouches::Diagnostics
 			double activationRadiusGameUnits{};
 			int armedSharedSlot{};
 		};
+		struct WearableDemo
+		{
+			bool enabled{}, interfaceValidated{}, providerAvailable{}, requestedActive{}, effectiveEnabled{};
+			std::uint32_t bagFormId{}, status{};
+			std::optional<bool> worn;
+			std::uint64_t equipmentEpoch{}, saveGeneration{}, viewRevision{}, instanceHandle{}, instanceRevision{};
+			std::string reason;
+			bool artGeometryAvailable{};
+			std::string artReason, artParent;
+		};
+		WearableDemo wearable;
 		bool available{ false };
 		std::string reason{ "not_initialized" };
 		Settings settings;
